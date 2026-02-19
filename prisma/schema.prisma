@@ -14,7 +14,12 @@ model Usuario {
   nombre    String
   apellido  String
   correo    String   @unique
-  carrera   String?
+  contrasenaHash String
+  carrera   String
+  semestre  Int
+  materiasCursando String[]
+  correoVerificado Boolean @default(false)
+  googleSub String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

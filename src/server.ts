@@ -19,7 +19,8 @@ app.get('/', (req, res) => {
     res.json({ 
         mensaje: '🚀 API de UniConnect con MongoDB',
         endpoints: {
-            usuarios: 'GET /api/usuarios - POST /api/usuarios'
+            usuarios: 'GET /api/usuarios',
+            registro: 'POST /api/usuarios/registro'
         }
     });
 });
