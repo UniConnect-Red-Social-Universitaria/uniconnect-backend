@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import { Prisma } from '@prisma/client';
 import { UsuarioModel } from '../models/usuario.model'
 import { esCorreoInstitucional, validarCorreoConGoogle } from '../utils/registro.util';
@@ -150,6 +151,85 @@ export class UsuarioController {
             res.status(500).json({
                 success: false,
                 message: 'Error al obtener usuarios'
+            });
+        }
+    }
+
+    // Login: autenticar usuario con correo y contraseña
+    static async login(req: Request, res: Response) {
+        try {
+            const { correo, contrasena } = req.body;
+
+            // Validar campos
+            if (!correo || !contrasena) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Correo y contraseña son requeridos'
+                });
+            }
+
+            if (typeof correo !== 'string' || typeof contrasena !== 'string') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Formato inválido'
+                });
+            }
+
+            // Buscar usuario por correo (con contraseña hash)
+            const usuario = await UsuarioModel.buscarPorCorreoConContrasena(correo.trim().toLowerCase());
+            
+            if (!usuario) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Correo o contraseña incorrectos'
+                });
+            }
+
+            // Validar contraseña
+            const contrasenaValida = await bcrypt.compare(contrasena, usuario.contrasenaHash as string);
+            
+            if (!contrasenaValida) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Correo o contraseña incorrectos'
+                });
+            }
+
+            // Generar JWT
+            if (!process.env.JWT_SECRET) {
+                throw new Error('JWT_SECRET no configurado en .env');
+            }
+
+            const token = jwt.sign(
+                {
+                    id: usuario.id,
+                    correo: usuario.correo,
+                    nombre: usuario.nombre
+                },
+                process.env.JWT_SECRET,
+                { expiresIn: '7d' }
+            );
+
+            res.json({
+                success: true,
+                message: 'Inicio de sesión exitoso',
+                data: {
+                    token,
+                    usuario: {
+                        id: usuario.id,
+                        nombre: usuario.nombre,
+                        apellido: usuario.apellido,
+                        correo: usuario.correo,
+                        carrera: usuario.carrera
+                    }
+                }
+            });
+
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                message: 'Error al iniciar sesión',
+                error: error instanceof Error ? error.message : 'Error desconocido'
             });
         }
     }

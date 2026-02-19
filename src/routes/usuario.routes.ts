@@ -4,6 +4,7 @@ import { UsuarioController } from '../controllers/usuario.controller';
 const router = express.Router();
 
 router.post('/registro', UsuarioController.registrar);
+router.post('/login', UsuarioController.login);
 router.get('/', UsuarioController.obtenerTodos);
 
 export default router;

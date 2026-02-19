@@ -18,11 +18,22 @@ export class UsuarioModel {
         });
     }
 
-    // Buscar por correo
+    // Buscar por correo (con contraseña para login)
     static async buscarPorCorreo(correo: string) {
         return prisma.usuario.findUnique({
             where: { correo }
         });
+    }
+
+    // Buscar por correo (retorna todo incluyendo contrasenaHash para validación)
+    static async buscarPorCorreoConContrasena(correo: string) {
+        const usuario = await prisma.usuario.findUnique({
+            where: { correo }
+        });
+        
+        if (!usuario) return null;
+        
+        return usuario as unknown as Record<string, unknown> & { contrasenaHash: string };
     }
 
     // Buscar por ID
