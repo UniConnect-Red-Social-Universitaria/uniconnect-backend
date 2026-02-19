@@ -68,4 +68,50 @@ export class UsuarioModel {
             };
         });
     }
+
+    // Obtener usuario por ID sin exponer contraseña
+    static async obtenerPorIdSeguro(id: string) {
+        const usuario = await prisma.usuario.findUnique({
+            where: { id }
+        });
+
+        if (!usuario) return null;
+
+        const usuarioDinamico = usuario as unknown as Record<string, unknown>;
+
+        return {
+            id: usuario.id,
+            nombre: usuario.nombre,
+            apellido: usuario.apellido,
+            correo: usuario.correo,
+            carrera: usuario.carrera,
+            semestre: typeof usuarioDinamico.semestre === 'number' ? usuarioDinamico.semestre : null,
+            materiasCursando: Array.isArray(usuarioDinamico.materiasCursando)
+                ? (usuarioDinamico.materiasCursando as string[])
+                : [],
+            correoVerificado: typeof usuarioDinamico.correoVerificado === 'boolean'
+                ? usuarioDinamico.correoVerificado
+                : false,
+            createdAt: usuario.createdAt,
+            updatedAt: usuario.updatedAt
+        };
+    }
+
+    // Actualizar usuario (carrera, semestre, materias)
+    static async actualizar(id: string, data: {
+        carrera?: string;
+        semestre?: number;
+        materiasCursando?: string[];
+    }) {
+        const updateData: Record<string, unknown> = {};
+
+        if (data.carrera !== undefined) updateData.carrera = data.carrera;
+        if (data.semestre !== undefined) updateData.semestre = data.semestre;
+        if (data.materiasCursando !== undefined) updateData.materiasCursando = data.materiasCursando;
+
+        return prisma.usuario.update({
+            where: { id },
+            data: updateData
+        });
+    }
 }

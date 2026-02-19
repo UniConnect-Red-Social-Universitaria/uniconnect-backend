@@ -233,4 +233,118 @@ export class UsuarioController {
             });
         }
     }
+
+    // Obtener perfil del usuario autenticado (protegido)
+    static async obtenerPerfil(req: Request, res: Response) {
+        try {
+            if (!req.usuario) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Usuario no autenticado'
+                });
+            }
+
+            const usuario = await UsuarioModel.obtenerPorIdSeguro(req.usuario.id);
+
+            if (!usuario) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Usuario no encontrado'
+                });
+            }
+
+            res.json({
+                success: true,
+                data: usuario
+            });
+
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                message: 'Error al obtener perfil',
+                error: error instanceof Error ? error.message : 'Error desconocido'
+            });
+        }
+    }
+
+    // Actualizar perfil del usuario autenticado (protegido)
+    static async actualizarPerfil(req: Request, res: Response) {
+        try {
+            if (!req.usuario) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Usuario no autenticado'
+                });
+            }
+
+            const { carrera, semestre, materiasCursando } = req.body;
+
+            // Validaciones
+            if (carrera !== undefined && typeof carrera !== 'string') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Carrera debe ser texto'
+                });
+            }
+
+            if (semestre !== undefined && (!Number.isInteger(semestre) || semestre <= 0)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Semestre debe ser un número entero mayor a 0'
+                });
+            }
+
+            if (materiasCursando !== undefined) {
+                if (!Array.isArray(materiasCursando) || materiasCursando.length === 0) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Materias debe ser un array no vacío'
+                    });
+                }
+
+                if (materiasCursando.some((materia) => typeof materia !== 'string' || !materia.trim())) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Todas las materias deben ser textos válidos'
+                    });
+                }
+            }
+
+            // Actualizar
+            const usuarioActualizado = await UsuarioModel.actualizar(req.usuario.id, {
+                carrera: carrera?.trim(),
+                semestre,
+                materiasCursando: materiasCursando?.map((m: string) => m.trim())
+            });
+
+            const usuarioDinamico = usuarioActualizado as unknown as Record<string, unknown>;
+
+            res.json({
+                success: true,
+                message: 'Perfil actualizado correctamente',
+                data: {
+                    id: usuarioActualizado.id,
+                    nombre: usuarioActualizado.nombre,
+                    apellido: usuarioActualizado.apellido,
+                    correo: usuarioActualizado.correo,
+                    carrera: usuarioActualizado.carrera,
+                    semestre: typeof usuarioDinamico.semestre === 'number' ? usuarioDinamico.semestre : null,
+                    materiasCursando: Array.isArray(usuarioDinamico.materiasCursando)
+                        ? (usuarioDinamico.materiasCursando as string[])
+                        : [],
+                    correoVerificado: typeof usuarioDinamico.correoVerificado === 'boolean'
+                        ? usuarioDinamico.correoVerificado
+                        : false,
+                    updatedAt: usuarioActualizado.updatedAt
+                }
+            });
+
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                message: 'Error al actualizar perfil',
+                error: error instanceof Error ? error.message : 'Error desconocido'
+            });
+        }
+    }
 }
