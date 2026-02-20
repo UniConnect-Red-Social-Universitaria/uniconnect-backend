@@ -22,6 +22,8 @@ model Usuario {
   googleSub String?
   solicitudesEnviadas Contacto[] @relation("Solicitante")
   solicitudesRecibidas Contacto[] @relation("Receptor")
+  grupos UsuarioGrupo[]
+  gruposCreados Grupo[] @relation("GruposCreados")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -37,6 +39,37 @@ model Contacto {
   updatedAt     DateTime       @updatedAt
 
   @@unique([solicitanteId, receptorId])
+}
+
+model Materia {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  nombre    String   @unique
+  grupos    Grupo[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Grupo {
+  id        String        @id @default(auto()) @map("_id") @db.ObjectId
+  nombre    String
+  materiaId String        @db.ObjectId
+  creadorId String        @db.ObjectId
+  materia   Materia       @relation(fields: [materiaId], references: [id])
+  creador   Usuario       @relation("GruposCreados", fields: [creadorId], references: [id])
+  miembros  UsuarioGrupo[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+model UsuarioGrupo {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  usuarioId String   @db.ObjectId
+  grupoId   String   @db.ObjectId
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id])
+  grupo     Grupo    @relation(fields: [grupoId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([usuarioId, grupoId])
 }
 
 enum EstadoContacto {

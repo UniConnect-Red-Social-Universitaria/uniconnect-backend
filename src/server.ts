@@ -4,6 +4,8 @@ import cors from 'cors';
 
 
 import usuarioRoutes from './routes/usuario.routes';
+import materiaRoutes from './routes/materia.routes';
+import grupoRoutes from './routes/grupo.routes';
 
 
 const app = express();
@@ -14,6 +16,8 @@ app.use(express.json());
 
 // Rutas
 app.use('/api/usuarios', usuarioRoutes);
+app.use('/api/materias', materiaRoutes);
+app.use('/api/grupos', grupoRoutes);
 
 app.get('/', (req, res) => {
     res.json({ 
@@ -24,7 +28,9 @@ app.get('/', (req, res) => {
             login: 'POST /api/usuarios/login',
             buscarPorMateria: 'GET /api/usuarios/buscar-por-materia?materia=...',
             enviarSolicitud: 'POST /api/usuarios/solicitudes',
-            companeros: 'GET /api/usuarios/companeros'
+            companeros: 'GET /api/usuarios/companeros',
+            crearMateria: 'POST /api/materias',
+            crearGrupo: 'POST /api/grupos'
         }
     });
 });
