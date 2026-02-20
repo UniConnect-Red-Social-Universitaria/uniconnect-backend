@@ -24,6 +24,8 @@ model Usuario {
   solicitudesRecibidas Contacto[] @relation("Receptor")
   grupos UsuarioGrupo[]
   gruposCreados Grupo[] @relation("GruposCreados")
+  mensajesEnviados Mensaje[] @relation("MensajesEnviados")
+  mensajesRecibidos Mensaje[] @relation("MensajesRecibidos")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -70,6 +72,16 @@ model UsuarioGrupo {
   createdAt DateTime @default(now())
 
   @@unique([usuarioId, grupoId])
+}
+
+model Mensaje {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  contenido  String
+  emisorId   String   @db.ObjectId
+  receptorId String   @db.ObjectId
+  emisor     Usuario  @relation("MensajesEnviados", fields: [emisorId], references: [id])
+  receptor   Usuario  @relation("MensajesRecibidos", fields: [receptorId], references: [id])
+  createdAt  DateTime @default(now())
 }
 
 enum EstadoContacto {

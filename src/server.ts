@@ -1,11 +1,14 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import http from 'http';
 
 
 import usuarioRoutes from './routes/usuario.routes';
 import materiaRoutes from './routes/materia.routes';
 import grupoRoutes from './routes/grupo.routes';
+import mensajeRoutes from './routes/mensaje.routes';
+import { inicializarSocket } from './lib/socket';
 
 
 const app = express();
@@ -18,6 +21,7 @@ app.use(express.json());
 app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/materias', materiaRoutes);
 app.use('/api/grupos', grupoRoutes);
+app.use('/api/mensajes', mensajeRoutes);
 
 app.get('/', (req, res) => {
     res.json({ 
@@ -30,12 +34,17 @@ app.get('/', (req, res) => {
             enviarSolicitud: 'POST /api/usuarios/solicitudes',
             companeros: 'GET /api/usuarios/companeros',
             crearMateria: 'POST /api/materias',
-            crearGrupo: 'POST /api/grupos'
+            crearGrupo: 'POST /api/grupos',
+            enviarMensaje: 'POST /api/mensajes'
         }
     });
 });
 
-app.listen(PORT, () => {
+const httpServer = http.createServer(app);
+inicializarSocket(httpServer);
+
+httpServer.listen(PORT, () => {
     console.log(`✅ Servidor en http://localhost:${PORT}`);
     console.log(`📦 Conectado a MongoDB`);
+    console.log('⚡ Chat en tiempo real activo con Socket.IO');
 });
