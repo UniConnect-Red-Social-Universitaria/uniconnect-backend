@@ -71,18 +71,39 @@ export class UsuarioModel {
 
     // Buscar usuarios por materia excluyendo IDs específicos
     static async buscarPorMateriaExcluyendo(materia: string, usuarioActualId: string, idsExcluidos: string[]) {
+        // Normalizar búsqueda: quitar acentos, lowercase, trim, quitar caracteres especiales
+        const normalizarTexto = (texto: string) => {
+            return texto
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '') // Quita acentos
+                .replace(/[%_]/g, '') // Quita wildcards SQL
+                .trim();
+        };
+
+        const materiaNormalizada = normalizarTexto(materia);
+
+        // Obtener todos los usuarios excluyendo IDs
         const usuarios = await prisma.usuario.findMany({
             where: {
-                materiasCursando: {
-                    has: materia
-                },
                 id: {
                     notIn: [usuarioActualId, ...idsExcluidos]
                 }
             }
         });
 
-        return usuarios.map((usuario) => ({
+        // Filtrar manualmente por materia normalizada
+        const usuariosFiltrados = usuarios.filter((usuario) => {
+            const materias = Array.isArray(usuario.materiasCursando) 
+                ? usuario.materiasCursando as string[]
+                : [];
+            
+            return materias.some((mat) => 
+                normalizarTexto(mat).includes(materiaNormalizada)
+            );
+        });
+
+        return usuariosFiltrados.map((usuario) => ({
             id: usuario.id,
             nombre: usuario.nombre,
             apellido: usuario.apellido,
