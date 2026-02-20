@@ -69,6 +69,30 @@ export class UsuarioModel {
         });
     }
 
+    // Buscar usuarios por materia excluyendo IDs específicos
+    static async buscarPorMateriaExcluyendo(materia: string, usuarioActualId: string, idsExcluidos: string[]) {
+        const usuarios = await prisma.usuario.findMany({
+            where: {
+                materiasCursando: {
+                    has: materia
+                },
+                id: {
+                    notIn: [usuarioActualId, ...idsExcluidos]
+                }
+            }
+        });
+
+        return usuarios.map((usuario) => ({
+            id: usuario.id,
+            nombre: usuario.nombre,
+            apellido: usuario.apellido,
+            correo: usuario.correo,
+            carrera: usuario.carrera,
+            semestre: usuario.semestre,
+            materiasCursando: usuario.materiasCursando
+        }));
+    }
+
     // Obtener usuario por ID sin exponer contraseña
     static async obtenerPorIdSeguro(id: string) {
         const usuario = await prisma.usuario.findUnique({

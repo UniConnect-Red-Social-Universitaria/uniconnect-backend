@@ -21,7 +21,10 @@ app.get('/', (req, res) => {
         endpoints: {
             usuarios: 'GET /api/usuarios',
             registro: 'POST /api/usuarios/registro',
-            login: 'POST /api/usuarios/login'
+            login: 'POST /api/usuarios/login',
+            buscarPorMateria: 'GET /api/usuarios/buscar-por-materia?materia=...',
+            enviarSolicitud: 'POST /api/usuarios/solicitudes',
+            companeros: 'GET /api/usuarios/companeros'
         }
     });
 });

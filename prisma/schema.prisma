@@ -20,6 +20,26 @@ model Usuario {
   materiasCursando String[]
   correoVerificado Boolean @default(false)
   googleSub String?
+  solicitudesEnviadas Contacto[] @relation("Solicitante")
+  solicitudesRecibidas Contacto[] @relation("Receptor")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Contacto {
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
+  solicitanteId String         @db.ObjectId
+  receptorId    String         @db.ObjectId
+  estado        EstadoContacto @default(PENDIENTE)
+  solicitante   Usuario        @relation("Solicitante", fields: [solicitanteId], references: [id])
+  receptor      Usuario        @relation("Receptor", fields: [receptorId], references: [id])
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@unique([solicitanteId, receptorId])
+}
+
+enum EstadoContacto {
+  PENDIENTE
+  ACEPTADA
 }

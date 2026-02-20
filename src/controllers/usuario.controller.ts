@@ -3,9 +3,151 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { Prisma } from '@prisma/client';
 import { UsuarioModel } from '../models/usuario.model'
+import { ContactoModel } from '../models/contacto.model';
 import { esCorreoInstitucional, validarCorreoConGoogle } from '../utils/registro.util';
 
 export class UsuarioController {
+    // Buscar estudiantes por materia (excluye al usuario autenticado y relaciones existentes)
+    static async buscarPorMateria(req: Request, res: Response) {
+        try {
+            if (!req.usuario) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Usuario no autenticado'
+                });
+            }
+
+            const materiaQuery = req.query.materia;
+
+            if (typeof materiaQuery !== 'string' || !materiaQuery.trim()) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Debes enviar la materia a buscar'
+                });
+            }
+
+            const materia = materiaQuery.trim();
+            const idsRelacionados = await ContactoModel.obtenerIdsRelacionados(req.usuario.id);
+            const resultados = await UsuarioModel.buscarPorMateriaExcluyendo(materia, req.usuario.id, idsRelacionados);
+
+            res.json({
+                success: true,
+                data: resultados
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                message: 'Error al buscar estudiantes por materia',
+                error: error instanceof Error ? error.message : 'Error desconocido'
+            });
+        }
+    }
+
+    // Enviar solicitud de conexión
+    static async enviarSolicitudConexion(req: Request, res: Response) {
+        try {
+            if (!req.usuario) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Usuario no autenticado'
+                });
+            }
+
+            const { usuarioDestinoId } = req.body;
+
+            if (!usuarioDestinoId || typeof usuarioDestinoId !== 'string') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'usuarioDestinoId es obligatorio'
+                });
+            }
+
+            if (usuarioDestinoId === req.usuario.id) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'No puedes enviarte solicitud a ti mismo'
+                });
+            }
+
+            const usuarioDestino = await UsuarioModel.buscarPorId(usuarioDestinoId);
+
+            if (!usuarioDestino) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Usuario destino inexistente'
+                });
+            }
+
+            const relacionExistente = await ContactoModel.existeRelacionEntreUsuarios(req.usuario.id, usuarioDestinoId);
+
+            if (relacionExistente) {
+                if (relacionExistente.estado === 'ACEPTADA') {
+                    return res.status(409).json({
+                        success: false,
+                        message: 'Este compañero ya está agregado'
+                    });
+                }
+
+                return res.status(409).json({
+                    success: false,
+                    message: 'Ya existe una solicitud de conexión entre estos usuarios'
+                });
+            }
+
+            const solicitud = await ContactoModel.crearSolicitud(req.usuario.id, usuarioDestinoId);
+
+            res.status(201).json({
+                success: true,
+                message: 'Solicitud de conexión enviada',
+                data: {
+                    id: solicitud.id,
+                    estado: solicitud.estado,
+                    solicitanteId: solicitud.solicitanteId,
+                    receptorId: solicitud.receptorId,
+                    createdAt: solicitud.createdAt
+                }
+            });
+        } catch (error) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2023') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'usuarioDestinoId tiene formato inválido'
+                });
+            }
+
+            res.status(500).json({
+                success: false,
+                message: 'Error al enviar solicitud de conexión',
+                error: error instanceof Error ? error.message : 'Error desconocido'
+            });
+        }
+    }
+
+    // Listar compañeros agregados (solo relaciones aceptadas)
+    static async listarCompaneros(req: Request, res: Response) {
+        try {
+            if (!req.usuario) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Usuario no autenticado'
+                });
+            }
+
+            const companeros = await ContactoModel.listarCompanerosAceptados(req.usuario.id);
+
+            res.json({
+                success: true,
+                data: companeros
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                message: 'Error al listar compañeros',
+                error: error instanceof Error ? error.message : 'Error desconocido'
+            });
+        }
+    }
+
     // Registrar usuario
     static async registrar(req: Request, res: Response) {
         try {
