@@ -14,6 +14,8 @@ router.get('/perfil', verificarJWT, UsuarioController.obtenerPerfil);
 router.put('/perfil', verificarJWT, UsuarioController.actualizarPerfil);
 router.get('/buscar-por-materia', verificarJWT, UsuarioController.buscarPorMateria);
 router.post('/solicitudes', verificarJWT, UsuarioController.enviarSolicitudConexion);
+router.get('/solicitudes-recibidas', verificarJWT, UsuarioController.listarSolicitudesRecibidas);
+router.post('/solicitudes/aceptar', verificarJWT, UsuarioController.aceptarSolicitud);
 router.get('/companeros', verificarJWT, UsuarioController.listarCompaneros);
 
 export default router;

@@ -25,12 +25,20 @@ function contactoDelegate() {
     const prismaDinamico = prisma as unknown as {
         contacto: {
             findFirst: (args: unknown) => Promise<{ estado: EstadoContacto } | null>;
+            findUnique: (args: unknown) => Promise<{ id: string; estado: EstadoContacto; solicitanteId: string; receptorId: string } | null>;
             create: (args: unknown) => Promise<{
                 id: string;
                 estado: EstadoContacto;
                 solicitanteId: string;
                 receptorId: string;
                 createdAt: Date;
+            }>;
+            update: (args: unknown) => Promise<{
+                id: string;
+                estado: EstadoContacto;
+                solicitanteId: string;
+                receptorId: string;
+                updatedAt: Date;
             }>;
             findMany: (args: unknown) => Promise<Array<Record<string, unknown>>>;
         };
@@ -134,6 +142,63 @@ export class ContactoModel {
                     materiasCursando: companero.materiasCursando
                 }
             };
+        });
+    }
+
+    static async listarSolicitudesRecibidas(usuarioId: string) {
+        const solicitudesRaw = await contactoDelegate().findMany({
+            where: {
+                receptorId: usuarioId,
+                estado: 'PENDIENTE'
+            },
+            include: {
+                solicitante: true
+            }
+        });
+
+        const solicitudes = solicitudesRaw as unknown as Array<{
+            id: string;
+            estado: EstadoContacto;
+            createdAt: Date;
+            solicitante: UsuarioBasico;
+        }>;
+
+        return solicitudes.map((solicitud) => ({
+            solicitudId: solicitud.id,
+            estado: solicitud.estado,
+            createdAt: solicitud.createdAt,
+            solicitante: {
+                id: solicitud.solicitante.id,
+                nombre: solicitud.solicitante.nombre,
+                apellido: solicitud.solicitante.apellido,
+                correo: solicitud.solicitante.correo,
+                carrera: solicitud.solicitante.carrera,
+                semestre: solicitud.solicitante.semestre,
+                materiasCursando: solicitud.solicitante.materiasCursando
+            }
+        }));
+    }
+
+    static async aceptarSolicitud(solicitudId: string, usuarioReceptorId: string) {
+        const solicitud = await contactoDelegate().findUnique({
+            where: { id: solicitudId }
+        });
+
+        if (!solicitud) {
+            throw new Error('Solicitud no encontrada');
+        }
+
+        if (solicitud.receptorId !== usuarioReceptorId) {
+            throw new Error('No tienes permiso para aceptar esta solicitud');
+        }
+
+        if (solicitud.estado !== 'PENDIENTE') {
+            throw new Error('La solicitud ya fue procesada');
+        }
+
+        return contactoDelegate().update({
+            where: { id: solicitudId },
+            data: { estado: 'ACEPTADA' }
         });
     }
 }

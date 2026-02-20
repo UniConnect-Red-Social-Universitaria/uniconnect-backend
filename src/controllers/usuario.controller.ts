@@ -148,6 +148,86 @@ export class UsuarioController {
         }
     }
 
+    // Listar solicitudes recibidas (pendientes)
+    static async listarSolicitudesRecibidas(req: Request, res: Response) {
+        try {
+            if (!req.usuario) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Usuario no autenticado'
+                });
+            }
+
+            const solicitudes = await ContactoModel.listarSolicitudesRecibidas(req.usuario.id);
+
+            res.json({
+                success: true,
+                data: solicitudes
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                message: 'Error al listar solicitudes recibidas',
+                error: error instanceof Error ? error.message : 'Error desconocido'
+            });
+        }
+    }
+
+    // Aceptar solicitud de conexión
+    static async aceptarSolicitud(req: Request, res: Response) {
+        try {
+            if (!req.usuario) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Usuario no autenticado'
+                });
+            }
+
+            const { solicitudId } = req.body;
+
+            if (!solicitudId || typeof solicitudId !== 'string') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'solicitudId es obligatorio'
+                });
+            }
+
+            const solicitudActualizada = await ContactoModel.aceptarSolicitud(solicitudId, req.usuario.id);
+
+            res.json({
+                success: true,
+                message: 'Solicitud aceptada correctamente',
+                data: {
+                    id: solicitudActualizada.id,
+                    estado: solicitudActualizada.estado,
+                    updatedAt: solicitudActualizada.updatedAt
+                }
+            });
+        } catch (error) {
+            if (error instanceof Error) {
+                if (error.message === 'Solicitud no encontrada') {
+                    return res.status(404).json({
+                        success: false,
+                        message: error.message
+                    });
+                }
+
+                if (error.message === 'No tienes permiso para aceptar esta solicitud' || error.message === 'La solicitud ya fue procesada') {
+                    return res.status(403).json({
+                        success: false,
+                        message: error.message
+                    });
+                }
+            }
+
+            res.status(500).json({
+                success: false,
+                message: 'Error al aceptar solicitud',
+                error: error instanceof Error ? error.message : 'Error desconocido'
+            });
+        }
+    }
+
     // Registrar usuario
     static async registrar(req: Request, res: Response) {
         try {
