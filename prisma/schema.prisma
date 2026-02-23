@@ -16,16 +16,27 @@ model Usuario {
   correo    String   @unique
   contrasenaHash String
   carrera   String
+  carreraId String? @db.ObjectId
   semestre  Int
   materiasCursando String[]
   correoVerificado Boolean @default(false)
   googleSub String?
+  carreraCatalogo Carrera? @relation(fields: [carreraId], references: [id])
   solicitudesEnviadas Contacto[] @relation("Solicitante")
   solicitudesRecibidas Contacto[] @relation("Receptor")
   grupos UsuarioGrupo[]
   gruposCreados Grupo[] @relation("GruposCreados")
   mensajesEnviados Mensaje[] @relation("MensajesEnviados")
   mensajesRecibidos Mensaje[] @relation("MensajesRecibidos")
+  eventosCreados Evento[] @relation("EventosCreados")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Carrera {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  nombre    String   @unique
+  usuarios  Usuario[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -82,6 +93,17 @@ model Mensaje {
   emisor     Usuario  @relation("MensajesEnviados", fields: [emisorId], references: [id])
   receptor   Usuario  @relation("MensajesRecibidos", fields: [receptorId], references: [id])
   createdAt  DateTime @default(now())
+}
+
+model Evento {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  titulo      String
+  descripcion String
+  fechaEvento DateTime
+  creadorId   String   @db.ObjectId
+  creador     Usuario  @relation("EventosCreados", fields: [creadorId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 enum EstadoContacto {

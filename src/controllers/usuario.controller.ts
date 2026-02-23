@@ -5,6 +5,9 @@ import { Prisma } from '@prisma/client';
 import { UsuarioModel } from '../models/usuario.model'
 import { ContactoModel } from '../models/contacto.model';
 import { esCorreoInstitucional, validarCorreoConGoogle } from '../utils/registro.util';
+import { revokeToken } from '../lib/token-blacklist';
+import { CarreraModel } from '../models/carrera.model';
+import { MateriaModel } from '../models/materia.model';
 
 export class UsuarioController {
     // Buscar estudiantes por materia (excluye al usuario autenticado y relaciones existentes)
@@ -270,6 +273,42 @@ export class UsuarioController {
                 });
             }
 
+            const [cantidadCarreras, cantidadMaterias] = await Promise.all([
+                CarreraModel.contar(),
+                MateriaModel.contar()
+            ]);
+
+            const carreraNormalizada = carrera.trim();
+            const materiasNormalizadas = materiasCursando.map((materia) => materia.trim());
+
+            let carreraCatalogo: { id: string; nombre: string } | null = null;
+
+            if (cantidadCarreras > 0) {
+                carreraCatalogo = await CarreraModel.buscarPorNombre(carreraNormalizada);
+
+                if (!carreraCatalogo) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'La carrera no existe en el catálogo oficial'
+                    });
+                }
+            }
+
+            if (cantidadMaterias > 0) {
+                const materiasCatalogo = await MateriaModel.listarTodas();
+                const setMaterias = new Set(materiasCatalogo.map((materia) => materia.nombre.toLowerCase()));
+                const materiaInvalida = materiasNormalizadas.find(
+                    (materia) => !setMaterias.has(materia.toLowerCase())
+                );
+
+                if (materiaInvalida) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `La materia "${materiaInvalida}" no existe en el catálogo oficial`
+                    });
+                }
+            }
+
             if (contrasena.length < 8) {
                 return res.status(400).json({
                     success: false,
@@ -315,9 +354,10 @@ export class UsuarioController {
                 apellido: apellido.trim(),
                 correo: correo.trim().toLowerCase(),
                 contrasenaHash,
-                carrera: carrera.trim(),
+                carrera: carreraNormalizada,
+                carreraId: carreraCatalogo?.id,
                 semestre,
-                materiasCursando: materiasCursando.map((materia) => materia.trim()),
+                materiasCursando: materiasNormalizadas,
                 correoVerificado: verificacionGoogle.correoVerificado,
                 googleSub: verificacionGoogle.googleSub
             });
@@ -330,9 +370,9 @@ export class UsuarioController {
                     nombre: nombre.trim(),
                     apellido: apellido.trim(),
                     correo: correo.trim().toLowerCase(),
-                    carrera: carrera.trim(),
+                    carrera: carreraNormalizada,
                     semestre,
-                    materiasCursando: materiasCursando.map((materia) => materia.trim()),
+                    materiasCursando: materiasNormalizadas,
                     correoVerificado: verificacionGoogle.correoVerificado,
                     createdAt: usuario.createdAt
                 }
@@ -373,6 +413,40 @@ export class UsuarioController {
             res.status(500).json({
                 success: false,
                 message: 'Error al obtener usuarios'
+            });
+        }
+    }
+
+    // Logout: invalida el token actual
+    static async logout(req: Request, res: Response) {
+        try {
+            if (!req.token) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Token no proporcionado'
+                });
+            }
+
+            const decoded = jwt.decode(req.token) as { exp?: number } | null;
+
+            if (!decoded?.exp) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'No fue posible invalidar el token'
+                });
+            }
+
+            revokeToken(req.token, decoded.exp);
+
+            return res.json({
+                success: true,
+                message: 'Sesión cerrada correctamente'
+            });
+        } catch (error) {
+            return res.status(500).json({
+                success: false,
+                message: 'Error al cerrar sesión',
+                error: error instanceof Error ? error.message : 'Error desconocido'
             });
         }
     }
@@ -501,12 +575,31 @@ export class UsuarioController {
 
             const { carrera, semestre, materiasCursando } = req.body;
 
+            const materiaCatalogo = await MateriaModel.listarTodas();
+            const setMaterias = new Set(materiaCatalogo.map((materia) => materia.nombre.toLowerCase()));
+            const cantidadCarreras = await CarreraModel.contar();
+
+            let carreraId: string | undefined;
+
             // Validaciones
             if (carrera !== undefined && typeof carrera !== 'string') {
                 return res.status(400).json({
                     success: false,
                     message: 'Carrera debe ser texto'
                 });
+            }
+
+            if (typeof carrera === 'string' && cantidadCarreras > 0) {
+                const carreraCatalogo = await CarreraModel.buscarPorNombre(carrera.trim());
+
+                if (!carreraCatalogo) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'La carrera no existe en el catálogo oficial'
+                    });
+                }
+
+                carreraId = carreraCatalogo.id;
             }
 
             if (semestre !== undefined && (!Number.isInteger(semestre) || semestre <= 0)) {
@@ -530,11 +623,25 @@ export class UsuarioController {
                         message: 'Todas las materias deben ser textos válidos'
                     });
                 }
+
+                if (setMaterias.size > 0) {
+                    const materiaInvalida = materiasCursando.find(
+                        (materia) => !setMaterias.has(String(materia).trim().toLowerCase())
+                    );
+
+                    if (materiaInvalida) {
+                        return res.status(400).json({
+                            success: false,
+                            message: `La materia "${String(materiaInvalida)}" no existe en el catálogo oficial`
+                        });
+                    }
+                }
             }
 
             // Actualizar
             const usuarioActualizado = await UsuarioModel.actualizar(req.usuario.id, {
                 carrera: carrera?.trim(),
+                carreraId,
                 semestre,
                 materiasCursando: materiasCursando?.map((m: string) => m.trim())
             });

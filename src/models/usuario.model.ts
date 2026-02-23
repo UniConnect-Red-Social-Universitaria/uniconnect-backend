@@ -8,6 +8,7 @@ export class UsuarioModel {
         correo: string;
         contrasenaHash: string;
         carrera: string;
+        carreraId?: string;
         semestre: number;
         materiasCursando: string[];
         correoVerificado: boolean;
@@ -145,12 +146,14 @@ export class UsuarioModel {
     // Actualizar usuario (carrera, semestre, materias)
     static async actualizar(id: string, data: {
         carrera?: string;
+        carreraId?: string;
         semestre?: number;
         materiasCursando?: string[];
     }) {
         const updateData: Record<string, unknown> = {};
 
         if (data.carrera !== undefined) updateData.carrera = data.carrera;
+        if (data.carreraId !== undefined) updateData.carreraId = data.carreraId;
         if (data.semestre !== undefined) updateData.semestre = data.semestre;
         if (data.materiasCursando !== undefined) updateData.materiasCursando = data.materiasCursando;
 

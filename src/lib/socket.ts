@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { Server } from 'socket.io';
 import { Server as HttpServer } from 'http';
+import { isTokenRevoked } from './token-blacklist';
 
 interface TokenPayload {
     id: string;
@@ -23,6 +24,10 @@ export function inicializarSocket(server: HttpServer) {
 
             if (!token) {
                 return next(new Error('Token no proporcionado'));
+            }
+
+            if (isTokenRevoked(token)) {
+                return next(new Error('Token revocado'));
             }
 
             if (!process.env.JWT_SECRET) {

@@ -1,9 +1,8 @@
 import prisma from '../lib/prisma';
 
-function materiaDelegate() {
+function carreraDelegate() {
     const prismaDinamico = prisma as unknown as {
-        materia: {
-            create: (args: unknown) => Promise<{ id: string; nombre: string; createdAt: Date }>;
+        carrera: {
             findUnique: (args: unknown) => Promise<{ id: string; nombre: string } | null>;
             findMany: (args?: unknown) => Promise<Array<{ id: string; nombre: string }>>;
             createMany: (args: unknown) => Promise<{ count: number }>;
@@ -11,36 +10,24 @@ function materiaDelegate() {
         };
     };
 
-    return prismaDinamico.materia;
+    return prismaDinamico.carrera;
 }
 
-export class MateriaModel {
-    static async crear(nombre: string) {
-        return materiaDelegate().create({
-            data: { nombre }
-        });
-    }
-
-    static async buscarPorId(id: string) {
-        return materiaDelegate().findUnique({
-            where: { id }
-        });
-    }
-
+export class CarreraModel {
     static async buscarPorNombre(nombre: string) {
-        return materiaDelegate().findUnique({
+        return carreraDelegate().findUnique({
             where: { nombre }
         });
     }
 
     static async listarTodas() {
-        return materiaDelegate().findMany({
+        return carreraDelegate().findMany({
             orderBy: { nombre: 'asc' }
         });
     }
 
     static async contar() {
-        return materiaDelegate().count();
+        return carreraDelegate().count();
     }
 
     static async crearCatalogo(nombres: string[]) {
@@ -48,7 +35,7 @@ export class MateriaModel {
             return { count: 0 };
         }
 
-        return materiaDelegate().createMany({
+        return carreraDelegate().createMany({
             data: nombres.map((nombre) => ({ nombre })),
             skipDuplicates: true
         });
