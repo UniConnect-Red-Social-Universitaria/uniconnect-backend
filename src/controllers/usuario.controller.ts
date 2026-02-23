@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import type { SignOptions } from 'jsonwebtoken';
 import { Prisma } from '@prisma/client';
 import { UsuarioModel } from '../models/usuario.model'
 import { ContactoModel } from '../models/contacto.model';
@@ -503,7 +504,7 @@ export class UsuarioController {
                     nombre: usuario.nombre
                 },
                 process.env.JWT_SECRET,
-                { expiresIn: '7d' }
+                { expiresIn: (process.env.JWT_EXPIRES_IN ?? '30d') as SignOptions['expiresIn'] }
             );
 
             res.json({
