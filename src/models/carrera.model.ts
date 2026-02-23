@@ -35,9 +35,34 @@ export class CarreraModel {
             return { count: 0 };
         }
 
+        const nombresNormalizados = nombres
+            .map((nombre) => nombre.trim())
+            .filter((nombre) => nombre.length > 0);
+
+        if (nombresNormalizados.length === 0) {
+            return { count: 0 };
+        }
+
+        const existentes = await carreraDelegate().findMany({
+            where: {
+                nombre: {
+                    in: nombresNormalizados
+                }
+            },
+            select: {
+                nombre: true
+            }
+        });
+
+        const existentesSet = new Set(existentes.map((carrera) => carrera.nombre));
+        const nuevosNombres = nombresNormalizados.filter((nombre) => !existentesSet.has(nombre));
+
+        if (nuevosNombres.length === 0) {
+            return { count: 0 };
+        }
+
         return carreraDelegate().createMany({
-            data: nombres.map((nombre) => ({ nombre })),
-            skipDuplicates: true
+            data: nuevosNombres.map((nombre) => ({ nombre }))
         });
     }
 }

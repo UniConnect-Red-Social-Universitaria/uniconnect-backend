@@ -48,9 +48,34 @@ export class MateriaModel {
             return { count: 0 };
         }
 
+        const nombresNormalizados = nombres
+            .map((nombre) => nombre.trim())
+            .filter((nombre) => nombre.length > 0);
+
+        if (nombresNormalizados.length === 0) {
+            return { count: 0 };
+        }
+
+        const existentes = await materiaDelegate().findMany({
+            where: {
+                nombre: {
+                    in: nombresNormalizados
+                }
+            },
+            select: {
+                nombre: true
+            }
+        });
+
+        const existentesSet = new Set(existentes.map((materia) => materia.nombre));
+        const nuevosNombres = nombresNormalizados.filter((nombre) => !existentesSet.has(nombre));
+
+        if (nuevosNombres.length === 0) {
+            return { count: 0 };
+        }
+
         return materiaDelegate().createMany({
-            data: nombres.map((nombre) => ({ nombre })),
-            skipDuplicates: true
+            data: nuevosNombres.map((nombre) => ({ nombre }))
         });
     }
 }
