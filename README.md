@@ -180,3 +180,18 @@ Eventos emitidos por el backend:
 ## Estado de salud
 
 `GET /` responde información general de la API y endpoints de referencia.
+
+# Configuración del token NGrok
+- No olvides hacer npm install (npm install ngrok)
+1. Crea una cuenta en: [ngrok.com](https://ngrok.com/?homepage-cta-docs=test)
+2. En el menú de la izquierda, busca la sección "Your Authtoken".
+3. Configura el token con: 
+```bash 
+ngrok config add-authtoken TU_TOKEN_AQUI 
+```
+4. Correr el backen normalmente
+5. En otra terminal correr
+```bash
+ngrok http 3001
+
+```
