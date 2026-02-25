@@ -68,6 +68,9 @@ Variables adicionales soportadas:
 - `npm run dev`: levanta el servidor en desarrollo con nodemon.
 - `npm run build`: compila TypeScript a `dist/`.
 - `npm start`: ejecuta el servidor compilado (`dist/server.js`).
+- `npm test`: ejecuta pruebas con Jest.
+- `npm run test:watch`: ejecuta pruebas en modo watch.
+- `npm run test:coverage`: genera cobertura de pruebas.
 
 ## Ejecución
 
