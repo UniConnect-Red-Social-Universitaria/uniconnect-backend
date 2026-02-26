@@ -162,4 +162,10 @@ export class UsuarioModel {
             data: updateData
         });
     }
+    //eliminar usuario sin importar si está autenticado o no
+    static async eliminar(id: string) {
+        return prisma.usuario.delete({
+            where: { id }
+        });
+    }
 }
