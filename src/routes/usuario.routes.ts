@@ -19,5 +19,6 @@ router.post('/solicitudes', verificarJWT, UsuarioController.enviarSolicitudConex
 router.get('/solicitudes-recibidas', verificarJWT, UsuarioController.listarSolicitudesRecibidas);
 router.post('/solicitudes/aceptar', verificarJWT, UsuarioController.aceptarSolicitud);
 router.get('/companeros', verificarJWT, UsuarioController.listarCompaneros);
+router.delete('/:id', UsuarioController.eliminarUsuario);
 
 export default router;
