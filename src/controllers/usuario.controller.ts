@@ -11,6 +11,27 @@ import { CarreraModel } from '../models/carrera.model';
 import { MateriaModel } from '../models/materia.model';
 
 export class UsuarioController {
+    private static extraerMateriaBusqueda(req: Request): string | null {
+        const queryMateria = typeof req.query.materia === 'string' ? req.query.materia : null;
+        const queryQ = typeof req.query.q === 'string' ? req.query.q : null;
+
+        const body = (req.body ?? {}) as Record<string, unknown>;
+        const bodyMateria = typeof body.materia === 'string' ? body.materia : null;
+        const bodyQ = typeof body.q === 'string'
+            ? body.q
+            : typeof body.query === 'string'
+                ? body.query
+                : null;
+
+        const materia = queryMateria ?? queryQ ?? bodyMateria ?? bodyQ;
+
+        if (!materia || !materia.trim()) {
+            return null;
+        }
+
+        return materia.trim();
+    }
+
     // Buscar estudiantes por materia (excluye al usuario autenticado y relaciones existentes)
     static async buscarPorMateria(req: Request, res: Response) {
         try {
@@ -21,16 +42,15 @@ export class UsuarioController {
                 });
             }
 
-            const materiaQuery = req.query.materia;
+            const materia = UsuarioController.extraerMateriaBusqueda(req);
 
-            if (typeof materiaQuery !== 'string' || !materiaQuery.trim()) {
+            if (!materia) {
                 return res.status(400).json({
                     success: false,
-                    message: 'Debes enviar la materia a buscar'
+                    message: 'Debes enviar la materia a buscar en "materia" o "q"'
                 });
             }
 
-            const materia = materiaQuery.trim();
             const idsRelacionados = await ContactoModel.obtenerIdsRelacionados(req.usuario.id);
             const resultados = await UsuarioModel.buscarPorMateriaExcluyendo(materia, req.usuario.id, idsRelacionados);
 

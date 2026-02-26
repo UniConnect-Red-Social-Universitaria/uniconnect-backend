@@ -1,3 +1,6 @@
+/// <reference types="jest" />
+
+import { beforeAll, describe, expect, it } from '@jest/globals';
 import request from 'supertest';
 import { app } from '../../src/app';
 
@@ -17,6 +20,28 @@ describe('API endpoints', () => {
 
   it('GET /api/usuarios/perfil sin token responde 401', async () => {
     const response = await request(app).get('/api/usuarios/perfil');
+
+    expect(response.status).toBe(401);
+    expect(response.body).toMatchObject({
+      success: false,
+      message: 'Token no proporcionado'
+    });
+  });
+
+  it('GET /api/usuarios/buscar-por-materia sin token responde 401', async () => {
+    const response = await request(app).get('/api/usuarios/buscar-por-materia?materia=calculo');
+
+    expect(response.status).toBe(401);
+    expect(response.body).toMatchObject({
+      success: false,
+      message: 'Token no proporcionado'
+    });
+  });
+
+  it('POST /api/usuarios/buscar-por-materia sin token responde 401', async () => {
+    const response = await request(app)
+      .post('/api/usuarios/buscar-por-materia')
+      .send({ materia: 'calculo' });
 
     expect(response.status).toBe(401);
     expect(response.body).toMatchObject({
