@@ -32,7 +32,7 @@ export class UsuarioController {
         return materia.trim();
     }
 
-    // Buscar estudiantes por materia (excluye al usuario autenticado y relaciones existentes)
+    // Buscar estudiantes por materia (excluye solo al usuario autenticado)
     static async buscarPorMateria(req: Request, res: Response) {
         try {
             if (!req.usuario) {
@@ -51,8 +51,7 @@ export class UsuarioController {
                 });
             }
 
-            const idsRelacionados = await ContactoModel.obtenerIdsRelacionados(req.usuario.id);
-            const resultados = await UsuarioModel.buscarPorMateriaExcluyendo(materia, req.usuario.id, idsRelacionados);
+            const resultados = await UsuarioModel.buscarPorMateriaExcluyendo(materia, req.usuario.id, []);
 
             res.json({
                 success: true,
