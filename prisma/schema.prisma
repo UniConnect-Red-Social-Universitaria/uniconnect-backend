@@ -109,4 +109,5 @@ model Evento {
 enum EstadoContacto {
   PENDIENTE
   ACEPTADA
+  RECHAZADA
 }

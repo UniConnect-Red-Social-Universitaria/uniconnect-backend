@@ -1,6 +1,6 @@
 import prisma from '../lib/prisma';
 
-type EstadoContacto = 'PENDIENTE' | 'ACEPTADA';
+type EstadoContacto = 'PENDIENTE' | 'ACEPTADA' | 'RECHAZADA';
 
 interface UsuarioBasico {
     id: string;
@@ -34,13 +34,6 @@ function contactoDelegate() {
                 createdAt: Date;
             }>;
             update: (args: unknown) => Promise<{
-                id: string;
-                estado: EstadoContacto;
-                solicitanteId: string;
-                receptorId: string;
-                updatedAt: Date;
-            }>;
-            delete: (args: unknown) => Promise<{
                 id: string;
                 estado: EstadoContacto;
                 solicitanteId: string;
@@ -226,8 +219,9 @@ export class ContactoModel {
             throw new Error('La solicitud ya fue procesada');
         }
 
-        return contactoDelegate().delete({
-            where: { id: solicitudId }
+        return contactoDelegate().update({
+            where: { id: solicitudId },
+            data: { estado: 'RECHAZADA' }
         });
     }
 }
