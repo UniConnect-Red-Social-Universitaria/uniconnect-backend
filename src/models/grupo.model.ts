@@ -12,6 +12,23 @@ function grupoDelegate() {
                 materia: { id: string; nombre: string };
                 miembros: Array<{ id: string }>;
             }>;
+            findMany: (args: unknown) => Promise<Array<{
+                id: string;
+                nombre: string;
+                materiaId: string;
+                creadorId: string;
+                createdAt: Date;
+                materia: { id: string; nombre: string };
+                miembros: Array<{
+                    id: string;
+                    usuarioId: string;
+                    usuario: {
+                        id: string;
+                        nombre: string;
+                        apellido: string;
+                    };
+                }>;
+            }>>;
         };
     };
 
@@ -34,6 +51,35 @@ export class GrupoModel {
             include: {
                 materia: true,
                 miembros: true
+            }
+        });
+    }
+
+    static async listarPorUsuario(usuarioId: string) {
+        return grupoDelegate().findMany({
+            where: {
+                miembros: {
+                    some: {
+                        usuarioId
+                    }
+                }
+            },
+            include: {
+                materia: true,
+                miembros: {
+                    include: {
+                        usuario: {
+                            select: {
+                                id: true,
+                                nombre: true,
+                                apellido: true
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: 'desc'
             }
         });
     }

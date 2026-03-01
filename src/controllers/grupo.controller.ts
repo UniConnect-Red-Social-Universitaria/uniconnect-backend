@@ -119,4 +119,45 @@ export class GrupoController {
             });
         }
     }
+
+    static async listarMisGrupos(req: Request, res: Response) {
+        try {
+            if (!req.usuario) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Usuario no autenticado'
+                });
+            }
+
+            const grupos = await GrupoModel.listarPorUsuario(req.usuario.id);
+
+            const gruposFormateados = grupos.map((grupo) => ({
+                id: grupo.id,
+                nombre: grupo.nombre,
+                materia: {
+                    id: grupo.materia.id,
+                    nombre: grupo.materia.nombre
+                },
+                creadorId: grupo.creadorId,
+                cantidadMiembros: grupo.miembros.length,
+                miembros: grupo.miembros.map((m) => ({
+                    id: m.usuario.id,
+                    nombre: m.usuario.nombre,
+                    apellido: m.usuario.apellido
+                })),
+                createdAt: grupo.createdAt
+            }));
+
+            return res.json({
+                success: true,
+                data: gruposFormateados
+            });
+        } catch (error) {
+            return res.status(500).json({
+                success: false,
+                message: 'Error al listar grupos',
+                error: error instanceof Error ? error.message : 'Error desconocido'
+            });
+        }
+    }
 }

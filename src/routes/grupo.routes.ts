@@ -5,5 +5,6 @@ import { verificarJWT } from '../middleware/autenticacion.middleware';
 const router = express.Router();
 
 router.post('/', verificarJWT, GrupoController.crearGrupo);
+router.get('/', verificarJWT, GrupoController.listarMisGrupos);
 
 export default router;
