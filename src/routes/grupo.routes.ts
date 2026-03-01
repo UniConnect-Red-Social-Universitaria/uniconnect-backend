@@ -6,5 +6,7 @@ const router = express.Router();
 
 router.post('/', verificarJWT, GrupoController.crearGrupo);
 router.get('/', verificarJWT, GrupoController.listarMisGrupos);
+router.post('/:grupoId/unirse', verificarJWT, GrupoController.unirseGrupo);
+router.post('/:grupoId/miembros', verificarJWT, GrupoController.agregarMiembro);
 
 export default router;
