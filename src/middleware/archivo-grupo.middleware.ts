@@ -44,8 +44,22 @@ export const uploadArchivoGrupo = multer({
 export const limiteArchivoGrupoBytes = LIMITE_PDF_BYTES;
 
 export function procesarUploadArchivoGrupo(req: Request, res: Response, next: NextFunction) {
-    uploadArchivoGrupo.single('archivo')(req, res, (error: unknown) => {
+    uploadArchivoGrupo.fields([
+        { name: 'archivo', maxCount: 1 },
+        { name: 'file', maxCount: 1 },
+        { name: 'pdf', maxCount: 1 }
+    ])(req, res, (error: unknown) => {
         if (!error) {
+            const archivosPorCampo = req.files as Record<string, Express.Multer.File[]> | undefined;
+            const archivo =
+                archivosPorCampo?.archivo?.[0] ??
+                archivosPorCampo?.file?.[0] ??
+                archivosPorCampo?.pdf?.[0];
+
+            if (archivo) {
+                req.file = archivo;
+            }
+
             next();
             return;
         }
@@ -54,6 +68,14 @@ export function procesarUploadArchivoGrupo(req: Request, res: Response, next: Ne
             res.status(400).json({
                 success: false,
                 message: `El PDF excede el límite de ${Math.floor(LIMITE_PDF_BYTES / (1024 * 1024))}MB`
+            });
+            return;
+        }
+
+        if (error instanceof multer.MulterError && error.code === 'LIMIT_UNEXPECTED_FILE') {
+            res.status(400).json({
+                success: false,
+                message: 'Campo inválido para archivo. Usa archivo, file o pdf'
             });
             return;
         }
