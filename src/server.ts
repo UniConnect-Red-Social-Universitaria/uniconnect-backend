@@ -4,7 +4,6 @@ import { app } from './app';
 import { inicializarSocket } from './lib/socket';
 
 const PORT = process.env.PORT || 3000;
-
 const httpServer = http.createServer(app);
 inicializarSocket(httpServer);
 

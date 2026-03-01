@@ -19,6 +19,7 @@ router.post('/buscar-por-materia', verificarJWT, UsuarioController.buscarPorMate
 router.post('/solicitudes', verificarJWT, UsuarioController.enviarSolicitudConexion);
 router.get('/solicitudes-recibidas', verificarJWT, UsuarioController.listarSolicitudesRecibidas);
 router.post('/solicitudes/aceptar', verificarJWT, UsuarioController.aceptarSolicitud);
+router.post('/solicitudes/rechazar', verificarJWT, UsuarioController.rechazarSolicitud);
 router.get('/companeros', verificarJWT, UsuarioController.listarCompaneros);
 
 export default router;
