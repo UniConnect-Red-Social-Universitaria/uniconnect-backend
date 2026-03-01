@@ -40,6 +40,13 @@ function contactoDelegate() {
                 receptorId: string;
                 updatedAt: Date;
             }>;
+            delete: (args: unknown) => Promise<{
+                id: string;
+                estado: EstadoContacto;
+                solicitanteId: string;
+                receptorId: string;
+                updatedAt: Date;
+            }>;
             findMany: (args: unknown) => Promise<Array<Record<string, unknown>>>;
         };
     };
@@ -199,6 +206,28 @@ export class ContactoModel {
         return contactoDelegate().update({
             where: { id: solicitudId },
             data: { estado: 'ACEPTADA' }
+        });
+    }
+
+    static async rechazarSolicitud(solicitudId: string, usuarioReceptorId: string) {
+        const solicitud = await contactoDelegate().findUnique({
+            where: { id: solicitudId }
+        });
+
+        if (!solicitud) {
+            throw new Error('Solicitud no encontrada');
+        }
+
+        if (solicitud.receptorId !== usuarioReceptorId) {
+            throw new Error('No tienes permiso para rechazar esta solicitud');
+        }
+
+        if (solicitud.estado !== 'PENDIENTE') {
+            throw new Error('La solicitud ya fue procesada');
+        }
+
+        return contactoDelegate().delete({
+            where: { id: solicitudId }
         });
     }
 }

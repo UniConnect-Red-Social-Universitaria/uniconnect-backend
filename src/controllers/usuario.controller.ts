@@ -232,6 +232,61 @@ export class UsuarioController {
         }
     }
 
+    // Rechazar solicitud de conexión
+    static async rechazarSolicitud(req: Request, res: Response) {
+        try {
+            if (!req.usuario) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Usuario no autenticado'
+                });
+            }
+
+            const { solicitudId } = req.body;
+
+            if (!solicitudId || typeof solicitudId !== 'string') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'solicitudId es obligatorio'
+                });
+            }
+
+            const solicitudRechazada = await ContactoModel.rechazarSolicitud(solicitudId, req.usuario.id);
+
+            res.json({
+                success: true,
+                message: 'Solicitud rechazada correctamente',
+                data: {
+                    id: solicitudRechazada.id,
+                    estado: solicitudRechazada.estado,
+                    updatedAt: solicitudRechazada.updatedAt
+                }
+            });
+        } catch (error) {
+            if (error instanceof Error) {
+                if (error.message === 'Solicitud no encontrada') {
+                    return res.status(404).json({
+                        success: false,
+                        message: error.message
+                    });
+                }
+
+                if (error.message === 'No tienes permiso para rechazar esta solicitud' || error.message === 'La solicitud ya fue procesada') {
+                    return res.status(403).json({
+                        success: false,
+                        message: error.message
+                    });
+                }
+            }
+
+            res.status(500).json({
+                success: false,
+                message: 'Error al rechazar solicitud',
+                error: error instanceof Error ? error.message : 'Error desconocido'
+            });
+        }
+    }
+
     // Registrar usuario
     static async registrar(req: Request, res: Response) {
         try {
