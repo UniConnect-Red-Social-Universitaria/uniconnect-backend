@@ -18,9 +18,68 @@ function mensajeDelegate() {
                 createdAt: Date;
             }>>;
         };
+        grupoMensaje: {
+            create: (args: unknown) => Promise<{
+                id: string;
+                contenido: string;
+                grupoId: string;
+                emisorId: string;
+                createdAt: Date;
+                emisor?: {
+                    id: string;
+                    nombre: string;
+                    apellido: string;
+                };
+            }>;
+            findMany: (args: unknown) => Promise<Array<{
+                id: string;
+                contenido: string;
+                grupoId: string;
+                emisorId: string;
+                createdAt: Date;
+                emisor?: {
+                    id: string;
+                    nombre: string;
+                    apellido: string;
+                };
+            }>>;
+        };
     };
 
     return prismaDinamico.mensaje;
+}
+
+function grupoMensajeDelegate() {
+    const prismaDinamico = prisma as unknown as {
+        grupoMensaje: {
+            create: (args: unknown) => Promise<{
+                id: string;
+                contenido: string;
+                grupoId: string;
+                emisorId: string;
+                createdAt: Date;
+                emisor?: {
+                    id: string;
+                    nombre: string;
+                    apellido: string;
+                };
+            }>;
+            findMany: (args: unknown) => Promise<Array<{
+                id: string;
+                contenido: string;
+                grupoId: string;
+                emisorId: string;
+                createdAt: Date;
+                emisor?: {
+                    id: string;
+                    nombre: string;
+                    apellido: string;
+                };
+            }>>;
+        };
+    };
+
+    return prismaDinamico.grupoMensaje;
 }
 
 export class MensajeModel {
@@ -43,6 +102,42 @@ export class MensajeModel {
                         receptorId: usuarioAId
                     }
                 ]
+            },
+            orderBy: {
+                createdAt: 'asc'
+            },
+            take: limit
+        });
+    }
+
+    static async crearMensajeGrupo(data: { contenido: string; grupoId: string; emisorId: string }) {
+        return grupoMensajeDelegate().create({
+            data,
+            include: {
+                emisor: {
+                    select: {
+                        id: true,
+                        nombre: true,
+                        apellido: true
+                    }
+                }
+            }
+        });
+    }
+
+    static async obtenerHistorialGrupo(grupoId: string, limit: number) {
+        return grupoMensajeDelegate().findMany({
+            where: {
+                grupoId
+            },
+            include: {
+                emisor: {
+                    select: {
+                        id: true,
+                        nombre: true,
+                        apellido: true
+                    }
+                }
             },
             orderBy: {
                 createdAt: 'asc'

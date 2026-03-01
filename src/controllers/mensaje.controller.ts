@@ -3,9 +3,142 @@ import { Prisma } from '@prisma/client';
 import { MensajeModel } from '../models/mensaje.model';
 import { UsuarioModel } from '../models/usuario.model';
 import { ContactoModel } from '../models/contacto.model';
-import { emitirMensajeTiempoReal } from '../lib/socket';
+import { GrupoModel } from '../models/grupo.model';
+import { emitirMensajeGrupoTiempoReal, emitirMensajeTiempoReal } from '../lib/socket';
 
 export class MensajeController {
+    static async enviarMensajeGrupo(req: Request, res: Response) {
+        try {
+            if (!req.usuario) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Usuario no autenticado'
+                });
+            }
+
+            const { grupoId, contenido } = req.body;
+
+            if (typeof grupoId !== 'string' || !grupoId.trim()) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Debes enviar un grupoId válido'
+                });
+            }
+
+            if (typeof contenido !== 'string' || !contenido.trim()) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Debes enviar un contenido de mensaje válido'
+                });
+            }
+
+            const pertenencia = await GrupoModel.usuarioPertenece(grupoId.trim(), req.usuario.id);
+
+            if (!pertenencia.existe) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'El grupo no existe'
+                });
+            }
+
+            if (!pertenencia.pertenece) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Solo los integrantes del grupo pueden enviar mensajes'
+                });
+            }
+
+            const mensaje = await MensajeModel.crearMensajeGrupo({
+                contenido: contenido.trim(),
+                grupoId: grupoId.trim(),
+                emisorId: req.usuario.id
+            });
+
+            console.log(`💬 Mensaje grupal | grupo:${mensaje.grupoId} | emisor:${mensaje.emisorId}`);
+
+            emitirMensajeGrupoTiempoReal(mensaje);
+
+            return res.status(201).json({
+                success: true,
+                message: 'Mensaje grupal enviado correctamente',
+                data: mensaje
+            });
+        } catch (error) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2023') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'grupoId tiene formato inválido'
+                });
+            }
+
+            return res.status(500).json({
+                success: false,
+                message: 'Error al enviar mensaje grupal',
+                error: error instanceof Error ? error.message : 'Error desconocido'
+            });
+        }
+    }
+
+    static async obtenerHistorialGrupo(req: Request, res: Response) {
+        try {
+            if (!req.usuario) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Usuario no autenticado'
+                });
+            }
+
+            const { grupoId } = req.params;
+            const limitQuery = Number(req.query.limit ?? 100);
+            const limit = Number.isInteger(limitQuery) && limitQuery > 0 && limitQuery <= 300
+                ? limitQuery
+                : 100;
+
+            if (typeof grupoId !== 'string' || !grupoId.trim()) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Debes enviar un grupoId válido'
+                });
+            }
+
+            const pertenencia = await GrupoModel.usuarioPertenece(grupoId.trim(), req.usuario.id);
+
+            if (!pertenencia.existe) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'El grupo no existe'
+                });
+            }
+
+            if (!pertenencia.pertenece) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Solo los integrantes del grupo pueden consultar el historial'
+                });
+            }
+
+            const mensajes = await MensajeModel.obtenerHistorialGrupo(grupoId.trim(), limit);
+
+            return res.json({
+                success: true,
+                data: mensajes
+            });
+        } catch (error) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2023') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'grupoId tiene formato inválido'
+                });
+            }
+
+            return res.status(500).json({
+                success: false,
+                message: 'Error al obtener historial grupal',
+                error: error instanceof Error ? error.message : 'Error desconocido'
+            });
+        }
+    }
+
     static async enviarMensaje(req: Request, res: Response) {
         try {
             if (!req.usuario) {

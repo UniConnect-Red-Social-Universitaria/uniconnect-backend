@@ -28,6 +28,7 @@ model Usuario {
   gruposCreados Grupo[] @relation("GruposCreados")
   mensajesEnviados Mensaje[] @relation("MensajesEnviados")
   mensajesRecibidos Mensaje[] @relation("MensajesRecibidos")
+  mensajesGrupoEnviados GrupoMensaje[] @relation("MensajesGrupoEnviados")
   eventosCreados Evento[] @relation("EventosCreados")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -70,6 +71,7 @@ model Grupo {
   materia   Materia       @relation(fields: [materiaId], references: [id])
   creador   Usuario       @relation("GruposCreados", fields: [creadorId], references: [id])
   miembros  UsuarioGrupo[]
+  mensajes  GrupoMensaje[]
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 }
@@ -92,6 +94,16 @@ model Mensaje {
   receptorId String   @db.ObjectId
   emisor     Usuario  @relation("MensajesEnviados", fields: [emisorId], references: [id])
   receptor   Usuario  @relation("MensajesRecibidos", fields: [receptorId], references: [id])
+  createdAt  DateTime @default(now())
+}
+
+model GrupoMensaje {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  contenido  String
+  grupoId    String   @db.ObjectId
+  emisorId   String   @db.ObjectId
+  grupo      Grupo    @relation(fields: [grupoId], references: [id])
+  emisor     Usuario  @relation("MensajesGrupoEnviados", fields: [emisorId], references: [id])
   createdAt  DateTime @default(now())
 }
 

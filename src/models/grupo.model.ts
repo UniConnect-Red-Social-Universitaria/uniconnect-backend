@@ -29,6 +29,26 @@ function grupoDelegate() {
                     };
                 }>;
             }>>;
+            findUnique: (args: unknown) => Promise<{
+                id: string;
+                nombre: string;
+                creadorId?: string;
+                miembros: Array<{ usuarioId: string }>;
+            } | null>;
+            update: (args: unknown) => Promise<{
+                id: string;
+                nombre: string;
+                creadorId: string;
+                miembros: Array<{
+                    id: string;
+                    usuarioId: string;
+                    usuario: {
+                        id: string;
+                        nombre: string;
+                        apellido: string;
+                    };
+                }>;
+            }>;
         };
     };
 
@@ -80,6 +100,113 @@ export class GrupoModel {
             },
             orderBy: {
                 createdAt: 'desc'
+            }
+        });
+    }
+
+    static async obtenerIdsPorUsuario(usuarioId: string) {
+        const grupos = await grupoDelegate().findMany({
+            where: {
+                miembros: {
+                    some: {
+                        usuarioId
+                    }
+                }
+            },
+            select: {
+                id: true
+            }
+        });
+
+        return grupos.map((grupo) => grupo.id);
+    }
+
+    static async usuarioPertenece(grupoId: string, usuarioId: string) {
+        const grupo = await grupoDelegate().findUnique({
+            where: { id: grupoId },
+            select: {
+                id: true,
+                nombre: true,
+                miembros: {
+                    where: {
+                        usuarioId
+                    },
+                    select: {
+                        usuarioId: true
+                    }
+                }
+            }
+        });
+
+        if (!grupo) {
+            return { existe: false, pertenece: false };
+        }
+
+        return {
+            existe: true,
+            pertenece: grupo.miembros.length > 0
+        };
+    }
+
+    static async obtenerPorId(grupoId: string) {
+        return grupoDelegate().findUnique({
+            where: { id: grupoId },
+            select: {
+                id: true,
+                nombre: true,
+                creadorId: true,
+                miembros: {
+                    select: {
+                        usuarioId: true
+                    }
+                }
+            }
+        });
+    }
+
+    static async usuarioEsCreador(grupoId: string, usuarioId: string) {
+        const grupo = await grupoDelegate().findUnique({
+            where: { id: grupoId },
+            select: {
+                id: true,
+                nombre: true,
+                creadorId: true,
+                miembros: {
+                    select: {
+                        usuarioId: true
+                    }
+                }
+            }
+        });
+
+        return {
+            existe: Boolean(grupo),
+            esCreador: grupo?.creadorId === usuarioId
+        };
+    }
+
+    static async agregarMiembro(grupoId: string, usuarioId: string) {
+        return grupoDelegate().update({
+            where: { id: grupoId },
+            data: {
+                miembros: {
+                    create: {
+                        usuarioId
+                    }
+                }
+            },
+            include: {
+                miembros: {
+                    include: {
+                        usuario: {
+                            select: {
+                                id: true,
+                                nombre: true,
+                                apellido: true
+                            }
+                        }
+                    }
+                }
             }
         });
     }
