@@ -29,6 +29,7 @@ model Usuario {
   mensajesEnviados Mensaje[] @relation("MensajesEnviados")
   mensajesRecibidos Mensaje[] @relation("MensajesRecibidos")
   mensajesGrupoEnviados GrupoMensaje[] @relation("MensajesGrupoEnviados")
+  archivosGrupoSubidos GrupoArchivo[] @relation("ArchivosGrupoSubidos")
   eventosCreados Evento[] @relation("EventosCreados")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -72,6 +73,7 @@ model Grupo {
   creador   Usuario       @relation("GruposCreados", fields: [creadorId], references: [id])
   miembros  UsuarioGrupo[]
   mensajes  GrupoMensaje[]
+  archivos  GrupoArchivo[]
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 }
@@ -105,6 +107,20 @@ model GrupoMensaje {
   grupo      Grupo    @relation(fields: [grupoId], references: [id])
   emisor     Usuario  @relation("MensajesGrupoEnviados", fields: [emisorId], references: [id])
   createdAt  DateTime @default(now())
+}
+
+model GrupoArchivo {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  nombre       String
+  nombreFisico String
+  ruta         String
+  mimeType     String
+  tamanoBytes  Int
+  grupoId      String   @db.ObjectId
+  subidoPorId  String   @db.ObjectId
+  grupo        Grupo    @relation(fields: [grupoId], references: [id])
+  subidoPor    Usuario  @relation("ArchivosGrupoSubidos", fields: [subidoPorId], references: [id])
+  createdAt    DateTime @default(now())
 }
 
 model Evento {
