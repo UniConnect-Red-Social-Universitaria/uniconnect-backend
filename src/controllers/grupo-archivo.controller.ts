@@ -5,9 +5,23 @@ import path from 'path';
 import { GrupoModel } from '../models/grupo.model';
 import { GrupoArchivoModel } from '../models/grupo-archivo.model';
 
+type ArchivoSubido = {
+    originalname: string;
+    filename: string;
+    path: string;
+    mimetype: string;
+    size: number;
+};
+
+type RequestConArchivo = Request & {
+    file?: ArchivoSubido;
+};
+
 export class GrupoArchivoController {
     static async subirPdf(req: Request, res: Response) {
         try {
+            const reqConArchivo = req as RequestConArchivo;
+
             if (!req.usuario) {
                 return res.status(401).json({
                     success: false,
@@ -40,7 +54,7 @@ export class GrupoArchivoController {
                 });
             }
 
-            const archivo = req.file;
+            const archivo = reqConArchivo.file;
 
             if (!archivo) {
                 return res.status(400).json({

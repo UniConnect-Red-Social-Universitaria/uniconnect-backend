@@ -13,5 +13,6 @@ router.post('/:grupoId/miembros', verificarJWT, GrupoController.agregarMiembro);
 router.post('/:grupoId/archivos', verificarJWT, procesarUploadArchivoGrupo, GrupoArchivoController.subirPdf);
 router.get('/:grupoId/archivos', verificarJWT, GrupoArchivoController.listarPdfGrupo);
 router.get('/:grupoId/archivos/:archivoId/descargar', verificarJWT, GrupoArchivoController.descargarPdfGrupo);
+router.get('/:grupoId/:archivoId/descargar', verificarJWT, GrupoArchivoController.descargarPdfGrupo);
 
 export default router;
