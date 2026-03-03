@@ -5,6 +5,8 @@ import { GrupoModel } from '../models/grupo.model';
 import { UsuarioModel } from '../models/usuario.model';
 
 export class GrupoController {
+    private static readonly MAX_MIEMBROS_GRUPO = 8;
+
     static async crearMateria(req: Request, res: Response) {
         try {
             const { nombre } = req.body;
@@ -171,6 +173,8 @@ export class GrupoController {
                 });
             }
 
+            const usuarioAutenticado = req.usuario;
+
             const { grupoId } = req.params;
 
             if (typeof grupoId !== 'string' || !grupoId.trim()) {
@@ -189,7 +193,23 @@ export class GrupoController {
                 });
             }
 
-            const grupoActualizado = await GrupoModel.agregarMiembro(grupoId.trim(), req.usuario.id);
+            const yaPertenece = grupo.miembros.some((miembro) => miembro.usuarioId === usuarioAutenticado.id);
+
+            if (yaPertenece) {
+                return res.status(409).json({
+                    success: false,
+                    message: 'Ya perteneces a este grupo'
+                });
+            }
+
+            if (grupo.miembros.length >= GrupoController.MAX_MIEMBROS_GRUPO) {
+                return res.status(409).json({
+                    success: false,
+                    message: `El grupo alcanzó el máximo de ${GrupoController.MAX_MIEMBROS_GRUPO} integrantes`
+                });
+            }
+
+            const grupoActualizado = await GrupoModel.agregarMiembro(grupoId.trim(), usuarioAutenticado.id);
 
             return res.status(201).json({
                 success: true,
@@ -264,6 +284,22 @@ export class GrupoController {
                 return res.status(403).json({
                     success: false,
                     message: 'Solo el creador del grupo puede agregar miembros'
+                });
+            }
+
+            const grupo = await GrupoModel.obtenerPorId(grupoId.trim());
+
+            if (!grupo) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'El grupo no existe'
+                });
+            }
+
+            if (grupo.miembros.length >= GrupoController.MAX_MIEMBROS_GRUPO) {
+                return res.status(409).json({
+                    success: false,
+                    message: `El grupo alcanzó el máximo de ${GrupoController.MAX_MIEMBROS_GRUPO} integrantes`
                 });
             }
 
