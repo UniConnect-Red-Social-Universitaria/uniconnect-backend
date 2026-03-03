@@ -73,7 +73,14 @@ export class EventoController {
 
     static async listarGlobal(req: Request, res: Response) {
         try {
-            const eventos = await EventoModel.listarGlobalNoVencidos();
+            if (!req.usuario) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Usuario no autenticado'
+                });
+            }
+
+            const eventos = await EventoModel.listarGlobalNoVencidosDeOtros(req.usuario.id);
 
             return res.json({
                 success: true,

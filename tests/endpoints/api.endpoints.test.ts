@@ -90,6 +90,16 @@ describe('API endpoints', () => {
     });
   });
 
+  it('GET /api/eventos sin token responde 401', async () => {
+    const response = await request(app).get('/api/eventos');
+
+    expect(response.status).toBe(401);
+    expect(response.body).toMatchObject({
+      success: false,
+      message: 'Token no proporcionado'
+    });
+  });
+
   it('POST /api/catalogos/poblar sin token responde 401', async () => {
     const response = await request(app).post('/api/catalogos/poblar');
 

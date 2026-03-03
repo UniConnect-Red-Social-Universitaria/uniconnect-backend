@@ -43,9 +43,12 @@ export class EventoModel {
         });
     }
 
-    static async listarGlobalNoVencidos() {
+    static async listarGlobalNoVencidosDeOtros(usuarioId: string) {
         return eventoDelegate().findMany({
             where: {
+                creadorId: {
+                    not: usuarioId
+                },
                 fechaEvento: {
                     gte: new Date()
                 }

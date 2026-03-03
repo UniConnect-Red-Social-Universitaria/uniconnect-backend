@@ -5,6 +5,6 @@ import { verificarJWT } from '../middleware/autenticacion.middleware';
 const router = express.Router();
 
 router.post('/', verificarJWT, EventoController.crear);
-router.get('/', EventoController.listarGlobal);
+router.get('/', verificarJWT, EventoController.listarGlobal);
 
 export default router;
