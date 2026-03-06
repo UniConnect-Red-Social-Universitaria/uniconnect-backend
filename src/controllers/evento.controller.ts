@@ -82,7 +82,7 @@ export class EventoController {
 
             const eventos = await EventoModel.listarGlobalNoVencidosDeOtros(req.usuario.id);
 
-            return res.json({
+            return res.status(200).json({
                 success: true,
                 data: eventos
             });

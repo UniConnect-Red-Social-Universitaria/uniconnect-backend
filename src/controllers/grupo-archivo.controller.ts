@@ -137,7 +137,7 @@ export class GrupoArchivoController {
 
             const archivos = await GrupoArchivoModel.listarPorGrupo(grupoId.trim());
 
-            return res.json({
+            return res.status(200).json({
                 success: true,
                 data: archivos.map((archivo) => ({
                     id: archivo.id,
@@ -225,6 +225,7 @@ export class GrupoArchivoController {
                 });
             }
 
+            res.status(200);
             return res.download(rutaAbsoluta, archivo.nombre);
         } catch (error) {
             if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2023') {

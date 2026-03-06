@@ -22,7 +22,7 @@ app.use('/api/eventos', eventoRoutes);
 app.use('/api/catalogos', catalogoRoutes);
 
 app.get('/', (req, res) => {
-    res.json({
+    res.status(200).json({
         mensaje: '🚀 API de UniConnect con MongoDB',
         endpoints: {
             usuarios: 'GET /api/usuarios',

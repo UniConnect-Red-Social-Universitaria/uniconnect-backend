@@ -53,7 +53,7 @@ export class UsuarioController {
 
             const resultados = await UsuarioModel.buscarPorMateriaExcluyendo(materia, req.usuario.id, []);
 
-            res.json({
+            res.status(200).json({
                 success: true,
                 data: resultados
             });
@@ -158,7 +158,7 @@ export class UsuarioController {
 
             const companeros = await ContactoModel.listarCompanerosAceptados(req.usuario.id);
 
-            res.json({
+            res.status(200).json({
                 success: true,
                 data: companeros
             });
@@ -183,7 +183,7 @@ export class UsuarioController {
 
             const solicitudes = await ContactoModel.listarSolicitudesRecibidas(req.usuario.id);
 
-            res.json({
+            res.status(200).json({
                 success: true,
                 data: solicitudes
             });
@@ -217,7 +217,7 @@ export class UsuarioController {
 
             const solicitudActualizada = await ContactoModel.aceptarSolicitud(solicitudId, req.usuario.id);
 
-            res.json({
+            res.status(200).json({
                 success: true,
                 message: 'Solicitud aceptada correctamente',
                 data: {
@@ -272,7 +272,7 @@ export class UsuarioController {
 
             const solicitudRechazada = await ContactoModel.rechazarSolicitud(solicitudId, req.usuario.id);
 
-            res.json({
+            res.status(200).json({
                 success: true,
                 message: 'Solicitud rechazada correctamente',
                 data: {
@@ -480,7 +480,7 @@ export class UsuarioController {
     static async obtenerTodos(req: Request, res: Response) {
         try {
             const usuarios = await UsuarioModel.obtenerTodos();
-            res.json({
+            res.status(200).json({
                 success: true,
                 data: usuarios
             });
@@ -513,7 +513,7 @@ export class UsuarioController {
 
             revokeToken(req.token, decoded.exp);
 
-            return res.json({
+            return res.status(200).json({
                 success: true,
                 message: 'Sesión cerrada correctamente'
             });
@@ -581,7 +581,7 @@ export class UsuarioController {
                 { expiresIn: (process.env.JWT_EXPIRES_IN ?? '30d') as SignOptions['expiresIn'] }
             );
 
-            res.json({
+            res.status(200).json({
                 success: true,
                 message: 'Inicio de sesión exitoso',
                 data: {
@@ -624,7 +624,7 @@ export class UsuarioController {
                 });
             }
 
-            res.json({
+            res.status(200).json({
                 success: true,
                 data: usuario
             });
@@ -723,7 +723,7 @@ export class UsuarioController {
 
             const usuarioDinamico = usuarioActualizado as unknown as Record<string, unknown>;
 
-            res.json({
+            res.status(200).json({
                 success: true,
                 message: 'Perfil actualizado correctamente',
                 data: {

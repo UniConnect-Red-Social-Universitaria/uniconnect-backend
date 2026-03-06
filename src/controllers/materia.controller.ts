@@ -55,7 +55,7 @@ export class MateriaController {
         try {
             const materias = await MateriaModel.listarTodas();
 
-            return res.json({
+            return res.status(200).json({
                 success: true,
                 data: materias
             });

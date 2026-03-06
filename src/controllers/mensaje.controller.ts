@@ -119,7 +119,7 @@ export class MensajeController {
 
             const mensajes = await MensajeModel.obtenerHistorialGrupo(grupoId.trim(), limit);
 
-            return res.json({
+            return res.status(200).json({
                 success: true,
                 data: mensajes
             });
@@ -271,7 +271,7 @@ export class MensajeController {
 
             const mensajes = await MensajeModel.obtenerConversacion(req.usuario.id, companeroId.trim(), limit);
 
-            return res.json({
+            return res.status(200).json({
                 success: true,
                 data: mensajes
             });
