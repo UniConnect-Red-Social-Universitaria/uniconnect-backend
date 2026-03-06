@@ -7,6 +7,7 @@ import grupoRoutes from './routes/grupo.routes';
 import mensajeRoutes from './routes/mensaje.routes';
 import eventoRoutes from './routes/evento.routes';
 import catalogoRoutes from './routes/catalogo.routes';
+import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 
 export const app = express();
 
@@ -52,3 +53,6 @@ app.get('/', (req, res) => {
         }
     });
 });
+
+app.use(notFoundHandler);
+app.use(errorHandler);
