@@ -1,17 +1,7 @@
 import { Request, Response } from 'express';
 import { Prisma } from '@prisma/client';
-import fs from 'fs';
-import path from 'path';
-import { GrupoModel } from '../models/grupo.model';
-import { GrupoArchivoModel } from '../models/grupo-archivo.model';
-
-type ArchivoSubido = {
-    originalname: string;
-    filename: string;
-    path: string;
-    mimetype: string;
-    size: number;
-};
+import { GrupoArchivoService, ArchivoSubido } from '../services/grupo-archivo.service';
+import { ServiceError } from '../services/service-error';
 
 type RequestConArchivo = Request & {
     file?: ArchivoSubido;
@@ -30,48 +20,7 @@ export class GrupoArchivoController {
             }
 
             const { grupoId } = req.params;
-
-            if (typeof grupoId !== 'string' || !grupoId.trim()) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Debes enviar un grupoId válido'
-                });
-            }
-
-            const pertenencia = await GrupoModel.usuarioPertenece(grupoId.trim(), req.usuario.id);
-
-            if (!pertenencia.existe) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'El grupo no existe'
-                });
-            }
-
-            if (!pertenencia.pertenece) {
-                return res.status(403).json({
-                    success: false,
-                    message: 'Solo los integrantes del grupo pueden subir archivos'
-                });
-            }
-
-            const archivo = reqConArchivo.file;
-
-            if (!archivo) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Debes adjuntar un archivo PDF en el campo "archivo"'
-                });
-            }
-
-            const archivoCreado = await GrupoArchivoModel.crear({
-                nombre: archivo.originalname,
-                nombreFisico: archivo.filename,
-                ruta: archivo.path,
-                mimeType: archivo.mimetype,
-                tamanoBytes: archivo.size,
-                grupoId: grupoId.trim(),
-                subidoPorId: req.usuario.id
-            });
+            const archivoCreado = await GrupoArchivoService.subirPdf(req.usuario.id, grupoId, reqConArchivo.file);
 
             return res.status(201).json({
                 success: true,
@@ -86,6 +35,13 @@ export class GrupoArchivoController {
                 }
             });
         } catch (error) {
+            if (error instanceof ServiceError) {
+                return res.status(error.statusCode).json({
+                    success: false,
+                    message: error.message
+                });
+            }
+
             if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2023') {
                 return res.status(400).json({
                     success: false,
@@ -111,46 +67,20 @@ export class GrupoArchivoController {
             }
 
             const { grupoId } = req.params;
-
-            if (typeof grupoId !== 'string' || !grupoId.trim()) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Debes enviar un grupoId válido'
-                });
-            }
-
-            const pertenencia = await GrupoModel.usuarioPertenece(grupoId.trim(), req.usuario.id);
-
-            if (!pertenencia.existe) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'El grupo no existe'
-                });
-            }
-
-            if (!pertenencia.pertenece) {
-                return res.status(403).json({
-                    success: false,
-                    message: 'Solo los integrantes del grupo pueden consultar archivos'
-                });
-            }
-
-            const archivos = await GrupoArchivoModel.listarPorGrupo(grupoId.trim());
+            const archivos = await GrupoArchivoService.listarPdfGrupo(req.usuario.id, grupoId);
 
             return res.status(200).json({
                 success: true,
-                data: archivos.map((archivo) => ({
-                    id: archivo.id,
-                    nombre: archivo.nombre,
-                    mimeType: archivo.mimeType,
-                    tamanoBytes: archivo.tamanoBytes,
-                    grupoId: archivo.grupoId,
-                    subidoPor: archivo.subidoPor,
-                    createdAt: archivo.createdAt,
-                    descargarUrl: `/api/grupos/${archivo.grupoId}/archivos/${archivo.id}/descargar`
-                }))
+                data: archivos
             });
         } catch (error) {
+            if (error instanceof ServiceError) {
+                return res.status(error.statusCode).json({
+                    success: false,
+                    message: error.message
+                });
+            }
+
             if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2023') {
                 return res.status(400).json({
                     success: false,
@@ -176,58 +106,18 @@ export class GrupoArchivoController {
             }
 
             const { grupoId, archivoId } = req.params;
-
-            if (typeof grupoId !== 'string' || !grupoId.trim()) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Debes enviar un grupoId válido'
-                });
-            }
-
-            if (typeof archivoId !== 'string' || !archivoId.trim()) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Debes enviar un archivoId válido'
-                });
-            }
-
-            const pertenencia = await GrupoModel.usuarioPertenece(grupoId.trim(), req.usuario.id);
-
-            if (!pertenencia.existe) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'El grupo no existe'
-                });
-            }
-
-            if (!pertenencia.pertenece) {
-                return res.status(403).json({
-                    success: false,
-                    message: 'Solo los integrantes del grupo pueden descargar archivos'
-                });
-            }
-
-            const archivo = await GrupoArchivoModel.buscarPorId(archivoId.trim());
-
-            if (!archivo || archivo.grupoId !== grupoId.trim()) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Archivo no encontrado en este grupo'
-                });
-            }
-
-            const rutaAbsoluta = path.resolve(archivo.ruta);
-
-            if (!fs.existsSync(rutaAbsoluta)) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'El archivo no está disponible en el servidor'
-                });
-            }
+            const descarga = await GrupoArchivoService.prepararDescarga(req.usuario.id, grupoId, archivoId);
 
             res.status(200);
-            return res.download(rutaAbsoluta, archivo.nombre);
+            return res.download(descarga.rutaAbsoluta, descarga.nombre);
         } catch (error) {
+            if (error instanceof ServiceError) {
+                return res.status(error.statusCode).json({
+                    success: false,
+                    message: error.message
+                });
+            }
+
             if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2023') {
                 return res.status(400).json({
                     success: false,

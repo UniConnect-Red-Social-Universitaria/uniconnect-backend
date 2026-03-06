@@ -1,34 +1,12 @@
 import { Request, Response } from 'express';
 import { Prisma } from '@prisma/client';
-import { MateriaModel } from '../models/materia.model';
-import { GrupoModel } from '../models/grupo.model';
-import { UsuarioModel } from '../models/usuario.model';
+import { GrupoService } from '../services/grupo.service';
+import { ServiceError } from '../services/service-error';
 
 export class GrupoController {
-    private static readonly MAX_MIEMBROS_GRUPO = 8;
-
     static async crearMateria(req: Request, res: Response) {
         try {
-            const { nombre } = req.body;
-
-            if (typeof nombre !== 'string' || !nombre.trim()) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Debes enviar un nombre de materia válido'
-                });
-            }
-
-            const nombreNormalizado = nombre.trim();
-            const materiaExistente = await MateriaModel.buscarPorNombre(nombreNormalizado);
-
-            if (materiaExistente) {
-                return res.status(409).json({
-                    success: false,
-                    message: 'La materia ya existe'
-                });
-            }
-
-            const materia = await MateriaModel.crear(nombreNormalizado);
+            const materia = await GrupoService.crearMateria((req.body as Record<string, unknown>).nombre);
 
             return res.status(201).json({
                 success: true,
@@ -40,6 +18,13 @@ export class GrupoController {
                 }
             });
         } catch (error) {
+            if (error instanceof ServiceError) {
+                return res.status(error.statusCode).json({
+                    success: false,
+                    message: error.message
+                });
+            }
+
             if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
                 return res.status(409).json({
                     success: false,
@@ -64,36 +49,8 @@ export class GrupoController {
                 });
             }
 
-            const { nombre, materiaId } = req.body;
-
-            if (typeof nombre !== 'string' || !nombre.trim()) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Debes enviar un nombre de grupo válido'
-                });
-            }
-
-            if (typeof materiaId !== 'string' || !materiaId.trim()) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Debes enviar un materiaId válido'
-                });
-            }
-
-            const materia = await MateriaModel.buscarPorId(materiaId.trim());
-
-            if (!materia) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'La materia asociada no existe'
-                });
-            }
-
-            const grupo = await GrupoModel.crear({
-                nombre: nombre.trim(),
-                materiaId: materia.id,
-                creadorId: req.usuario.id
-            });
+            const body = req.body as Record<string, unknown>;
+            const grupo = await GrupoService.crearGrupo(req.usuario.id, body.nombre, body.materiaId);
 
             return res.status(201).json({
                 success: true,
@@ -108,6 +65,13 @@ export class GrupoController {
                 }
             });
         } catch (error) {
+            if (error instanceof ServiceError) {
+                return res.status(error.statusCode).json({
+                    success: false,
+                    message: error.message
+                });
+            }
+
             if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2023') {
                 return res.status(400).json({
                     success: false,
@@ -132,24 +96,7 @@ export class GrupoController {
                 });
             }
 
-            const grupos = await GrupoModel.listarPorUsuario(req.usuario.id);
-
-            const gruposFormateados = grupos.map((grupo) => ({
-                id: grupo.id,
-                nombre: grupo.nombre,
-                materia: {
-                    id: grupo.materia.id,
-                    nombre: grupo.materia.nombre
-                },
-                creadorId: grupo.creadorId,
-                cantidadMiembros: grupo.miembros.length,
-                miembros: grupo.miembros.map((m) => ({
-                    id: m.usuario.id,
-                    nombre: m.usuario.nombre,
-                    apellido: m.usuario.apellido
-                })),
-                createdAt: grupo.createdAt
-            }));
+            const gruposFormateados = await GrupoService.listarMisGrupos(req.usuario.id);
 
             return res.status(200).json({
                 success: true,
@@ -173,43 +120,8 @@ export class GrupoController {
                 });
             }
 
-            const usuarioAutenticado = req.usuario;
-
             const { grupoId } = req.params;
-
-            if (typeof grupoId !== 'string' || !grupoId.trim()) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Debes enviar un grupoId válido'
-                });
-            }
-
-            const grupo = await GrupoModel.obtenerPorId(grupoId.trim());
-
-            if (!grupo) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'El grupo no existe'
-                });
-            }
-
-            const yaPertenece = grupo.miembros.some((miembro) => miembro.usuarioId === usuarioAutenticado.id);
-
-            if (yaPertenece) {
-                return res.status(409).json({
-                    success: false,
-                    message: 'Ya perteneces a este grupo'
-                });
-            }
-
-            if (grupo.miembros.length >= GrupoController.MAX_MIEMBROS_GRUPO) {
-                return res.status(409).json({
-                    success: false,
-                    message: `El grupo alcanzó el máximo de ${GrupoController.MAX_MIEMBROS_GRUPO} integrantes`
-                });
-            }
-
-            const grupoActualizado = await GrupoModel.agregarMiembro(grupoId.trim(), usuarioAutenticado.id);
+            const grupoActualizado = await GrupoService.unirseGrupo(req.usuario.id, grupoId);
 
             return res.status(201).json({
                 success: true,
@@ -221,6 +133,13 @@ export class GrupoController {
                 }
             });
         } catch (error) {
+            if (error instanceof ServiceError) {
+                return res.status(error.statusCode).json({
+                    success: false,
+                    message: error.message
+                });
+            }
+
             if (error instanceof Prisma.PrismaClientKnownRequestError) {
                 if (error.code === 'P2002') {
                     return res.status(409).json({
@@ -255,64 +174,8 @@ export class GrupoController {
             }
 
             const { grupoId } = req.params;
-            const { usuarioId } = req.body;
-
-            if (typeof grupoId !== 'string' || !grupoId.trim()) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Debes enviar un grupoId válido'
-                });
-            }
-
-            if (typeof usuarioId !== 'string' || !usuarioId.trim()) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Debes enviar un usuarioId válido'
-                });
-            }
-
-            const permiso = await GrupoModel.usuarioEsCreador(grupoId.trim(), req.usuario.id);
-
-            if (!permiso.existe) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'El grupo no existe'
-                });
-            }
-
-            if (!permiso.esCreador) {
-                return res.status(403).json({
-                    success: false,
-                    message: 'Solo el creador del grupo puede agregar miembros'
-                });
-            }
-
-            const grupo = await GrupoModel.obtenerPorId(grupoId.trim());
-
-            if (!grupo) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'El grupo no existe'
-                });
-            }
-
-            if (grupo.miembros.length >= GrupoController.MAX_MIEMBROS_GRUPO) {
-                return res.status(409).json({
-                    success: false,
-                    message: `El grupo alcanzó el máximo de ${GrupoController.MAX_MIEMBROS_GRUPO} integrantes`
-                });
-            }
-
-            const usuario = await UsuarioModel.buscarPorId(usuarioId.trim());
-
-            if (!usuario) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'El usuario a agregar no existe'
-                });
-            }
-
-            const grupoActualizado = await GrupoModel.agregarMiembro(grupoId.trim(), usuarioId.trim());
+            const body = req.body as Record<string, unknown>;
+            const grupoActualizado = await GrupoService.agregarMiembro(req.usuario.id, grupoId, body.usuarioId);
 
             return res.status(201).json({
                 success: true,
@@ -324,6 +187,13 @@ export class GrupoController {
                 }
             });
         } catch (error) {
+            if (error instanceof ServiceError) {
+                return res.status(error.statusCode).json({
+                    success: false,
+                    message: error.message
+                });
+            }
+
             if (error instanceof Prisma.PrismaClientKnownRequestError) {
                 if (error.code === 'P2002') {
                     return res.status(409).json({

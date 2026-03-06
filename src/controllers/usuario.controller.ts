@@ -4,11 +4,11 @@ import jwt from 'jsonwebtoken';
 import type { SignOptions } from 'jsonwebtoken';
 import { Prisma } from '@prisma/client';
 import { UsuarioModel } from '../models/usuario.model'
-import { ContactoModel } from '../models/contacto.model';
 import { esCorreoInstitucional, validarCorreoConGoogle } from '../utils/registro.util';
 import { revokeToken } from '../lib/token-blacklist';
 import { CarreraModel } from '../models/carrera.model';
 import { MateriaModel } from '../models/materia.model';
+import { UsuarioContactoService, UsuarioContactoServiceError } from '../services/usuario-contacto.service';
 
 export class UsuarioController {
     private static extraerMateriaBusqueda(req: Request): string | null {
@@ -51,7 +51,7 @@ export class UsuarioController {
                 });
             }
 
-            const resultados = await UsuarioModel.buscarPorMateriaExcluyendo(materia, req.usuario.id, []);
+            const resultados = await UsuarioContactoService.buscarPorMateria(req.usuario.id, materia);
 
             res.status(200).json({
                 success: true,
@@ -85,39 +85,7 @@ export class UsuarioController {
                 });
             }
 
-            if (usuarioDestinoId === req.usuario.id) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'No puedes enviarte solicitud a ti mismo'
-                });
-            }
-
-            const usuarioDestino = await UsuarioModel.buscarPorId(usuarioDestinoId);
-
-            if (!usuarioDestino) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Usuario destino inexistente'
-                });
-            }
-
-            const relacionExistente = await ContactoModel.existeRelacionEntreUsuarios(req.usuario.id, usuarioDestinoId);
-
-            if (relacionExistente) {
-                if (relacionExistente.estado === 'ACEPTADA') {
-                    return res.status(409).json({
-                        success: false,
-                        message: 'Este compañero ya está agregado'
-                    });
-                }
-
-                return res.status(409).json({
-                    success: false,
-                    message: 'Ya existe una solicitud de conexión entre estos usuarios'
-                });
-            }
-
-            const solicitud = await ContactoModel.crearSolicitud(req.usuario.id, usuarioDestinoId);
+            const solicitud = await UsuarioContactoService.enviarSolicitudConexion(req.usuario.id, usuarioDestinoId);
 
             res.status(201).json({
                 success: true,
@@ -131,6 +99,13 @@ export class UsuarioController {
                 }
             });
         } catch (error) {
+            if (error instanceof UsuarioContactoServiceError) {
+                return res.status(error.statusCode).json({
+                    success: false,
+                    message: error.message
+                });
+            }
+
             if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2023') {
                 return res.status(400).json({
                     success: false,
@@ -156,7 +131,7 @@ export class UsuarioController {
                 });
             }
 
-            const companeros = await ContactoModel.listarCompanerosAceptados(req.usuario.id);
+            const companeros = await UsuarioContactoService.listarCompaneros(req.usuario.id);
 
             res.status(200).json({
                 success: true,
@@ -181,7 +156,7 @@ export class UsuarioController {
                 });
             }
 
-            const solicitudes = await ContactoModel.listarSolicitudesRecibidas(req.usuario.id);
+            const solicitudes = await UsuarioContactoService.listarSolicitudesRecibidas(req.usuario.id);
 
             res.status(200).json({
                 success: true,
@@ -215,7 +190,7 @@ export class UsuarioController {
                 });
             }
 
-            const solicitudActualizada = await ContactoModel.aceptarSolicitud(solicitudId, req.usuario.id);
+            const solicitudActualizada = await UsuarioContactoService.aceptarSolicitud(solicitudId, req.usuario.id);
 
             res.status(200).json({
                 success: true,
@@ -227,20 +202,11 @@ export class UsuarioController {
                 }
             });
         } catch (error) {
-            if (error instanceof Error) {
-                if (error.message === 'Solicitud no encontrada') {
-                    return res.status(404).json({
-                        success: false,
-                        message: error.message
-                    });
-                }
-
-                if (error.message === 'No tienes permiso para aceptar esta solicitud' || error.message === 'La solicitud ya fue procesada') {
-                    return res.status(403).json({
-                        success: false,
-                        message: error.message
-                    });
-                }
+            if (error instanceof UsuarioContactoServiceError) {
+                return res.status(error.statusCode).json({
+                    success: false,
+                    message: error.message
+                });
             }
 
             res.status(500).json({
@@ -270,7 +236,7 @@ export class UsuarioController {
                 });
             }
 
-            const solicitudRechazada = await ContactoModel.rechazarSolicitud(solicitudId, req.usuario.id);
+            const solicitudRechazada = await UsuarioContactoService.rechazarSolicitud(solicitudId, req.usuario.id);
 
             res.status(200).json({
                 success: true,
@@ -282,20 +248,11 @@ export class UsuarioController {
                 }
             });
         } catch (error) {
-            if (error instanceof Error) {
-                if (error.message === 'Solicitud no encontrada') {
-                    return res.status(404).json({
-                        success: false,
-                        message: error.message
-                    });
-                }
-
-                if (error.message === 'No tienes permiso para rechazar esta solicitud' || error.message === 'La solicitud ya fue procesada') {
-                    return res.status(403).json({
-                        success: false,
-                        message: error.message
-                    });
-                }
+            if (error instanceof UsuarioContactoServiceError) {
+                return res.status(error.statusCode).json({
+                    success: false,
+                    message: error.message
+                });
             }
 
             res.status(500).json({

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
-import { EventoModel } from '../models/evento.model';
+import { EventoService } from '../services/evento.service';
+import { ServiceError } from '../services/service-error';
 
 export class EventoController {
     static async crear(req: Request, res: Response) {
@@ -11,50 +12,11 @@ export class EventoController {
                 });
             }
 
-            const { titulo, descripcion, fechaEvento } = req.body;
-
-            if (typeof titulo !== 'string' || !titulo.trim()) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Debes enviar un título válido'
-                });
-            }
-
-            if (typeof descripcion !== 'string' || !descripcion.trim()) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Debes enviar una descripción válida'
-                });
-            }
-
-            if (typeof fechaEvento !== 'string') {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Debes enviar fechaEvento en formato ISO'
-                });
-            }
-
-            const fecha = new Date(fechaEvento);
-
-            if (Number.isNaN(fecha.getTime())) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'fechaEvento tiene formato inválido'
-                });
-            }
-
-            if (fecha <= new Date()) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'La fecha del evento debe ser futura'
-                });
-            }
-
-            const evento = await EventoModel.crear({
-                titulo: titulo.trim(),
-                descripcion: descripcion.trim(),
-                fechaEvento: fecha,
-                creadorId: req.usuario.id
+            const body = req.body as Record<string, unknown>;
+            const evento = await EventoService.crear(req.usuario.id, {
+                titulo: body.titulo,
+                descripcion: body.descripcion,
+                fechaEvento: body.fechaEvento
             });
 
             return res.status(201).json({
@@ -63,6 +25,13 @@ export class EventoController {
                 data: evento
             });
         } catch (error) {
+            if (error instanceof ServiceError) {
+                return res.status(error.statusCode).json({
+                    success: false,
+                    message: error.message
+                });
+            }
+
             return res.status(500).json({
                 success: false,
                 message: 'Error al crear evento',
@@ -80,7 +49,7 @@ export class EventoController {
                 });
             }
 
-            const eventos = await EventoModel.listarGlobalNoVencidosDeOtros(req.usuario.id);
+            const eventos = await EventoService.listarGlobal(req.usuario.id);
 
             return res.status(200).json({
                 success: true,

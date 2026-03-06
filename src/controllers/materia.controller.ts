@@ -1,30 +1,12 @@
 import { Request, Response } from 'express';
 import { Prisma } from '@prisma/client';
-import { MateriaModel } from '../models/materia.model';
+import { MateriaService } from '../services/materia.service';
+import { ServiceError } from '../services/service-error';
 
 export class MateriaController {
     static async crear(req: Request, res: Response) {
         try {
-            const { nombre } = req.body;
-
-            if (typeof nombre !== 'string' || !nombre.trim()) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Debes enviar un nombre de materia válido'
-                });
-            }
-
-            const nombreNormalizado = nombre.trim();
-            const materiaExistente = await MateriaModel.buscarPorNombre(nombreNormalizado);
-
-            if (materiaExistente) {
-                return res.status(409).json({
-                    success: false,
-                    message: 'La materia ya existe'
-                });
-            }
-
-            const materia = await MateriaModel.crear(nombreNormalizado);
+            const materia = await MateriaService.crear((req.body as Record<string, unknown>).nombre);
 
             return res.status(201).json({
                 success: true,
@@ -36,6 +18,13 @@ export class MateriaController {
                 }
             });
         } catch (error) {
+            if (error instanceof ServiceError) {
+                return res.status(error.statusCode).json({
+                    success: false,
+                    message: error.message
+                });
+            }
+
             if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
                 return res.status(409).json({
                     success: false,
@@ -53,7 +42,7 @@ export class MateriaController {
 
     static async listar(req: Request, res: Response) {
         try {
-            const materias = await MateriaModel.listarTodas();
+            const materias = await MateriaService.listar();
 
             return res.status(200).json({
                 success: true,
