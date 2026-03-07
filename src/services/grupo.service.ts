@@ -50,15 +50,15 @@ export class GrupoService {
             id: grupo.id,
             nombre: grupo.nombre,
             materia: {
-                id: grupo.materia.id,
-                nombre: grupo.materia.nombre
+                id: grupo.materia?.id ?? '',
+                nombre: grupo.materia?.nombre ?? 'Sin materia'
             },
             creadorId: grupo.creadorId,
             cantidadMiembros: grupo.miembros.length,
             miembros: grupo.miembros.map((m) => ({
-                id: m.usuario.id,
-                nombre: m.usuario.nombre,
-                apellido: m.usuario.apellido
+                id: m.usuario?.id ?? m.id,
+                nombre: m.usuario?.nombre ?? 'Usuario',
+                apellido: m.usuario?.apellido ?? 'sin apellido'
             })),
             createdAt: grupo.createdAt
         }));
@@ -68,7 +68,10 @@ export class GrupoService {
         const grupos = await GrupoModel.listarTodos();
 
         return grupos.map((grupo) => {
-            const yaPertenece = grupo.miembros.some((miembro) => miembro.usuario.id === usuarioId);
+            const yaPertenece = grupo.miembros.some((miembro) => {
+                const miembroId = miembro.usuario?.id ?? miembro.usuarioId;
+                return miembroId === usuarioId;
+            });
             const cantidadMiembros = grupo.miembros.length;
             const cuposDisponibles = Math.max(GrupoService.MAX_MIEMBROS_GRUPO - cantidadMiembros, 0);
 
@@ -76,8 +79,8 @@ export class GrupoService {
                 id: grupo.id,
                 nombre: grupo.nombre,
                 materia: {
-                    id: grupo.materia.id,
-                    nombre: grupo.materia.nombre
+                    id: grupo.materia?.id ?? '',
+                    nombre: grupo.materia?.nombre ?? 'Sin materia'
                 },
                 creadorId: grupo.creadorId,
                 cantidadMiembros,
@@ -86,9 +89,9 @@ export class GrupoService {
                 estaLleno: cantidadMiembros >= GrupoService.MAX_MIEMBROS_GRUPO,
                 yaPertenece,
                 miembros: grupo.miembros.map((m) => ({
-                    id: m.usuario.id,
-                    nombre: m.usuario.nombre,
-                    apellido: m.usuario.apellido
+                    id: m.usuario?.id ?? m.id,
+                    nombre: m.usuario?.nombre ?? 'Usuario',
+                    apellido: m.usuario?.apellido ?? 'sin apellido'
                 })),
                 createdAt: grupo.createdAt
             };
