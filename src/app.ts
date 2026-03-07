@@ -37,6 +37,7 @@ app.get('/', (req, res) => {
             companeros: 'GET /api/usuarios/companeros',
             crearMateria: 'POST /api/materias',
             crearGrupo: 'POST /api/grupos',
+            gruposDisponibles: 'GET /api/grupos/disponibles',
             unirseGrupo: 'POST /api/grupos/:grupoId/unirse',
             agregarMiembroGrupo: 'POST /api/grupos/:grupoId/miembros',
             subirPdfGrupo: 'POST /api/grupos/:grupoId/archivos (form-data archivo)',

@@ -104,6 +104,28 @@ export class GrupoModel {
         });
     }
 
+    static async listarTodos() {
+        return grupoDelegate().findMany({
+            include: {
+                materia: true,
+                miembros: {
+                    include: {
+                        usuario: {
+                            select: {
+                                id: true,
+                                nombre: true,
+                                apellido: true
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+    }
+
     static async obtenerIdsPorUsuario(usuarioId: string) {
         const grupos = await grupoDelegate().findMany({
             where: {

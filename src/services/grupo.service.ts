@@ -64,6 +64,37 @@ export class GrupoService {
         }));
     }
 
+    static async listarGruposDisponibles(usuarioId: string) {
+        const grupos = await GrupoModel.listarTodos();
+
+        return grupos.map((grupo) => {
+            const yaPertenece = grupo.miembros.some((miembro) => miembro.usuario.id === usuarioId);
+            const cantidadMiembros = grupo.miembros.length;
+            const cuposDisponibles = Math.max(GrupoService.MAX_MIEMBROS_GRUPO - cantidadMiembros, 0);
+
+            return {
+                id: grupo.id,
+                nombre: grupo.nombre,
+                materia: {
+                    id: grupo.materia.id,
+                    nombre: grupo.materia.nombre
+                },
+                creadorId: grupo.creadorId,
+                cantidadMiembros,
+                maxMiembros: GrupoService.MAX_MIEMBROS_GRUPO,
+                cuposDisponibles,
+                estaLleno: cantidadMiembros >= GrupoService.MAX_MIEMBROS_GRUPO,
+                yaPertenece,
+                miembros: grupo.miembros.map((m) => ({
+                    id: m.usuario.id,
+                    nombre: m.usuario.nombre,
+                    apellido: m.usuario.apellido
+                })),
+                createdAt: grupo.createdAt
+            };
+        });
+    }
+
     static async unirseGrupo(usuarioId: string, grupoId: unknown) {
         if (typeof grupoId !== 'string' || !grupoId.trim()) {
             throw new ServiceError(400, 'Debes enviar un grupoId válido');

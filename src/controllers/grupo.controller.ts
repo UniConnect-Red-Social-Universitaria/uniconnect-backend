@@ -111,6 +111,30 @@ export class GrupoController {
         }
     }
 
+    static async listarDisponibles(req: Request, res: Response) {
+        try {
+            if (!req.usuario) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Usuario no autenticado'
+                });
+            }
+
+            const gruposFormateados = await GrupoService.listarGruposDisponibles(req.usuario.id);
+
+            return res.status(200).json({
+                success: true,
+                data: gruposFormateados
+            });
+        } catch (error) {
+            return res.status(500).json({
+                success: false,
+                message: 'Error al listar grupos disponibles',
+                error: error instanceof Error ? error.message : 'Error desconocido'
+            });
+        }
+    }
+
     static async unirseGrupo(req: Request, res: Response) {
         try {
             if (!req.usuario) {
