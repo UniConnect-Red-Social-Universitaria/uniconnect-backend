@@ -16,6 +16,7 @@ export class EventoController {
             const evento = await EventoService.crear(req.usuario.id, {
                 titulo: body.titulo,
                 descripcion: body.descripcion,
+                lugar: body.lugar,
                 fechaEvento: body.fechaEvento
             });
 

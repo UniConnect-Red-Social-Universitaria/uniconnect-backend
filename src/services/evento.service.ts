@@ -4,12 +4,13 @@ import { ServiceError } from './service-error';
 type CrearEventoInput = {
     titulo: unknown;
     descripcion: unknown;
+    lugar: unknown;
     fechaEvento: unknown;
 };
 
 export class EventoService {
     static async crear(creadorId: string, input: CrearEventoInput) {
-        const { titulo, descripcion, fechaEvento } = input;
+        const { titulo, descripcion, lugar, fechaEvento } = input;
 
         if (typeof titulo !== 'string' || !titulo.trim()) {
             throw new ServiceError(400, 'Debes enviar un título válido');
@@ -17,6 +18,10 @@ export class EventoService {
 
         if (typeof descripcion !== 'string' || !descripcion.trim()) {
             throw new ServiceError(400, 'Debes enviar una descripción válida');
+        }
+
+        if (typeof lugar !== 'string' || !lugar.trim()) {
+            throw new ServiceError(400, 'Debes enviar un lugar válido');
         }
 
         if (typeof fechaEvento !== 'string') {
@@ -36,12 +41,13 @@ export class EventoService {
         return EventoModel.crear({
             titulo: titulo.trim(),
             descripcion: descripcion.trim(),
+            lugar: lugar.trim(),
             fechaEvento: fecha,
             creadorId
         });
     }
 
-    static async listarGlobal(usuarioId: string) {
-        return EventoModel.listarGlobalNoVencidosDeOtros(usuarioId);
+    static async listarGlobal(_usuarioId: string) {
+        return EventoModel.listarGlobalNoVencidos();
     }
 }

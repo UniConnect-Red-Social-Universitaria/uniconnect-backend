@@ -127,6 +127,7 @@ model Evento {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   titulo      String
   descripcion String
+  lugar       String?
   fechaEvento DateTime
   creadorId   String   @db.ObjectId
   creador     Usuario  @relation("EventosCreados", fields: [creadorId], references: [id])
