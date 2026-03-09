@@ -172,6 +172,13 @@ export class GrupoController {
                     });
                 }
 
+                if (error.code === 'P2025') {
+                    return res.status(404).json({
+                        success: false,
+                        message: 'El grupo no existe o ya no está disponible'
+                    });
+                }
+
                 if (error.code === 'P2023') {
                     return res.status(400).json({
                         success: false,
