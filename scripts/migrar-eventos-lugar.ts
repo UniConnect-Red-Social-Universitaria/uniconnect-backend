@@ -39,7 +39,7 @@ async function main() {
 main()
   .catch((error) => {
     console.error('Error migrando eventos:', error);
-    process.exitCode = 1;
+    throw error;
   })
   .finally(async () => {
     await prisma.$disconnect();
