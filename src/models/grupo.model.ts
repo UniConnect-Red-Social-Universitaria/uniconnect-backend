@@ -32,6 +32,7 @@ function grupoDelegate() {
             findUnique: (args: unknown) => Promise<{
                 id: string;
                 nombre: string;
+                materiaId?: string;
                 creadorId?: string;
                 miembros: Array<{ usuarioId: string }>;
             } | null>;
@@ -196,6 +197,7 @@ export class GrupoModel {
             select: {
                 id: true,
                 nombre: true,
+                materiaId: true,
                 creadorId: true,
                 miembros: {
                     select: {

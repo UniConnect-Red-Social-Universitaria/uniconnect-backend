@@ -6,6 +6,44 @@ import { ServiceError } from './service-error';
 export class GrupoService {
     private static readonly MAX_MIEMBROS_GRUPO = 8;
 
+    private static normalizarTexto(texto: string) {
+        return texto
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .trim();
+    }
+
+    private static async validarUsuarioCursaMateriaGrupo(usuarioId: string, materiaId: string) {
+        const usuario = await UsuarioModel.buscarPorId(usuarioId);
+
+        if (!usuario) {
+            throw new ServiceError(404, 'El usuario no existe');
+        }
+
+        const materiaGrupo = await MateriaModel.buscarPorId(materiaId);
+
+        if (!materiaGrupo) {
+            throw new ServiceError(404, 'La materia asociada al grupo no existe');
+        }
+
+        const materiasUsuario = Array.isArray(usuario.materiasCursando)
+            ? (usuario.materiasCursando as string[])
+            : [];
+        const cursaMateriaDelGrupo = materiasUsuario.some(
+            (materiaUsuario) =>
+                GrupoService.normalizarTexto(materiaUsuario)
+                === GrupoService.normalizarTexto(materiaGrupo.nombre)
+        );
+
+        if (!cursaMateriaDelGrupo) {
+            throw new ServiceError(
+                403,
+                `Debes cursar la materia ${materiaGrupo.nombre} para unirte a este grupo`
+            );
+        }
+    }
+
     static async crearMateria(nombre: unknown) {
         if (typeof nombre !== 'string' || !nombre.trim()) {
             throw new ServiceError(400, 'Debes enviar un nombre de materia válido');
@@ -143,6 +181,8 @@ export class GrupoService {
             throw new ServiceError(409, `El grupo alcanzó el máximo de ${GrupoService.MAX_MIEMBROS_GRUPO} integrantes`);
         }
 
+        await GrupoService.validarUsuarioCursaMateriaGrupo(usuarioId, grupo.materiaId ?? '');
+
         return GrupoModel.agregarMiembro(grupoId.trim(), usuarioId);
     }
 
@@ -180,6 +220,8 @@ export class GrupoService {
         if (!usuario) {
             throw new ServiceError(404, 'El usuario a agregar no existe');
         }
+
+        await GrupoService.validarUsuarioCursaMateriaGrupo(usuarioId.trim(), grupo.materiaId ?? '');
 
         return GrupoModel.agregarMiembro(grupoId.trim(), usuarioId.trim());
     }
