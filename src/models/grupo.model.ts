@@ -254,4 +254,23 @@ export class GrupoModel {
             }
         });
     }
+
+    static async contarGruposPorMateria(materiaId: string): Promise<number> {
+        return prisma.grupo.count({
+            where: { materiaId }
+        });
+    }
+
+    static async buscarPorNombreYMateria(nombre: string, materiaId: string) {
+        const nombreNormalizado = GrupoModel.normalizarTexto(nombre);
+        const grupos = await grupoDelegate().findMany({
+            where: { materiaId },
+            include: {
+                materia: true,
+                miembros: true
+            }
+        });
+
+        return grupos.find((grupo) => GrupoModel.normalizarTexto(grupo.nombre) === nombreNormalizado);
+    }
 }

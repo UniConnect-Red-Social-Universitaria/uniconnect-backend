@@ -5,6 +5,7 @@ import { ServiceError } from './service-error';
 
 export class GrupoService {
     private static readonly MAX_MIEMBROS_GRUPO = 8;
+    private static readonly MAX_GRUPOS_POR_MATERIA = 3;
 
     private static normalizarTexto(texto: string) {
         return texto
@@ -72,6 +73,24 @@ export class GrupoService {
 
         if (!materia) {
             throw new ServiceError(404, 'La materia asociada no existe');
+        }
+
+        await GrupoService.validarUsuarioCursaMateriaGrupo(usuarioId, materia.id);
+
+        const cantidadGrupos = await GrupoModel.contarGruposPorMateria(materia.id);
+        if (cantidadGrupos >= GrupoService.MAX_GRUPOS_POR_MATERIA) {
+            throw new ServiceError(
+                409,
+                `Ya hay ${GrupoService.MAX_GRUPOS_POR_MATERIA} grupos para la materia ${materia.nombre}`
+            );
+        }
+
+        const grupoExistente = await GrupoModel.buscarPorNombreYMateria(nombre.trim(), materia.id);
+        if (grupoExistente) {
+            throw new ServiceError(
+                409,
+                `Ya existe un grupo con el nombre "${nombre.trim()}" en la materia ${materia.nombre}`
+            );
         }
 
         return GrupoModel.crear({
