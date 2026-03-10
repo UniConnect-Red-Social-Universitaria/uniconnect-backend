@@ -1,6 +1,14 @@
 import prisma from '../lib/prisma';
 
 export class UsuarioModel {
+    private static normalizarTexto(texto: string) {
+        return texto
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .trim();
+    }
+
     // Crear un usuario registrado
     static async crear(data: {
         nombre: string;
@@ -72,17 +80,7 @@ export class UsuarioModel {
 
     // Buscar usuarios por materia excluyendo IDs específicos
     static async buscarPorMateriaExcluyendo(materia: string, usuarioActualId: string, idsExcluidos: string[]) {
-        // Normalizar búsqueda: quitar acentos, lowercase, trim, quitar caracteres especiales
-        const normalizarTexto = (texto: string) => {
-            return texto
-                .toLowerCase()
-                .normalize('NFD')
-                .replace(/[\u0300-\u036f]/g, '') // Quita acentos
-                .replace(/[%_]/g, '') // Quita wildcards SQL
-                .trim();
-        };
-
-        const materiaNormalizada = normalizarTexto(materia);
+        const materiaNormalizada = UsuarioModel.normalizarTexto(materia).replace(/[%_]/g, '');
 
         // Obtener todos los usuarios excluyendo IDs
         const usuarios = await prisma.usuario.findMany({
@@ -100,11 +98,45 @@ export class UsuarioModel {
                 : [];
             
             return materias.some((mat) => 
-                normalizarTexto(mat).includes(materiaNormalizada)
+                UsuarioModel.normalizarTexto(mat).includes(materiaNormalizada)
             );
         });
 
         return usuariosFiltrados.map((usuario) => ({
+            id: usuario.id,
+            nombre: usuario.nombre,
+            apellido: usuario.apellido,
+            correo: usuario.correo,
+            carrera: usuario.carrera,
+            semestre: usuario.semestre,
+            materiasCursando: usuario.materiasCursando
+        }));
+    }
+
+    static async buscarPorTexto(texto: string, usuarioActualId: string) {
+        const busquedaNormalizada = UsuarioModel.normalizarTexto(texto);
+
+        const usuarios = await prisma.usuario.findMany({
+            where: {
+                id: {
+                    not: usuarioActualId
+                }
+            }
+        });
+
+        const filtrados = usuarios.filter((usuario) => {
+            const nombre = UsuarioModel.normalizarTexto(usuario.nombre ?? '');
+            const apellido = UsuarioModel.normalizarTexto(usuario.apellido ?? '');
+            const correo = UsuarioModel.normalizarTexto(usuario.correo ?? '');
+
+            return (
+                nombre.includes(busquedaNormalizada)
+                || apellido.includes(busquedaNormalizada)
+                || correo.includes(busquedaNormalizada)
+            );
+        });
+
+        return filtrados.map((usuario) => ({
             id: usuario.id,
             nombre: usuario.nombre,
             apellido: usuario.apellido,

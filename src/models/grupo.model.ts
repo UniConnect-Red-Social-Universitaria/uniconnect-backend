@@ -56,6 +56,14 @@ function grupoDelegate() {
 }
 
 export class GrupoModel {
+    private static normalizarTexto(texto: string) {
+        return texto
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .trim();
+    }
+
     static async crear(data: { nombre: string; materiaId: string; creadorId: string }) {
         return grupoDelegate().create({
             data: {
@@ -123,6 +131,18 @@ export class GrupoModel {
             orderBy: {
                 createdAt: 'desc'
             }
+        });
+    }
+
+    static async buscarPorTexto(texto: string) {
+        const busquedaNormalizada = GrupoModel.normalizarTexto(texto);
+        const grupos = await GrupoModel.listarTodos();
+
+        return grupos.filter((grupo) => {
+            const nombreGrupo = GrupoModel.normalizarTexto(grupo.nombre ?? '');
+            const nombreMateria = GrupoModel.normalizarTexto(grupo.materia?.nombre ?? '');
+
+            return nombreGrupo.includes(busquedaNormalizada) || nombreMateria.includes(busquedaNormalizada);
         });
     }
 

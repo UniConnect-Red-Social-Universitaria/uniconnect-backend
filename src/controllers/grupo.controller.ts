@@ -4,6 +4,39 @@ import { GrupoService } from '../services/grupo.service';
 import { ServiceError } from '../services/service-error';
 
 export class GrupoController {
+    static async buscar(req: Request, res: Response) {
+        try {
+            if (!req.usuario) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Usuario no autenticado'
+                });
+            }
+
+            const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+
+            if (!q) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Debes enviar el parámetro de búsqueda "q"'
+                });
+            }
+
+            const grupos = await GrupoService.buscarPorTexto(req.usuario.id, q);
+
+            return res.status(200).json({
+                success: true,
+                data: grupos
+            });
+        } catch (error) {
+            return res.status(500).json({
+                success: false,
+                message: 'Error al buscar grupos',
+                error: error instanceof Error ? error.message : 'Error desconocido'
+            });
+        }
+    }
+
     static async crearMateria(req: Request, res: Response) {
         try {
             const materia = await GrupoService.crearMateria((req.body as Record<string, unknown>).nombre);

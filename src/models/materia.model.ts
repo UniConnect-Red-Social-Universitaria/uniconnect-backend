@@ -15,6 +15,14 @@ function materiaDelegate() {
 }
 
 export class MateriaModel {
+    private static normalizarTexto(texto: string) {
+        return texto
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .trim();
+    }
+
     static async crear(nombre: string) {
         return materiaDelegate().create({
             data: { nombre }
@@ -37,6 +45,15 @@ export class MateriaModel {
         return materiaDelegate().findMany({
             orderBy: { nombre: 'asc' }
         });
+    }
+
+    static async buscarPorTexto(texto: string) {
+        const busquedaNormalizada = MateriaModel.normalizarTexto(texto);
+        const materias = await MateriaModel.listarTodas();
+
+        return materias.filter((materia) =>
+            MateriaModel.normalizarTexto(materia.nombre).includes(busquedaNormalizada)
+        );
     }
 
     static async contar() {

@@ -449,6 +449,46 @@ export class UsuarioController {
         }
     }
 
+    // Buscar estudiantes y materias por texto
+    static async buscar(req: Request, res: Response) {
+        try {
+            if (!req.usuario) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Usuario no autenticado'
+                });
+            }
+
+            const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+
+            if (!q) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Debes enviar el parámetro de búsqueda "q"'
+                });
+            }
+
+            const [estudiantes, materias] = await Promise.all([
+                UsuarioModel.buscarPorTexto(q, req.usuario.id),
+                MateriaModel.buscarPorTexto(q)
+            ]);
+
+            return res.status(200).json({
+                success: true,
+                data: {
+                    estudiantes,
+                    materias
+                }
+            });
+        } catch (error) {
+            return res.status(500).json({
+                success: false,
+                message: 'Error al buscar estudiantes y materias',
+                error: error instanceof Error ? error.message : 'Error desconocido'
+            });
+        }
+    }
+
     // Logout: invalida el token actual
     static async logout(req: Request, res: Response) {
         try {

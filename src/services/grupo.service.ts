@@ -98,6 +98,30 @@ export class GrupoService {
         });
     }
 
+    static async buscarPorTexto(usuarioId: string, texto: string) {
+        const grupos = await GrupoModel.buscarPorTexto(texto);
+
+        return grupos.map((grupo) => {
+            const yaPertenece = grupo.miembros.some((miembro) => {
+                const miembroId = miembro.usuario?.id ?? miembro.usuarioId;
+                return miembroId === usuarioId;
+            });
+
+            return {
+                id: grupo.id,
+                nombre: grupo.nombre,
+                materia: {
+                    id: grupo.materia?.id ?? '',
+                    nombre: grupo.materia?.nombre ?? 'Sin materia'
+                },
+                creadorId: grupo.creadorId,
+                cantidadMiembros: grupo.miembros.length,
+                yaPertenece,
+                createdAt: grupo.createdAt
+            };
+        });
+    }
+
     static async unirseGrupo(usuarioId: string, grupoId: unknown) {
         if (typeof grupoId !== 'string' || !grupoId.trim()) {
             throw new ServiceError(400, 'Debes enviar un grupoId válido');
