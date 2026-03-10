@@ -22,7 +22,11 @@ export class CarreraModel {
 
     static async listarTodas() {
         return carreraDelegate().findMany({
-            orderBy: { nombre: 'asc' }
+            orderBy: { nombre: 'asc' },
+            select: {
+                id: true,
+                nombre: true
+            }
         });
     }
 

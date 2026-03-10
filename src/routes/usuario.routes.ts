@@ -21,5 +21,6 @@ router.get('/solicitudes-recibidas', verificarJWT, UsuarioController.listarSolic
 router.post('/solicitudes/aceptar', verificarJWT, UsuarioController.aceptarSolicitud);
 router.post('/solicitudes/rechazar', verificarJWT, UsuarioController.rechazarSolicitud);
 router.get('/companeros', verificarJWT, UsuarioController.listarCompaneros);
+router.delete('/:id', UsuarioController.eliminarUsuario);
 
 export default router;

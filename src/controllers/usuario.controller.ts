@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import type { SignOptions } from 'jsonwebtoken';
 import { Prisma } from '@prisma/client';
 import { UsuarioModel } from '../models/usuario.model'
-import { esCorreoInstitucional, validarCorreoConGoogle } from '../utils/registro.util';
+import { esCorreoInstitucional, validarTokenAuth0 } from '../utils/registro.util';
 import { revokeToken } from '../lib/token-blacklist';
 import { CarreraModel } from '../models/carrera.model';
 import { MateriaModel } from '../models/materia.model';
@@ -359,14 +359,14 @@ export class UsuarioController {
             let verificacionGoogle;
             
             if (process.env.DEV_MODE === 'true') {
-                // Modo desarrollo: saltarse validación Google
+                // Modo desarrollo: saltarse validación del proveedor externo
                 verificacionGoogle = {
                     correoVerificado: true,
                     googleSub: `dev-${Date.now()}`
                 };
             } else {
-                // Modo producción: validar Google
-                verificacionGoogle = await validarCorreoConGoogle(googleIdToken, correo);
+                // El campo googleIdToken contiene el token de Auth0 en el flujo actual.
+                verificacionGoogle = await validarTokenAuth0(googleIdToken, correo);
             }
 
             // Verificar si ya existe
@@ -418,7 +418,7 @@ export class UsuarioController {
                 });
             }
 
-            if (error instanceof Error && (error.message.includes('Google') || error.message.includes('correo'))) {
+            if (error instanceof Error && (error.message.includes('Google') || error.message.includes('Auth0') || error.message.includes('correo'))) {
                 return res.status(400).json({
                     success: false,
                     message: error.message
@@ -704,6 +704,33 @@ export class UsuarioController {
             res.status(500).json({
                 success: false,
                 message: 'Error al actualizar perfil',
+                error: error instanceof Error ? error.message : 'Error desconocido'
+            });
+        }
+    }
+
+    // Eliminar usuario por ID
+    static async eliminarUsuario(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+
+            if (typeof id !== 'string' || !id.trim()) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'ID inválido'
+                });
+            }
+
+            await UsuarioModel.eliminar(id);
+
+            return res.status(200).json({
+                success: true,
+                message: 'Usuario eliminado correctamente'
+            });
+        } catch (error) {
+            return res.status(500).json({
+                success: false,
+                message: 'Error al eliminar usuario',
                 error: error instanceof Error ? error.message : 'Error desconocido'
             });
         }
