@@ -12,6 +12,7 @@ import {
 import { revokeToken } from "../lib/token-blacklist";
 import { CarreraModel } from "../models/carrera.model";
 import { MateriaModel } from "../models/materia.model";
+import { validarTokenAuth0 } from "../utils/registro.util";
 
 export class UsuarioController {
   // Buscar estudiantes por materia (excluye al usuario autenticado y relaciones existentes)
@@ -379,18 +380,18 @@ export class UsuarioController {
         });
       }
 
-      let verificacionGoogle;
+let verificacionGoogle;
 
       if (process.env.DEV_MODE === "true") {
-        // Modo desarrollo: saltarse validación Google
+        // Modo desarrollo: saltarse validación
         verificacionGoogle = {
           correoVerificado: true,
           googleSub: `dev-${Date.now()}`,
         };
       } else {
-        // Modo producción: validar Google
-        verificacionGoogle = await validarCorreoConGoogle(
-          googleIdToken,
+        // 🔹 NUEVO: Usamos la validación de Auth0
+        verificacionGoogle = await validarTokenAuth0( // <--- Asegúrate de importarla arriba
+          googleIdToken, // Sigue llamándose así en tu body, pero ahora contiene el de Auth0
           correo,
         );
       }
