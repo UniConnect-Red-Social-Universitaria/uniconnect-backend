@@ -8,11 +8,13 @@ import mensajeRoutes from './routes/mensaje.routes';
 import eventoRoutes from './routes/evento.routes';
 import catalogoRoutes from './routes/catalogo.routes';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
+import { requestLogger } from './middleware/request-logger.middleware';
 
 export const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use(requestLogger);
 
 app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/materias', materiaRoutes);

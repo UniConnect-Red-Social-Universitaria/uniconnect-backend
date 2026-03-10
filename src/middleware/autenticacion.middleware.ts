@@ -1,68 +1,51 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import { isTokenRevoked } from '../lib/token-blacklist';
+import { auth, AuthenticatedUser, AuthError } from '../lib/auth';
+import { handler } from '../lib/handler';
+import { logger } from '../lib/logger';
 
-export interface UsuarioAutenticado {
-    id: string;
-    correo: string;
-    nombre: string;
-}
+export type UsuarioAutenticado = AuthenticatedUser;
 
 declare global {
     namespace Express {
         interface Request {
             usuario?: UsuarioAutenticado;
             token?: string;
+            requestId?: string;
         }
     }
 }
 
 export function verificarJWT(req: Request, res: Response, next: NextFunction) {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
-
-        if (!token) {
-            return res.status(401).json({
-                success: false,
-                message: 'Token no proporcionado'
-            });
-        }
-
-        if (isTokenRevoked(token)) {
-            return res.status(401).json({
-                success: false,
-                message: 'Token revocado'
-            });
-        }
-
-        if (!process.env.JWT_SECRET) {
-            throw new Error('JWT_SECRET no configurado en .env');
-        }
-
-        const decoded = jwt.verify(token, process.env.JWT_SECRET) as UsuarioAutenticado;
+        const token = auth.extractBearerToken(req.headers.authorization);
+        const decoded = auth.verifyToken(token);
         
         req.usuario = decoded;
         req.token = token;
         next();
 
     } catch (error) {
-        if (error instanceof jwt.TokenExpiredError) {
-            return res.status(401).json({
-                success: false,
-                message: 'Token expirado'
-            });
+        if (error instanceof AuthError) {
+            if (error.statusCode >= 500) {
+                logger.critical('Fallo crítico al verificar token', {
+                    requestId: req.requestId,
+                    error: error.message
+                });
+            } else {
+                logger.warning('Token rechazado', {
+                    requestId: req.requestId,
+                    error: error.message
+                });
+            }
+
+            return handler.failure(res, error.statusCode, error.message);
         }
 
-        if (error instanceof jwt.JsonWebTokenError) {
-            return res.status(401).json({
-                success: false,
-                message: 'Token inválido'
-            });
-        }
-
-        res.status(500).json({
-            success: false,
-            message: 'Error al verificar token',
+        logger.error('Error inesperado en autenticación', {
+            requestId: req.requestId,
+            error
+        });
+        return handler.failure(res, 500, 'Error al verificar token', {
             error: error instanceof Error ? error.message : 'Error desconocido'
         });
     }

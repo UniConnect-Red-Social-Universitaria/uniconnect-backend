@@ -1,4 +1,6 @@
 import { ErrorRequestHandler, RequestHandler } from 'express';
+import { handler } from '../lib/handler';
+import { logger } from '../lib/logger';
 
 export class HttpError extends Error {
     statusCode: number;
@@ -14,7 +16,7 @@ export const notFoundHandler: RequestHandler = (req, _res, next) => {
     next(new HttpError(404, `Ruta no encontrada: ${req.method} ${req.originalUrl}`));
 };
 
-export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
+export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
     const statusCode =
         err instanceof HttpError
             ? err.statusCode
@@ -28,14 +30,17 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
             : 'Error interno del servidor';
 
     if (statusCode >= 500) {
-        console.error('[Error no controlado]', err);
+        logger.critical('Error no controlado', {
+            requestId: req.requestId,
+            error: err
+        });
+    } else {
+        logger.warning('Error controlado', {
+            requestId: req.requestId,
+            statusCode,
+            message
+        });
     }
 
-    res.status(statusCode).json({
-        ok: false,
-        error: {
-            message,
-            statusCode
-        }
-    });
+    return handler.standardError(res, statusCode, message);
 };
