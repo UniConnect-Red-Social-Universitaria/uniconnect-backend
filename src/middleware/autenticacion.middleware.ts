@@ -6,6 +6,7 @@ export interface UsuarioAutenticado {
     id: string;
     correo: string;
     nombre: string;
+    materiasCursando: string[];
 }
 
 declare global {

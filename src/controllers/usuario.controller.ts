@@ -570,6 +570,7 @@ let verificacionGoogle;
           id: usuario.id,
           correo: usuario.correo,
           nombre: usuario.nombre,
+          materiasCursando: usuario.materiasCursando,
         },
         process.env.JWT_SECRET,
         {
