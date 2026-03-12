@@ -46,6 +46,13 @@ export class GrupoModel {
     private static includeDetalleGrupoFallback() {
         return {
             materia: true,
+            administrador: {
+                select: {
+                    id: true,
+                    nombre: true,
+                    apellido: true
+                }
+            },
             miembros: {
                 select: {
                     id: true,
