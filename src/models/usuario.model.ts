@@ -196,6 +196,105 @@ export class UsuarioModel {
     }
     //eliminar usuario sin importar si está autenticado o no
     static async eliminar(id: string) {
+        const gruposRelacionados = await prisma.grupo.findMany({
+            where: {
+                OR: [
+                    { administradorId: id },
+                    { creadorId: id }
+                ]
+            },
+            select: {
+                id: true,
+                nombre: true,
+                administradorId: true,
+                creadorId: true,
+                miembros: {
+                    select: {
+                        usuarioId: true
+                    }
+                }
+            }
+        });
+
+        const gruposSinReemplazo = gruposRelacionados.filter((grupo) =>
+            !grupo.miembros.some((miembro) => miembro.usuarioId !== id)
+        );
+
+        if (gruposSinReemplazo.length > 0) {
+            const nombres = gruposSinReemplazo.map((grupo) => grupo.nombre).slice(0, 3).join(', ');
+
+            throw new Error(
+                `No se puede eliminar el usuario porque quedarian grupos sin administrador ni creador valido: ${nombres}`
+            );
+        }
+
+        for (const grupo of gruposRelacionados) {
+            const reemplazo = grupo.miembros.find((miembro) => miembro.usuarioId !== id)?.usuarioId;
+
+            if (!reemplazo) {
+                continue;
+            }
+
+            const data: Record<string, string> = {};
+
+            if (grupo.administradorId === id) {
+                data.administradorId = reemplazo;
+            }
+
+            if (grupo.creadorId === id) {
+                data.creadorId = reemplazo;
+            }
+
+            if (Object.keys(data).length > 0) {
+                await prisma.grupo.update({
+                    where: { id: grupo.id },
+                    data
+                });
+            }
+        }
+
+        await prisma.contacto.deleteMany({
+            where: {
+                OR: [
+                    { solicitanteId: id },
+                    { receptorId: id }
+                ]
+            }
+        });
+
+        await prisma.mensaje.deleteMany({
+            where: {
+                OR: [
+                    { emisorId: id },
+                    { receptorId: id }
+                ]
+            }
+        });
+
+        await prisma.grupoMensaje.deleteMany({
+            where: {
+                emisorId: id
+            }
+        });
+
+        await prisma.grupoArchivo.deleteMany({
+            where: {
+                subidoPorId: id
+            }
+        });
+
+        await prisma.evento.deleteMany({
+            where: {
+                creadorId: id
+            }
+        });
+
+        await prisma.usuarioGrupo.deleteMany({
+            where: {
+                usuarioId: id
+            }
+        });
+
         return prisma.usuario.delete({
             where: { id }
         });

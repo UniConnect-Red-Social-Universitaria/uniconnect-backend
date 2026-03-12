@@ -16,7 +16,7 @@ function grupoDelegate() {
 export class GrupoModel {
     private static esErrorRelacionUsuarioInconsistente(error: unknown) {
         return error instanceof Error
-            && error.message.includes('Field usuario is required to return data, got null instead.');
+            && error.message.includes('is required to return data, got null instead.');
     }
 
     private static includeDetalleGrupo() {
@@ -46,13 +46,6 @@ export class GrupoModel {
     private static includeDetalleGrupoFallback() {
         return {
             materia: true,
-            administrador: {
-                select: {
-                    id: true,
-                    nombre: true,
-                    apellido: true
-                }
-            },
             miembros: {
                 select: {
                     id: true,

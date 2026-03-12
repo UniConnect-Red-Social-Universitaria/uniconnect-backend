@@ -9,6 +9,7 @@ import { revokeToken } from '../lib/token-blacklist';
 import { CarreraModel } from '../models/carrera.model';
 import { MateriaModel } from '../models/materia.model';
 import { UsuarioContactoService, UsuarioContactoServiceError } from '../services/usuario-contacto.service';
+import { ServiceError } from '../services/service-error';
 
 export class UsuarioController {
     private static extraerMateriaBusqueda(req: Request): string | null {
@@ -752,12 +753,26 @@ export class UsuarioController {
     // Eliminar usuario por ID
     static async eliminarUsuario(req: Request, res: Response) {
         try {
+            if (!req.usuario) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Usuario no autenticado'
+                });
+            }
+
             const { id } = req.params;
 
             if (typeof id !== 'string' || !id.trim()) {
                 return res.status(400).json({
                     success: false,
                     message: 'ID inválido'
+                });
+            }
+
+            if (req.usuario.id !== id.trim()) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Solo puedes eliminar tu propia cuenta'
                 });
             }
 
@@ -768,6 +783,20 @@ export class UsuarioController {
                 message: 'Usuario eliminado correctamente'
             });
         } catch (error) {
+            if (error instanceof ServiceError) {
+                return res.status(error.statusCode).json({
+                    success: false,
+                    message: error.message
+                });
+            }
+
+            if (error instanceof Error && error.message.includes('No se puede eliminar el usuario')) {
+                return res.status(409).json({
+                    success: false,
+                    message: error.message
+                });
+            }
+
             return res.status(500).json({
                 success: false,
                 message: 'Error al eliminar usuario',
