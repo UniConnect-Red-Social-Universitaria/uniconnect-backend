@@ -3,53 +3,10 @@ import prisma from '../lib/prisma';
 function grupoDelegate() {
     const prismaDinamico = prisma as unknown as {
         grupo: {
-            create: (args: unknown) => Promise<{
-                id: string;
-                nombre: string;
-                materiaId: string;
-                creadorId: string;
-                createdAt: Date;
-                materia: { id: string; nombre: string };
-                miembros: Array<{ id: string }>;
-            }>;
-            findMany: (args: unknown) => Promise<Array<{
-                id: string;
-                nombre: string;
-                materiaId: string;
-                creadorId: string;
-                createdAt: Date;
-                materia: { id: string; nombre: string };
-                miembros: Array<{
-                    id: string;
-                    usuarioId: string;
-                    usuario: {
-                        id: string;
-                        nombre: string;
-                        apellido: string;
-                    };
-                }>;
-            }>>;
-            findUnique: (args: unknown) => Promise<{
-                id: string;
-                nombre: string;
-                materiaId?: string;
-                creadorId?: string;
-                miembros: Array<{ usuarioId: string }>;
-            } | null>;
-            update: (args: unknown) => Promise<{
-                id: string;
-                nombre: string;
-                creadorId: string;
-                miembros: Array<{
-                    id: string;
-                    usuarioId: string;
-                    usuario: {
-                        id: string;
-                        nombre: string;
-                        apellido: string;
-                    };
-                }>;
-            }>;
+            create: (args: unknown) => Promise<any>;
+            findMany: (args: unknown) => Promise<any[]>;
+            findUnique: (args: unknown) => Promise<any | null>;
+            update: (args: unknown) => Promise<any>;
         };
     };
 
@@ -57,6 +14,54 @@ function grupoDelegate() {
 }
 
 export class GrupoModel {
+    private static esErrorRelacionUsuarioInconsistente(error: unknown) {
+        return error instanceof Error
+            && error.message.includes('Field usuario is required to return data, got null instead.');
+    }
+
+    private static includeDetalleGrupo() {
+        return {
+            materia: true,
+            administrador: {
+                select: {
+                    id: true,
+                    nombre: true,
+                    apellido: true
+                }
+            },
+            miembros: {
+                include: {
+                    usuario: {
+                        select: {
+                            id: true,
+                            nombre: true,
+                            apellido: true
+                        }
+                    }
+                }
+            }
+        };
+    }
+
+    private static includeDetalleGrupoFallback() {
+        return {
+            materia: true,
+            administrador: {
+                select: {
+                    id: true,
+                    nombre: true,
+                    apellido: true
+                }
+            },
+            miembros: {
+                select: {
+                    id: true,
+                    usuarioId: true
+                }
+            }
+        };
+    }
+
     private static normalizarTexto(texto: string) {
         return texto
             .toLowerCase()
@@ -71,68 +76,76 @@ export class GrupoModel {
                 nombre: data.nombre,
                 materiaId: data.materiaId,
                 creadorId: data.creadorId,
+                administradorId: data.creadorId,
+                estado: 'ACTIVO',
                 miembros: {
                     create: {
                         usuarioId: data.creadorId
                     }
                 }
             },
-            include: {
-                materia: true,
-                miembros: true
-            }
+            include: GrupoModel.includeDetalleGrupo()
         });
     }
 
     static async listarPorUsuario(usuarioId: string) {
-        return grupoDelegate().findMany({
-            where: {
-                miembros: {
-                    some: {
-                        usuarioId
-                    }
-                }
-            },
-            include: {
-                materia: true,
-                miembros: {
-                    include: {
-                        usuario: {
-                            select: {
-                                id: true,
-                                nombre: true,
-                                apellido: true
-                            }
+        try {
+            return await grupoDelegate().findMany({
+                where: {
+                    miembros: {
+                        some: {
+                            usuarioId
                         }
                     }
+                },
+                include: GrupoModel.includeDetalleGrupo(),
+                orderBy: {
+                    createdAt: 'desc'
                 }
-            },
-            orderBy: {
-                createdAt: 'desc'
+            });
+        } catch (error) {
+            if (!GrupoModel.esErrorRelacionUsuarioInconsistente(error)) {
+                throw error;
             }
-        });
+
+            // Fallback para registros huérfanos en UsuarioGrupo (usuario eliminado).
+            return grupoDelegate().findMany({
+                where: {
+                    miembros: {
+                        some: {
+                            usuarioId
+                        }
+                    }
+                },
+                include: GrupoModel.includeDetalleGrupoFallback(),
+                orderBy: {
+                    createdAt: 'desc'
+                }
+            });
+        }
     }
 
     static async listarTodos() {
-        return grupoDelegate().findMany({
-            include: {
-                materia: true,
-                miembros: {
-                    include: {
-                        usuario: {
-                            select: {
-                                id: true,
-                                nombre: true,
-                                apellido: true
-                            }
-                        }
-                    }
+        try {
+            return await grupoDelegate().findMany({
+                include: GrupoModel.includeDetalleGrupo(),
+                orderBy: {
+                    createdAt: 'desc'
                 }
-            },
-            orderBy: {
-                createdAt: 'desc'
+            });
+        } catch (error) {
+            if (!GrupoModel.esErrorRelacionUsuarioInconsistente(error)) {
+                throw error;
             }
-        });
+
+            // Fallback para registros huérfanos en UsuarioGrupo (usuario eliminado).
+            return grupoDelegate().findMany({
+                include: GrupoModel.includeDetalleGrupoFallback(),
+                orderBy: {
+                    createdAt: 'desc'
+                }
+            });
+        }
     }
 
     static async buscarPorTexto(texto: string) {
@@ -170,6 +183,7 @@ export class GrupoModel {
             select: {
                 id: true,
                 nombre: true,
+                estado: true,
                 miembros: {
                     where: {
                         usuarioId
@@ -187,7 +201,9 @@ export class GrupoModel {
 
         return {
             existe: true,
-            pertenece: grupo.miembros.length > 0
+            pertenece: grupo.miembros.length > 0,
+            estado: grupo.estado,
+            estaCerrado: grupo.estado === 'CERRADO'
         };
     }
 
@@ -199,6 +215,8 @@ export class GrupoModel {
                 nombre: true,
                 materiaId: true,
                 creadorId: true,
+                administradorId: true,
+                estado: true,
                 miembros: {
                     select: {
                         usuarioId: true
@@ -208,29 +226,26 @@ export class GrupoModel {
         });
     }
 
-    static async usuarioEsCreador(grupoId: string, usuarioId: string) {
-        const grupo = await grupoDelegate().findUnique({
-            where: { id: grupoId },
-            select: {
-                id: true,
-                nombre: true,
-                creadorId: true,
-                miembros: {
-                    select: {
-                        usuarioId: true
-                    }
-                }
+    static async obtenerDetallePorId(grupoId: string) {
+        try {
+            return await grupoDelegate().findUnique({
+                where: { id: grupoId },
+                include: GrupoModel.includeDetalleGrupo()
+            });
+        } catch (error) {
+            if (!GrupoModel.esErrorRelacionUsuarioInconsistente(error)) {
+                throw error;
             }
-        });
 
-        return {
-            existe: Boolean(grupo),
-            esCreador: grupo?.creadorId === usuarioId
-        };
+            return grupoDelegate().findUnique({
+                where: { id: grupoId },
+                include: GrupoModel.includeDetalleGrupoFallback()
+            });
+        }
     }
 
     static async agregarMiembro(grupoId: string, usuarioId: string) {
-        return grupoDelegate().update({
+        await grupoDelegate().update({
             where: { id: grupoId },
             data: {
                 miembros: {
@@ -238,21 +253,43 @@ export class GrupoModel {
                         usuarioId
                     }
                 }
-            },
-            include: {
-                miembros: {
-                    include: {
-                        usuario: {
-                            select: {
-                                id: true,
-                                nombre: true,
-                                apellido: true
-                            }
-                        }
-                    }
-                }
             }
         });
+
+        return GrupoModel.obtenerDetallePorId(grupoId);
+    }
+
+    static async removerMiembro(grupoId: string, usuarioId: string) {
+        await prisma.usuarioGrupo.deleteMany({
+            where: {
+                grupoId,
+                usuarioId
+            }
+        });
+
+        return GrupoModel.obtenerDetallePorId(grupoId);
+    }
+
+    static async actualizarAdministrador(grupoId: string, administradorId: string) {
+        await grupoDelegate().update({
+            where: { id: grupoId },
+            data: {
+                administradorId
+            }
+        });
+
+        return GrupoModel.obtenerDetallePorId(grupoId);
+    }
+
+    static async cerrar(grupoId: string) {
+        await grupoDelegate().update({
+            where: { id: grupoId },
+            data: {
+                estado: 'CERRADO'
+            }
+        });
+
+        return GrupoModel.obtenerDetallePorId(grupoId);
     }
 
     static async contarGruposPorMateria(materiaId: string): Promise<number> {
@@ -265,10 +302,7 @@ export class GrupoModel {
         const nombreNormalizado = GrupoModel.normalizarTexto(nombre);
         const grupos = await grupoDelegate().findMany({
             where: { materiaId },
-            include: {
-                materia: true,
-                miembros: true
-            }
+            include: GrupoModel.includeDetalleGrupoFallback()
         });
 
         return grupos.find((grupo) => GrupoModel.normalizarTexto(grupo.nombre) === nombreNormalizado);

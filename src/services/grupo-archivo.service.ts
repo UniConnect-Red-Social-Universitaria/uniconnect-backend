@@ -28,6 +28,10 @@ export class GrupoArchivoService {
             throw new ServiceError(403, 'Solo los integrantes del grupo pueden subir archivos');
         }
 
+        if (pertenencia.estaCerrado) {
+            throw new ServiceError(409, 'El grupo está cerrado y ya no admite nuevos archivos');
+        }
+
         if (!archivo) {
             throw new ServiceError(400, 'Debes adjuntar un archivo PDF en el campo "archivo"');
         }

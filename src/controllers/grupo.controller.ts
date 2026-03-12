@@ -88,14 +88,7 @@ export class GrupoController {
             return res.status(201).json({
                 success: true,
                 message: 'Grupo creado correctamente',
-                data: {
-                    id: grupo.id,
-                    nombre: grupo.nombre,
-                    materia: grupo.materia,
-                    creadorId: grupo.creadorId,
-                    cantidadMiembros: grupo.miembros.length,
-                    createdAt: grupo.createdAt
-                }
+                data: grupo
             });
         } catch (error) {
             if (error instanceof ServiceError) {
@@ -183,11 +176,7 @@ export class GrupoController {
             return res.status(201).json({
                 success: true,
                 message: 'Te uniste al grupo correctamente',
-                data: {
-                    id: grupoActualizado.id,
-                    nombre: grupoActualizado.nombre,
-                    cantidadMiembros: grupoActualizado.miembros.length
-                }
+                data: grupoActualizado
             });
         } catch (error) {
             if (error instanceof ServiceError) {
@@ -244,11 +233,7 @@ export class GrupoController {
             return res.status(201).json({
                 success: true,
                 message: 'Miembro agregado correctamente',
-                data: {
-                    id: grupoActualizado.id,
-                    nombre: grupoActualizado.nombre,
-                    cantidadMiembros: grupoActualizado.miembros.length
-                }
+                data: grupoActualizado
             });
         } catch (error) {
             if (error instanceof ServiceError) {
@@ -277,6 +262,167 @@ export class GrupoController {
             return res.status(500).json({
                 success: false,
                 message: 'Error al agregar miembro',
+                error: error instanceof Error ? error.message : 'Error desconocido'
+            });
+        }
+    }
+
+    static async cerrarGrupo(req: Request, res: Response) {
+        try {
+            if (!req.usuario) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Usuario no autenticado'
+                });
+            }
+
+            const { grupoId } = req.params;
+            const grupo = await GrupoService.cerrarGrupo(req.usuario.id, grupoId);
+
+            return res.status(200).json({
+                success: true,
+                message: 'Grupo cerrado correctamente',
+                data: grupo
+            });
+        } catch (error) {
+            if (error instanceof ServiceError) {
+                return res.status(error.statusCode).json({
+                    success: false,
+                    message: error.message
+                });
+            }
+
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2023') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'grupoId tiene formato inválido'
+                });
+            }
+
+            return res.status(500).json({
+                success: false,
+                message: 'Error al cerrar el grupo',
+                error: error instanceof Error ? error.message : 'Error desconocido'
+            });
+        }
+    }
+
+    static async cambiarAdministrador(req: Request, res: Response) {
+        try {
+            if (!req.usuario) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Usuario no autenticado'
+                });
+            }
+
+            const { grupoId } = req.params;
+            const body = req.body as Record<string, unknown>;
+            const grupo = await GrupoService.cambiarAdministrador(req.usuario.id, grupoId, body.usuarioId);
+
+            return res.status(200).json({
+                success: true,
+                message: 'Administrador asignado correctamente',
+                data: grupo
+            });
+        } catch (error) {
+            if (error instanceof ServiceError) {
+                return res.status(error.statusCode).json({
+                    success: false,
+                    message: error.message
+                });
+            }
+
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2023') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'grupoId o usuarioId tiene formato inválido'
+                });
+            }
+
+            return res.status(500).json({
+                success: false,
+                message: 'Error al cambiar el administrador del grupo',
+                error: error instanceof Error ? error.message : 'Error desconocido'
+            });
+        }
+    }
+
+    static async salirGrupo(req: Request, res: Response) {
+        try {
+            if (!req.usuario) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Usuario no autenticado'
+                });
+            }
+
+            const { grupoId } = req.params;
+            const grupo = await GrupoService.salirGrupo(req.usuario.id, grupoId);
+
+            return res.status(200).json({
+                success: true,
+                message: 'Saliste del grupo correctamente',
+                data: grupo
+            });
+        } catch (error) {
+            if (error instanceof ServiceError) {
+                return res.status(error.statusCode).json({
+                    success: false,
+                    message: error.message
+                });
+            }
+
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2023') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'grupoId tiene formato inválido'
+                });
+            }
+
+            return res.status(500).json({
+                success: false,
+                message: 'Error al salir del grupo',
+                error: error instanceof Error ? error.message : 'Error desconocido'
+            });
+        }
+    }
+
+    static async removerMiembro(req: Request, res: Response) {
+        try {
+            if (!req.usuario) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Usuario no autenticado'
+                });
+            }
+
+            const { grupoId, usuarioId } = req.params;
+            const grupo = await GrupoService.removerMiembro(req.usuario.id, grupoId, usuarioId);
+
+            return res.status(200).json({
+                success: true,
+                message: 'Miembro removido correctamente',
+                data: grupo
+            });
+        } catch (error) {
+            if (error instanceof ServiceError) {
+                return res.status(error.statusCode).json({
+                    success: false,
+                    message: error.message
+                });
+            }
+
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2023') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'grupoId o usuarioId tiene formato inválido'
+                });
+            }
+
+            return res.status(500).json({
+                success: false,
+                message: 'Error al remover miembro del grupo',
                 error: error instanceof Error ? error.message : 'Error desconocido'
             });
         }

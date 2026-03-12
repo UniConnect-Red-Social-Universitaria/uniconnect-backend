@@ -24,6 +24,10 @@ export class MensajeService {
             throw new ServiceError(403, 'Solo los integrantes del grupo pueden enviar mensajes');
         }
 
+        if (pertenencia.estaCerrado) {
+            throw new ServiceError(409, 'El grupo está cerrado y ya no admite nuevos mensajes');
+        }
+
         return MensajeModel.crearMensajeGrupo({
             contenido: contenido.trim(),
             grupoId: grupoId.trim(),

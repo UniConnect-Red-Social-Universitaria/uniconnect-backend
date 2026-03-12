@@ -26,6 +26,7 @@ model Usuario {
   solicitudesRecibidas Contacto[] @relation("Receptor")
   grupos UsuarioGrupo[]
   gruposCreados Grupo[] @relation("GruposCreados")
+  gruposAdministrados Grupo[] @relation("GruposAdministrados")
   mensajesEnviados Mensaje[] @relation("MensajesEnviados")
   mensajesRecibidos Mensaje[] @relation("MensajesRecibidos")
   mensajesGrupoEnviados GrupoMensaje[] @relation("MensajesGrupoEnviados")
@@ -69,8 +70,11 @@ model Grupo {
   nombre    String
   materiaId String        @db.ObjectId
   creadorId String        @db.ObjectId
+  administradorId String  @db.ObjectId
+  estado    EstadoGrupo   @default(ACTIVO)
   materia   Materia       @relation(fields: [materiaId], references: [id])
   creador   Usuario       @relation("GruposCreados", fields: [creadorId], references: [id])
+  administrador Usuario   @relation("GruposAdministrados", fields: [administradorId], references: [id])
   miembros  UsuarioGrupo[]
   mensajes  GrupoMensaje[]
   archivos  GrupoArchivo[]
@@ -139,4 +143,9 @@ enum EstadoContacto {
   PENDIENTE
   ACEPTADA
   RECHAZADA
+}
+
+enum EstadoGrupo {
+  ACTIVO
+  CERRADO
 }
