@@ -1,0 +1,1 @@
+export type { CareerRepository } from '../../../domain/contracts';

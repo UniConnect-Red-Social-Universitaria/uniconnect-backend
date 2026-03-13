@@ -1,6 +1,5 @@
 import { OAuth2Client } from "google-auth-library";
 import jwt, { JwtHeader, SigningKeyCallback } from "jsonwebtoken";
-import jwksClient from "jwks-rsa";
 
 const DEFAULT_DOMAIN = "ucaldas.edu.co";
 
@@ -16,22 +15,26 @@ const institutionalDomains = (
 const auth0Domain =
   process.env.AUTH0_DOMAIN || "dev-orxxfhogwtwn2og3.us.auth0.com";
 
-const auth0Client = jwksClient({
-  jwksUri: `https://${auth0Domain}/.well-known/jwks.json`,
-});
+async function createAuth0KeyResolver() {
+  const { default: jwksClient } = await import("jwks-rsa");
 
-function getAuth0Key(header: JwtHeader, callback: SigningKeyCallback) {
-  if (!header.kid) {
-    return callback(new Error("No se encontró 'kid' en el token"), undefined);
-  }
-
-  auth0Client.getSigningKey(header.kid, (err, key) => {
-    if (err) {
-      return callback(err, undefined);
-    }
-    const signingKey = key?.getPublicKey();
-    callback(null, signingKey);
+  const auth0Client = jwksClient({
+    jwksUri: `https://${auth0Domain}/.well-known/jwks.json`,
   });
+
+  return (header: JwtHeader, callback: SigningKeyCallback) => {
+    if (!header.kid) {
+      return callback(new Error("No se encontró 'kid' en el token"), undefined);
+    }
+
+    auth0Client.getSigningKey(header.kid, (err, key) => {
+      if (err) {
+        return callback(err, undefined);
+      }
+      const signingKey = key?.getPublicKey();
+      callback(null, signingKey);
+    });
+  };
 }
 
 export function esCorreoInstitucional(correo: string): boolean {
@@ -40,10 +43,12 @@ export function esCorreoInstitucional(correo: string): boolean {
   return institutionalDomains.includes(domain);
 }
 
-export const validarTokenAuth0 = (
+export const validarTokenAuth0 = async (
   token: string,
   correoEsperado: string,
 ): Promise<{ correoVerificado: boolean; googleSub: string }> => {
+  const getAuth0Key = await createAuth0KeyResolver();
+
   return new Promise((resolve, reject) => {
     jwt.verify(
       token,

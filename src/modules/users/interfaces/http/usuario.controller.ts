@@ -1,0 +1,204 @@
+import { Request, Response } from "express";
+
+import { usersUseCases } from '../../../../container';
+import { handleControllerError } from '../../../../shared/controller-error';
+
+export class UsuarioController {
+  // Buscar estudiantes por materia (excluye al usuario autenticado y relaciones existentes)
+  static async buscarPorMateria(req: Request, res: Response) {
+    try {
+      const resultado = await usersUseCases.buscarPorMateria(
+        req.usuario,
+        req.query.materia,
+      );
+
+      res.json({
+        success: true,
+        data: resultado.data,
+      });
+    } catch (error) {
+      return handleControllerError(
+        res,
+        error,
+        'Error al buscar estudiantes por materia',
+      );
+    }
+  }
+
+  // Enviar solicitud de conexión
+  static async enviarSolicitudConexion(req: Request, res: Response) {
+    try {
+      const resultado = await usersUseCases.enviarSolicitudConexion(
+        req.usuario,
+        req.body?.usuarioDestinoId,
+      );
+
+      res.status(201).json({
+        success: true,
+        message: resultado.message,
+        data: resultado.data,
+      });
+    } catch (error) {
+      return handleControllerError(
+        res,
+        error,
+        'Error al enviar solicitud de conexión',
+      );
+    }
+  }
+
+  // Listar compañeros agregados (solo relaciones aceptadas)
+  static async listarCompaneros(req: Request, res: Response) {
+    try {
+      const resultado = await usersUseCases.listarCompaneros(req.usuario);
+
+      res.json({
+        success: true,
+        data: resultado.data,
+      });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al listar compañeros');
+    }
+  }
+
+  // Listar solicitudes recibidas (pendientes)
+  static async listarSolicitudesRecibidas(req: Request, res: Response) {
+    try {
+      const resultado = await usersUseCases.listarSolicitudesRecibidas(req.usuario);
+
+      res.json({
+        success: true,
+        data: resultado.data,
+      });
+    } catch (error) {
+      return handleControllerError(
+        res,
+        error,
+        'Error al listar solicitudes recibidas',
+      );
+    }
+  }
+
+  // Aceptar solicitud de conexión
+  static async aceptarSolicitud(req: Request, res: Response) {
+    try {
+      const resultado = await usersUseCases.aceptarSolicitud(
+        req.usuario,
+        req.body?.solicitudId,
+      );
+
+      res.json({
+        success: true,
+        message: resultado.message,
+        data: resultado.data,
+      });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al aceptar solicitud');
+    }
+  }
+
+  // Registrar usuario
+  static async registrar(req: Request, res: Response) {
+    try {
+      const resultado = await usersUseCases.registrar(req.body);
+
+      res.status(201).json({
+        success: true,
+        message: resultado.message,
+        data: resultado.data,
+      });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al registrar usuario');
+    }
+  }
+
+  // Obtener todos los usuarios
+  static async obtenerTodos(req: Request, res: Response) {
+    try {
+      const resultado = await usersUseCases.obtenerTodos();
+      res.json({
+        success: true,
+        data: resultado.data,
+      });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al obtener usuarios', false);
+    }
+  }
+
+  // Logout: invalida el token actual
+  static async logout(req: Request, res: Response) {
+    try {
+      const resultado = await usersUseCases.logout(req.token);
+
+      return res.json({
+        success: true,
+        message: resultado.message,
+      });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al cerrar sesión');
+    }
+  }
+
+  // Login: autenticar usuario con correo y contraseña
+  static async login(req: Request, res: Response) {
+    try {
+      const resultado = await usersUseCases.login(
+        req.body?.correo,
+        req.body?.contrasena,
+      );
+
+      res.json({
+        success: true,
+        message: resultado.message,
+        data: resultado.data,
+      });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al iniciar sesión');
+    }
+  }
+
+  // Obtener perfil del usuario autenticado (protegido)
+  static async obtenerPerfil(req: Request, res: Response) {
+    try {
+      const resultado = await usersUseCases.obtenerPerfil(req.usuario);
+
+      res.json({
+        success: true,
+        data: resultado.data,
+      });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al obtener perfil');
+    }
+  }
+
+  // Actualizar perfil del usuario autenticado (protegido)
+  static async actualizarPerfil(req: Request, res: Response) {
+    try {
+      const resultado = await usersUseCases.actualizarPerfil(req.usuario, {
+        carrera: req.body?.carrera,
+        semestre: req.body?.semestre,
+        materiasCursando: req.body?.materiasCursando,
+      });
+
+      res.json({
+        success: true,
+        message: resultado.message,
+        data: resultado.data,
+      });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al actualizar perfil');
+    }
+  }
+  //eliminar usuario sin importar si esta autenticado o no, se puede eliminar por id
+  static async eliminarUsuario(req: Request, res: Response) {
+    try {
+      const resultado = await usersUseCases.eliminarUsuario(req.params.id);
+      res.json({
+        success: true,
+        message: resultado.message,
+      });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al eliminar usuario');
+    }
+  }
+}

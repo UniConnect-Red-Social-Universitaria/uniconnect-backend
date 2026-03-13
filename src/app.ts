@@ -1,12 +1,12 @@
 import express from 'express';
 import cors from 'cors';
 
-import usuarioRoutes from './routes/usuario.routes';
-import materiaRoutes from './routes/materia.routes';
-import grupoRoutes from './routes/grupo.routes';
-import mensajeRoutes from './routes/mensaje.routes';
-import eventoRoutes from './routes/evento.routes';
-import catalogoRoutes from './routes/catalogo.routes';
+import usuarioRoutes from './modules/users/interfaces/http/usuario.routes';
+import materiaRoutes from './modules/materias/interfaces/http/materia.routes';
+import grupoRoutes from './modules/groups/interfaces/http/grupo.routes';
+import mensajeRoutes from './modules/messages/interfaces/http/mensaje.routes';
+import eventoRoutes from './modules/events/interfaces/http/evento.routes';
+import catalogoRoutes from './modules/catalog/interfaces/http/catalogo.routes';
 
 export const app = express();
 

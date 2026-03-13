@@ -1,0 +1,500 @@
+import {
+  AuthenticatedUser,
+  CareerRepository,
+  ContactRepository,
+  IdentityVerificationService,
+  MateriaRepository,
+  PasswordService,
+  TokenBlacklistService,
+  TokenService,
+  UserRepository,
+} from '../../../domain/contracts';
+import { ApplicationError } from '../../../shared/application-error';
+import { esCorreoInstitucional } from '../../../utils/registro.util';
+import { isValidMongoId } from '../../../shared/mongo-id';
+
+type RegisterInput = {
+  nombre: unknown;
+  apellido: unknown;
+  correo: unknown;
+  contrasena: unknown;
+  carrera: unknown;
+  semestre: unknown;
+  materiasCursando: unknown;
+  googleIdToken: unknown;
+};
+
+type UpdateProfileInput = {
+  carrera?: unknown;
+  semestre?: unknown;
+  materiasCursando?: unknown;
+};
+
+type UsersUseCasesDependencies = {
+  userRepository: UserRepository;
+  contactRepository: ContactRepository;
+  careerRepository: CareerRepository;
+  materiaRepository: MateriaRepository;
+  passwordService: PasswordService;
+  tokenService: TokenService;
+  identityVerificationService: IdentityVerificationService;
+  tokenBlacklistService: TokenBlacklistService;
+};
+
+export class UsersUseCases {
+  constructor(private readonly deps: UsersUseCasesDependencies) {}
+
+  async buscarPorMateria(usuario: AuthenticatedUser | undefined, materiaQuery: unknown) {
+    const authUser = this.ensureAuthenticated(usuario);
+
+    if (typeof materiaQuery !== 'string' || !materiaQuery.trim()) {
+      throw new ApplicationError(400, 'Debes enviar la materia a buscar');
+    }
+
+    const idsRelacionados = await this.deps.contactRepository.getRelatedIds(authUser.id);
+    const resultados = await this.deps.userRepository.searchByMateriaExcluding(
+      materiaQuery.trim(),
+      authUser.id,
+      idsRelacionados,
+    );
+
+    return { data: resultados };
+  }
+
+  async enviarSolicitudConexion(
+    usuario: AuthenticatedUser | undefined,
+    usuarioDestinoId: unknown,
+  ) {
+    const authUser = this.ensureAuthenticated(usuario);
+
+    if (typeof usuarioDestinoId !== 'string' || !usuarioDestinoId.trim()) {
+      throw new ApplicationError(400, 'usuarioDestinoId es obligatorio');
+    }
+
+    if (!isValidMongoId(usuarioDestinoId.trim())) {
+      throw new ApplicationError(400, 'usuarioDestinoId tiene formato inválido');
+    }
+
+    if (usuarioDestinoId === authUser.id) {
+      throw new ApplicationError(400, 'No puedes enviarte solicitud a ti mismo');
+    }
+
+    const usuarioDestino = await this.deps.userRepository.findById(usuarioDestinoId.trim());
+
+    if (!usuarioDestino) {
+      throw new ApplicationError(404, 'Usuario destino inexistente');
+    }
+
+    const relacionExistente = await this.deps.contactRepository.findRelationBetweenUsers(
+      authUser.id,
+      usuarioDestinoId.trim(),
+    );
+
+    if (relacionExistente) {
+      if (relacionExistente.estado === 'ACEPTADA') {
+        throw new ApplicationError(409, 'Este compañero ya está agregado');
+      }
+
+      throw new ApplicationError(
+        409,
+        'Ya existe una solicitud de conexión entre estos usuarios',
+      );
+    }
+
+    const solicitud = await this.deps.contactRepository.createRequest(
+      authUser.id,
+      usuarioDestinoId.trim(),
+    );
+
+    return {
+      message: 'Solicitud de conexión enviada',
+      data: {
+        id: solicitud.id,
+        estado: solicitud.estado,
+        solicitanteId: solicitud.solicitanteId,
+        receptorId: solicitud.receptorId,
+        createdAt: solicitud.createdAt,
+      },
+    };
+  }
+
+  async listarCompaneros(usuario: AuthenticatedUser | undefined) {
+    const authUser = this.ensureAuthenticated(usuario);
+    const companeros = await this.deps.contactRepository.listAcceptedPeers(authUser.id);
+    return { data: companeros };
+  }
+
+  async listarSolicitudesRecibidas(usuario: AuthenticatedUser | undefined) {
+    const authUser = this.ensureAuthenticated(usuario);
+    const solicitudes = await this.deps.contactRepository.listReceivedPendingRequests(authUser.id);
+    return { data: solicitudes };
+  }
+
+  async aceptarSolicitud(usuario: AuthenticatedUser | undefined, solicitudId: unknown) {
+    const authUser = this.ensureAuthenticated(usuario);
+
+    if (typeof solicitudId !== 'string' || !solicitudId.trim()) {
+      throw new ApplicationError(400, 'solicitudId es obligatorio');
+    }
+
+    if (!isValidMongoId(solicitudId.trim())) {
+      throw new ApplicationError(400, 'solicitudId tiene formato inválido');
+    }
+
+    try {
+      const solicitudActualizada = await this.deps.contactRepository.acceptRequest(
+        solicitudId.trim(),
+        authUser.id,
+      );
+
+      return {
+        message: 'Solicitud aceptada correctamente',
+        data: {
+          id: solicitudActualizada.id,
+          estado: solicitudActualizada.estado,
+          updatedAt: solicitudActualizada.updatedAt,
+        },
+      };
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message === 'Solicitud no encontrada') {
+          throw new ApplicationError(404, error.message);
+        }
+
+        if (
+          error.message === 'No tienes permiso para aceptar esta solicitud' ||
+          error.message === 'La solicitud ya fue procesada'
+        ) {
+          throw new ApplicationError(403, error.message);
+        }
+      }
+
+      throw error;
+    }
+  }
+
+  async registrar(input: RegisterInput) {
+    const {
+      nombre,
+      apellido,
+      correo,
+      contrasena,
+      carrera,
+      semestre,
+      materiasCursando,
+      googleIdToken,
+    } = input;
+
+    if (
+      !nombre ||
+      !apellido ||
+      !correo ||
+      !contrasena ||
+      !carrera ||
+      semestre === undefined ||
+      !materiasCursando ||
+      !googleIdToken
+    ) {
+      throw new ApplicationError(400, 'Faltan campos obligatorios para el registro');
+    }
+
+    if (
+      typeof nombre !== 'string' ||
+      typeof apellido !== 'string' ||
+      typeof correo !== 'string' ||
+      typeof contrasena !== 'string' ||
+      typeof carrera !== 'string'
+    ) {
+      throw new ApplicationError(400, 'Formato inválido en los campos de texto');
+    }
+
+    if (!Number.isInteger(semestre) || Number(semestre) <= 0) {
+      throw new ApplicationError(400, 'El semestre debe ser un número entero mayor a 0');
+    }
+
+    if (
+      !Array.isArray(materiasCursando) ||
+      materiasCursando.length === 0 ||
+      materiasCursando.some(
+        (materia) => typeof materia !== 'string' || !materia.trim(),
+      )
+    ) {
+      throw new ApplicationError(400, 'Debes enviar al menos una materia válida');
+    }
+
+    const [cantidadCarreras, cantidadMaterias] = await Promise.all([
+      this.deps.careerRepository.count(),
+      this.deps.materiaRepository.count(),
+    ]);
+
+    const carreraNormalizada = carrera.trim();
+    const materiasNormalizadas = materiasCursando.map((materia) => materia.trim());
+
+    let carreraCatalogo: { id: string; nombre: string } | null = null;
+
+    if (cantidadCarreras > 0) {
+      carreraCatalogo = await this.deps.careerRepository.findByName(carreraNormalizada);
+
+      if (!carreraCatalogo) {
+        throw new ApplicationError(400, 'La carrera no existe en el catálogo oficial');
+      }
+    }
+
+    if (cantidadMaterias > 0) {
+      const materiasCatalogo = await this.deps.materiaRepository.listAll();
+      const setMaterias = new Set(
+        materiasCatalogo.map((materiaCatalogoItem) => materiaCatalogoItem.nombre.toLowerCase()),
+      );
+      const materiaInvalida = materiasNormalizadas.find(
+        (materia) => !setMaterias.has(materia.toLowerCase()),
+      );
+
+      if (materiaInvalida) {
+        throw new ApplicationError(
+          400,
+          `La materia "${materiaInvalida}" no existe en el catálogo oficial`,
+        );
+      }
+    }
+
+    if (contrasena.length < 8) {
+      throw new ApplicationError(400, 'La contraseña debe tener mínimo 8 caracteres');
+    }
+
+    if (!esCorreoInstitucional(correo)) {
+      throw new ApplicationError(400, 'Solo se permiten correos institucionales');
+    }
+
+    const correoNormalizado = correo.trim().toLowerCase();
+
+    const verificacionIdentidad = await this.deps.identityVerificationService.verifyRegistrationIdentity(
+      String(googleIdToken),
+      correoNormalizado,
+    );
+
+    const existe = await this.deps.userRepository.findByEmail(correoNormalizado);
+
+    if (existe) {
+      throw new ApplicationError(409, 'El correo ya está registrado');
+    }
+
+    const contrasenaHash = await this.deps.passwordService.hash(contrasena);
+    const usuario = await this.deps.userRepository.create({
+      nombre: nombre.trim(),
+      apellido: apellido.trim(),
+      correo: correoNormalizado,
+      contrasenaHash,
+      carrera: carreraNormalizada,
+      carreraId: carreraCatalogo?.id,
+      semestre: Number(semestre),
+      materiasCursando: materiasNormalizadas,
+      correoVerificado: verificacionIdentidad.correoVerificado,
+      googleSub: verificacionIdentidad.googleSub,
+    });
+
+    return {
+      message: 'Registro completado correctamente',
+      data: {
+        id: usuario.id,
+        nombre: nombre.trim(),
+        apellido: apellido.trim(),
+        correo: correoNormalizado,
+        carrera: carreraNormalizada,
+        semestre: Number(semestre),
+        materiasCursando: materiasNormalizadas,
+        correoVerificado: verificacionIdentidad.correoVerificado,
+        createdAt: usuario.createdAt,
+      },
+    };
+  }
+
+  async obtenerTodos() {
+    const usuarios = await this.deps.userRepository.listAll();
+    return { data: usuarios };
+  }
+
+  async logout(token: string | undefined) {
+    if (!token) {
+      throw new ApplicationError(401, 'Token no proporcionado');
+    }
+
+    const exp = this.deps.tokenService.decodeExpiration(token);
+
+    if (!exp) {
+      throw new ApplicationError(400, 'No fue posible invalidar el token');
+    }
+
+    this.deps.tokenBlacklistService.revoke(token, exp);
+
+    return {
+      message: 'Sesión cerrada correctamente',
+    };
+  }
+
+  async login(correo: unknown, contrasena: unknown) {
+    if (!correo || !contrasena) {
+      throw new ApplicationError(400, 'Correo y contraseña son requeridos');
+    }
+
+    if (typeof correo !== 'string' || typeof contrasena !== 'string') {
+      throw new ApplicationError(400, 'Formato inválido');
+    }
+
+    const usuario = await this.deps.userRepository.findByEmailWithPassword(
+      correo.trim().toLowerCase(),
+    );
+
+    if (!usuario) {
+      throw new ApplicationError(401, 'Correo o contraseña incorrectos');
+    }
+
+    const contrasenaValida = await this.deps.passwordService.compare(
+      contrasena,
+      usuario.contrasenaHash,
+    );
+
+    if (!contrasenaValida) {
+      throw new ApplicationError(401, 'Correo o contraseña incorrectos');
+    }
+
+    const token = this.deps.tokenService.sign({
+      id: usuario.id,
+      correo: usuario.correo,
+      nombre: usuario.nombre,
+      materiasCursando: usuario.materiasCursando,
+    });
+
+    return {
+      message: 'Inicio de sesión exitoso',
+      data: {
+        token,
+        usuario: {
+          id: usuario.id,
+          nombre: usuario.nombre,
+          apellido: usuario.apellido,
+          correo: usuario.correo,
+          carrera: usuario.carrera,
+        },
+      },
+    };
+  }
+
+  async obtenerPerfil(usuario: AuthenticatedUser | undefined) {
+    const authUser = this.ensureAuthenticated(usuario);
+    const perfil = await this.deps.userRepository.findSafeById(authUser.id);
+
+    if (!perfil) {
+      throw new ApplicationError(404, 'Usuario no encontrado');
+    }
+
+    return { data: perfil };
+  }
+
+  async actualizarPerfil(
+    usuario: AuthenticatedUser | undefined,
+    input: UpdateProfileInput,
+  ) {
+    const authUser = this.ensureAuthenticated(usuario);
+    const { carrera, semestre, materiasCursando } = input;
+
+    const materiaCatalogo = await this.deps.materiaRepository.listAll();
+    const setMaterias = new Set(
+      materiaCatalogo.map((materiaCatalogoItem) => materiaCatalogoItem.nombre.toLowerCase()),
+    );
+    const cantidadCarreras = await this.deps.careerRepository.count();
+
+    let carreraId: string | undefined;
+
+    if (carrera !== undefined && typeof carrera !== 'string') {
+      throw new ApplicationError(400, 'Carrera debe ser texto');
+    }
+
+    if (typeof carrera === 'string' && cantidadCarreras > 0) {
+      const carreraCatalogo = await this.deps.careerRepository.findByName(carrera.trim());
+
+      if (!carreraCatalogo) {
+        throw new ApplicationError(400, 'La carrera no existe en el catálogo oficial');
+      }
+
+      carreraId = carreraCatalogo.id;
+    }
+
+    if (
+      semestre !== undefined &&
+      (!Number.isInteger(semestre) || Number(semestre) <= 0)
+    ) {
+      throw new ApplicationError(400, 'Semestre debe ser un número entero mayor a 0');
+    }
+
+    if (materiasCursando !== undefined) {
+      if (!Array.isArray(materiasCursando) || materiasCursando.length === 0) {
+        throw new ApplicationError(400, 'Materias debe ser un array no vacío');
+      }
+
+      if (
+        materiasCursando.some(
+          (materia) => typeof materia !== 'string' || !materia.trim(),
+        )
+      ) {
+        throw new ApplicationError(400, 'Todas las materias deben ser textos válidos');
+      }
+
+      if (setMaterias.size > 0) {
+        const materiaInvalida = materiasCursando.find(
+          (materia) => !setMaterias.has(String(materia).trim().toLowerCase()),
+        );
+
+        if (materiaInvalida) {
+          throw new ApplicationError(
+            400,
+            `La materia "${String(materiaInvalida)}" no existe en el catálogo oficial`,
+          );
+        }
+      }
+    }
+
+    const usuarioActualizado = await this.deps.userRepository.updateProfile(authUser.id, {
+      carrera: typeof carrera === 'string' ? carrera.trim() : undefined,
+      carreraId,
+      semestre: Number.isInteger(semestre) ? Number(semestre) : undefined,
+      materiasCursando: Array.isArray(materiasCursando)
+        ? materiasCursando.map((materia) => String(materia).trim())
+        : undefined,
+    });
+
+    return {
+      message: 'Perfil actualizado correctamente',
+      data: {
+        id: usuarioActualizado.id,
+        nombre: usuarioActualizado.nombre,
+        apellido: usuarioActualizado.apellido,
+        correo: usuarioActualizado.correo,
+        carrera: usuarioActualizado.carrera,
+        semestre: usuarioActualizado.semestre,
+        materiasCursando: usuarioActualizado.materiasCursando,
+        correoVerificado: usuarioActualizado.correoVerificado ?? false,
+        updatedAt: usuarioActualizado.updatedAt,
+      },
+    };
+  }
+
+  async eliminarUsuario(id: unknown) {
+    if (typeof id !== 'string') {
+      throw new ApplicationError(400, 'ID inválido');
+    }
+
+    await this.deps.userRepository.delete(id);
+
+    return {
+      message: 'Usuario eliminado correctamente',
+    };
+  }
+
+  private ensureAuthenticated(usuario: AuthenticatedUser | undefined) {
+    if (!usuario) {
+      throw new ApplicationError(401, 'Usuario no autenticado');
+    }
+
+    return usuario;
+  }
+}

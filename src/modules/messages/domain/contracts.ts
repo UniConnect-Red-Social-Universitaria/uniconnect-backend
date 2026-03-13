@@ -1,0 +1,1 @@
+export type { MessageGateway, MessageRecord, MessageRepository } from '../../../domain/contracts';
