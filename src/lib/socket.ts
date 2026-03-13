@@ -2,7 +2,6 @@ import jwt from 'jsonwebtoken';
 import { Server } from 'socket.io';
 import { Server as HttpServer } from 'http';
 import { isTokenRevoked } from './token-blacklist';
-import { GrupoModel } from '../models/grupo.model';
 
 interface TokenPayload {
     id: string;
@@ -43,24 +42,12 @@ export function inicializarSocket(server: HttpServer) {
         }
     });
 
-    io.on('connection', async (socket) => {
+    io.on('connection', (socket) => {
         const usuarioId = socket.data.usuarioId as string;
 
         if (usuarioId) {
             socket.join(`usuario:${usuarioId}`);
             console.log(`🔌 Usuario conectado al chat: ${usuarioId}`);
-
-            try {
-                const gruposUsuario = await GrupoModel.obtenerIdsPorUsuario(usuarioId);
-
-                for (const grupoId of gruposUsuario) {
-                    socket.join(`grupo:${grupoId}`);
-                }
-
-                console.log(`👥 Usuario ${usuarioId} suscrito a ${gruposUsuario.length} grupo(s)`);
-            } catch {
-                console.log(`⚠️ No se pudieron cargar grupos para ${usuarioId}`);
-            }
         }
 
         socket.on('disconnect', () => {
@@ -87,23 +74,4 @@ export function emitirMensajeTiempoReal(payload: {
 
     ioInstance.to(`usuario:${payload.receptorId}`).emit('mensaje:nuevo', payload);
     ioInstance.to(`usuario:${payload.emisorId}`).emit('mensaje:enviado', payload);
-}
-
-export function emitirMensajeGrupoTiempoReal(payload: {
-    id: string;
-    contenido: string;
-    grupoId: string;
-    emisorId: string;
-    createdAt: Date;
-    emisor?: {
-        id: string;
-        nombre: string;
-        apellido: string;
-    };
-}) {
-    if (!ioInstance) {
-        return;
-    }
-
-    ioInstance.to(`grupo:${payload.grupoId}`).emit('grupo:mensaje:nuevo', payload);
 }

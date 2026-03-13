@@ -1,310 +1,169 @@
-import prisma from '../lib/prisma';
+import prisma from "../lib/prisma";
 
 function grupoDelegate() {
-    const prismaDinamico = prisma as unknown as {
-        grupo: {
-            create: (args: unknown) => Promise<any>;
-            findMany: (args: unknown) => Promise<any[]>;
-            findUnique: (args: unknown) => Promise<any | null>;
-            update: (args: unknown) => Promise<any>;
-        };
+  const prismaDinamico = prisma as unknown as {
+    grupo: {
+      create: (args: unknown) => Promise<{
+        id: string;
+        nombre: string;
+        materiaId: string;
+        creadorId: string;
+        createdAt: Date;
+        materia: { id: string; nombre: string };
+        miembros: Array<{ id: string }>;
+      }>;
+      findMany: (args: unknown) => Promise<
+        Array<{
+          id: string;
+          nombre: string;
+          materiaId: string;
+          creadorId: string;
+          createdAt: Date;
+          materia: { id: string; nombre: string };
+          miembros: Array<{
+            id: string;
+            usuarioId: string;
+            usuario: {
+              id: string;
+              nombre: string;
+              apellido: string;
+            };
+          }>;
+        }>
+      >;
+      findUnique: (args: unknown) => Promise<{
+        id: string;
+        nombre: string;
+        materiaId: string;
+        creadorId: string;
+        createdAt: Date;
+        materia: { id: string; nombre: string };
+        miembros: Array<{
+          id: string;
+          usuarioId: string;
+        }>;
+      } | null>;
     };
+  };
 
-    return prismaDinamico.grupo;
+  return prismaDinamico.grupo;
 }
 
 export class GrupoModel {
-    private static esErrorRelacionUsuarioInconsistente(error: unknown) {
-        return error instanceof Error
-            && error.message.includes('is required to return data, got null instead.');
-    }
+  static async crear(data: {
+    nombre: string;
+    materiaId: string;
+    creadorId: string;
+  }) {
+    return grupoDelegate().create({
+      data: {
+        nombre: data.nombre,
+        materiaId: data.materiaId,
+        creadorId: data.creadorId,
+        miembros: {
+          create: {
+            usuarioId: data.creadorId,
+          },
+        },
+      },
+      include: {
+        materia: true,
+        miembros: true,
+      },
+    });
+  }
 
-    private static includeDetalleGrupo() {
-        return {
-            materia: true,
-            administrador: {
-                select: {
-                    id: true,
-                    nombre: true,
-                    apellido: true
-                }
-            },
-            miembros: {
-                include: {
-                    usuario: {
-                        select: {
-                            id: true,
-                            nombre: true,
-                            apellido: true
-                        }
-                    }
-                }
-            }
-        };
-    }
-
-    private static includeDetalleGrupoFallback() {
-        return {
-            materia: true,
-            administrador: {
-                select: {
-                    id: true,
-                    nombre: true,
-                    apellido: true
-                }
-            },
-            miembros: {
-                select: {
-                    id: true,
-                    usuarioId: true
-                }
-            }
-        };
-    }
-
-    private static normalizarTexto(texto: string) {
-        return texto
-            .toLowerCase()
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
-            .trim();
-    }
-
-    static async crear(data: { nombre: string; materiaId: string; creadorId: string }) {
-        return grupoDelegate().create({
-            data: {
-                nombre: data.nombre,
-                materiaId: data.materiaId,
-                creadorId: data.creadorId,
-                administradorId: data.creadorId,
-                estado: 'ACTIVO',
-                miembros: {
-                    create: {
-                        usuarioId: data.creadorId
-                    }
-                }
-            },
-            include: GrupoModel.includeDetalleGrupo()
-        });
-    }
-
-    static async listarPorUsuario(usuarioId: string) {
-        try {
-            return await grupoDelegate().findMany({
-                where: {
-                    miembros: {
-                        some: {
-                            usuarioId
-                        }
-                    }
-                },
-                include: GrupoModel.includeDetalleGrupo(),
-                orderBy: {
-                    createdAt: 'desc'
-                }
-            });
-        } catch (error) {
-            if (!GrupoModel.esErrorRelacionUsuarioInconsistente(error)) {
-                throw error;
-            }
-
-            // Fallback para registros huérfanos en UsuarioGrupo (usuario eliminado).
-            return grupoDelegate().findMany({
-                where: {
-                    miembros: {
-                        some: {
-                            usuarioId
-                        }
-                    }
-                },
-                include: GrupoModel.includeDetalleGrupoFallback(),
-                orderBy: {
-                    createdAt: 'desc'
-                }
-            });
-        }
-    }
-
-    static async listarTodos() {
-        try {
-            return await grupoDelegate().findMany({
-                include: GrupoModel.includeDetalleGrupo(),
-                orderBy: {
-                    createdAt: 'desc'
-                }
-            });
-        } catch (error) {
-            if (!GrupoModel.esErrorRelacionUsuarioInconsistente(error)) {
-                throw error;
-            }
-
-            // Fallback para registros huérfanos en UsuarioGrupo (usuario eliminado).
-            return grupoDelegate().findMany({
-                include: GrupoModel.includeDetalleGrupoFallback(),
-                orderBy: {
-                    createdAt: 'desc'
-                }
-            });
-        }
-    }
-
-    static async buscarPorTexto(texto: string) {
-        const busquedaNormalizada = GrupoModel.normalizarTexto(texto);
-        const grupos = await GrupoModel.listarTodos();
-
-        return grupos.filter((grupo) => {
-            const nombreGrupo = GrupoModel.normalizarTexto(grupo.nombre ?? '');
-            const nombreMateria = GrupoModel.normalizarTexto(grupo.materia?.nombre ?? '');
-
-            return nombreGrupo.includes(busquedaNormalizada) || nombreMateria.includes(busquedaNormalizada);
-        });
-    }
-
-    static async obtenerIdsPorUsuario(usuarioId: string) {
-        const grupos = await grupoDelegate().findMany({
-            where: {
-                miembros: {
-                    some: {
-                        usuarioId
-                    }
-                }
-            },
-            select: {
-                id: true
-            }
-        });
-
-        return grupos.map((grupo) => grupo.id);
-    }
-
-    static async usuarioPertenece(grupoId: string, usuarioId: string) {
-        const grupo = await grupoDelegate().findUnique({
-            where: { id: grupoId },
-            select: {
+  static async listarPorUsuario(usuarioId: string) {
+    return grupoDelegate().findMany({
+      where: {
+        miembros: {
+          some: {
+            usuarioId,
+          },
+        },
+      },
+      include: {
+        materia: true,
+        miembros: {
+          include: {
+            usuario: {
+              select: {
                 id: true,
                 nombre: true,
-                estado: true,
-                miembros: {
-                    where: {
-                        usuarioId
-                    },
-                    select: {
-                        usuarioId: true
-                    }
-                }
-            }
-        });
+                apellido: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+  }
 
-        if (!grupo) {
-            return { existe: false, pertenece: false };
-        }
-
-        return {
-            existe: true,
-            pertenece: grupo.miembros.length > 0,
-            estado: grupo.estado,
-            estaCerrado: grupo.estado === 'CERRADO'
-        };
-    }
-
-    static async obtenerPorId(grupoId: string) {
-        return grupoDelegate().findUnique({
-            where: { id: grupoId },
-            select: {
+  static async listarDisponibles(
+    materiasCursando: string[],
+    usuarioId: string,
+  ) {
+    return grupoDelegate().findMany({
+      where: {
+        materia: {
+          nombre: { in: materiasCursando },
+        },
+        miembros: {
+          none: {
+            usuarioId,
+          },
+        },
+      },
+      include: {
+        materia: true,
+        miembros: {
+          include: {
+            usuario: {
+              select: {
                 id: true,
                 nombre: true,
-                materiaId: true,
-                creadorId: true,
-                administradorId: true,
-                estado: true,
-                miembros: {
-                    select: {
-                        usuarioId: true
-                    }
-                }
-            }
-        });
-    }
+                apellido: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+  }
 
-    static async obtenerDetallePorId(grupoId: string) {
-        try {
-            return await grupoDelegate().findUnique({
-                where: { id: grupoId },
-                include: GrupoModel.includeDetalleGrupo()
-            });
-        } catch (error) {
-            if (!GrupoModel.esErrorRelacionUsuarioInconsistente(error)) {
-                throw error;
-            }
+  static async buscarPorId(id: string) {
+    return grupoDelegate().findUnique({
+      where: { id },
+      include: {
+        materia: true,
+        miembros: true,
+      },
+    });
+  }
 
-            return grupoDelegate().findUnique({
-                where: { id: grupoId },
-                include: GrupoModel.includeDetalleGrupoFallback()
-            });
-        }
-    }
+  static async contarGruposPorMateria(materiaId: string) {
+    return prisma.grupo.count({
+      where: { materiaId },
+    });
+  }
 
-    static async agregarMiembro(grupoId: string, usuarioId: string) {
-        await grupoDelegate().update({
-            where: { id: grupoId },
-            data: {
-                miembros: {
-                    create: {
-                        usuarioId
-                    }
-                }
-            }
-        });
-
-        return GrupoModel.obtenerDetallePorId(grupoId);
-    }
-
-    static async removerMiembro(grupoId: string, usuarioId: string) {
-        await prisma.usuarioGrupo.deleteMany({
-            where: {
-                grupoId,
-                usuarioId
-            }
-        });
-
-        return GrupoModel.obtenerDetallePorId(grupoId);
-    }
-
-    static async actualizarAdministrador(grupoId: string, administradorId: string) {
-        await grupoDelegate().update({
-            where: { id: grupoId },
-            data: {
-                administradorId
-            }
-        });
-
-        return GrupoModel.obtenerDetallePorId(grupoId);
-    }
-
-    static async cerrar(grupoId: string) {
-        await grupoDelegate().update({
-            where: { id: grupoId },
-            data: {
-                estado: 'CERRADO'
-            }
-        });
-
-        return GrupoModel.obtenerDetallePorId(grupoId);
-    }
-
-    static async contarGruposPorMateria(materiaId: string): Promise<number> {
-        return prisma.grupo.count({
-            where: { materiaId }
-        });
-    }
-
-    static async buscarPorNombreYMateria(nombre: string, materiaId: string) {
-        const nombreNormalizado = GrupoModel.normalizarTexto(nombre);
-        const grupos = await grupoDelegate().findMany({
-            where: { materiaId },
-            include: GrupoModel.includeDetalleGrupoFallback()
-        });
-
-        return grupos.find((grupo) => GrupoModel.normalizarTexto(grupo.nombre) === nombreNormalizado);
-    }
+  static async unirse(grupoId: string, usuarioId: string) {
+    return prisma.usuarioGrupo.create({
+      data: {
+        grupoId,
+        usuarioId,
+      },
+    });
+  }
+  static async buscarPorNombre(nombre: string) {
+    return prisma.grupo.findFirst({
+      where: { nombre },
+    });
+  }
 }

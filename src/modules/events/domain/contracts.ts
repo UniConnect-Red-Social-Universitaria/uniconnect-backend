@@ -1,0 +1,1 @@
+export type { EventRecord, EventRepository } from '../../../domain/contracts';

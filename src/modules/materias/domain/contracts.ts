@@ -1,0 +1,1 @@
+export type { MateriaRepository } from '../../../domain/contracts';
