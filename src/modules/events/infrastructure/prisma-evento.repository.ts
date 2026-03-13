@@ -5,6 +5,7 @@ export class PrismaEventoRepository implements EventRepository {
   async create(data: {
     titulo: string;
     descripcion: string;
+    lugar: string;
     fechaEvento: Date;
     creadorId: string;
   }) {

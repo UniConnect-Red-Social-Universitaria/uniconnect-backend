@@ -1,4 +1,4 @@
-export type ContactStatus = 'PENDIENTE' | 'ACEPTADA';
+export type ContactStatus = 'PENDIENTE' | 'ACEPTADA' | 'RECHAZADA';
 
 export interface AuthenticatedUser {
   id: string;
@@ -127,6 +127,7 @@ export interface EventRecord {
   id: string;
   titulo: string;
   descripcion: string;
+  lugar?: string | null;
   fechaEvento: Date;
   creadorId: string;
   createdAt: Date;
@@ -136,6 +137,7 @@ export interface EventRecord {
 export interface CreateEventData {
   titulo: string;
   descripcion: string;
+  lugar: string;
   fechaEvento: Date;
   creadorId: string;
 }
