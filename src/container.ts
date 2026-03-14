@@ -48,6 +48,7 @@ export const messageUseCases = new MessageUseCases(
   mensajeRepository,
   userRepository,
   contactRepository,
+  grupoRepository,
   messageGateway,
 );
 export const eventUseCases = new EventUseCases(eventoRepository);

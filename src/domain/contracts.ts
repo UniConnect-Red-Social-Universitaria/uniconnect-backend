@@ -110,6 +110,19 @@ export interface MessageRecord {
   createdAt: Date;
 }
 
+export interface GroupMessageRecord {
+  id: string;
+  contenido: string;
+  grupoId: string;
+  emisorId: string;
+  createdAt: Date;
+  emisor?: {
+    id: string;
+    nombre: string;
+    apellido: string;
+  };
+}
+
 export interface CreateMessageData {
   contenido: string;
   emisorId: string;
@@ -222,6 +235,12 @@ export interface GroupRepository {
 export interface MessageRepository {
   create(data: CreateMessageData): Promise<MessageRecord>;
   getConversation(usuarioAId: string, usuarioBId: string, limit: number): Promise<MessageRecord[]>;
+  createGroupMessage(data: {
+    contenido: string;
+    grupoId: string;
+    emisorId: string;
+  }): Promise<GroupMessageRecord>;
+  getGroupHistory(grupoId: string, limit: number): Promise<GroupMessageRecord[]>;
 }
 
 export interface EventRepository {
@@ -257,4 +276,5 @@ export interface TokenBlacklistService {
 
 export interface MessageGateway {
   emitNewMessage(payload: MessageRecord): void;
+  emitNewGroupMessage(payload: GroupMessageRecord): void;
 }
