@@ -12,6 +12,7 @@ import {
 import { ApplicationError } from '../../../shared/application-error';
 import { esCorreoInstitucional } from '../../../utils/registro.util';
 import { isValidMongoId } from '../../../shared/mongo-id';
+import { emitirSolicitudContactoTiempoReal } from '../../../lib/socket';
 
 type RegisterInput = {
   nombre: unknown;
@@ -42,7 +43,7 @@ type UsersUseCasesDependencies = {
 };
 
 export class UsersUseCases {
-  constructor(private readonly deps: UsersUseCasesDependencies) {}
+  constructor(private readonly deps: UsersUseCasesDependencies) { }
 
   async buscarPorMateria(usuario: AuthenticatedUser | undefined, materiaQuery: unknown) {
     const authUser = this.ensureAuthenticated(usuario);
@@ -105,6 +106,16 @@ export class UsersUseCases {
       authUser.id,
       usuarioDestinoId.trim(),
     );
+
+    const solicitante = await this.deps.userRepository.findSafeById(authUser.id);
+    emitirSolicitudContactoTiempoReal({
+      solicitudId: solicitud.id,
+      receptorId: solicitud.receptorId,
+      solicitanteId: solicitud.solicitanteId,
+      solicitanteNombre: solicitante?.nombre ?? authUser.nombre,
+      solicitanteApellido: solicitante?.apellido,
+      createdAt: solicitud.createdAt,
+    });
 
     return {
       message: 'Solicitud de conexión enviada',
