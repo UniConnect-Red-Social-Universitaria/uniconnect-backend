@@ -108,6 +108,11 @@ export interface MessageRecord {
   emisorId: string;
   receptorId: string;
   createdAt: Date;
+  emisor?: {
+    id: string;
+    nombre: string;
+    apellido: string;
+  };
 }
 
 export interface GroupMessageRecord {

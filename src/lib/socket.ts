@@ -78,6 +78,11 @@ export function emitirMensajeTiempoReal(payload: {
     emisorId: string;
     receptorId: string;
     createdAt: Date;
+    emisor?: {
+        id: string;
+        nombre: string;
+        apellido: string;
+    };
 }) {
     if (!ioInstance) {
         return;

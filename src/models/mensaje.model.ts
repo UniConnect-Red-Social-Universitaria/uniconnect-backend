@@ -9,6 +9,11 @@ function mensajeDelegate() {
                 emisorId: string;
                 receptorId: string;
                 createdAt: Date;
+                emisor?: {
+                    id: string;
+                    nombre: string;
+                    apellido: string;
+                };
             }>;
             findMany: (args: unknown) => Promise<Array<{
                 id: string;
@@ -16,6 +21,11 @@ function mensajeDelegate() {
                 emisorId: string;
                 receptorId: string;
                 createdAt: Date;
+                emisor?: {
+                    id: string;
+                    nombre: string;
+                    apellido: string;
+                };
             }>>;
         };
         grupoMensaje: {
@@ -85,12 +95,21 @@ function grupoMensajeDelegate() {
 export class MensajeModel {
     static async crear(data: { contenido: string; emisorId: string; receptorId: string }) {
         return mensajeDelegate().create({
-            data
+            data,
+            include: {
+                emisor: {
+                    select: {
+                        id: true,
+                        nombre: true,
+                        apellido: true
+                    }
+                }
+            }
         });
     }
 
     static async obtenerConversacion(usuarioAId: string, usuarioBId: string, limit: number) {
-        return mensajeDelegate().findMany({
+        const mensajes = await mensajeDelegate().findMany({
             where: {
                 OR: [
                     {
@@ -104,10 +123,13 @@ export class MensajeModel {
                 ]
             },
             orderBy: {
-                createdAt: 'asc'
+                createdAt: 'desc'
             },
             take: limit
         });
+
+        // Return oldest -> newest for UI rendering, but query latest N first.
+        return mensajes.reverse();
     }
 
     static async crearMensajeGrupo(data: { contenido: string; grupoId: string; emisorId: string }) {
@@ -126,7 +148,7 @@ export class MensajeModel {
     }
 
     static async obtenerHistorialGrupo(grupoId: string, limit: number) {
-        return grupoMensajeDelegate().findMany({
+        const mensajes = await grupoMensajeDelegate().findMany({
             where: {
                 grupoId
             },
@@ -140,9 +162,12 @@ export class MensajeModel {
                 }
             },
             orderBy: {
-                createdAt: 'asc'
+                createdAt: 'desc'
             },
             take: limit
         });
+
+        // Return oldest -> newest for UI rendering, but query latest N first.
+        return mensajes.reverse();
     }
 }
