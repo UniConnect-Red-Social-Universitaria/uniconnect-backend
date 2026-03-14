@@ -233,10 +233,7 @@ export class UsersUseCases {
       throw new ApplicationError(400, 'Debes enviar al menos una materia válida');
     }
 
-    const [cantidadCarreras, cantidadMaterias] = await Promise.all([
-      this.deps.careerRepository.count(),
-      this.deps.materiaRepository.count(),
-    ]);
+    const cantidadCarreras = await this.deps.careerRepository.count();
 
     const carreraNormalizada = carrera.trim();
     const materiasNormalizadas = materiasCursando.map((materia) => materia.trim());
@@ -251,22 +248,8 @@ export class UsersUseCases {
       }
     }
 
-    if (cantidadMaterias > 0) {
-      const materiasCatalogo = await this.deps.materiaRepository.listAll();
-      const setMaterias = new Set(
-        materiasCatalogo.map((materiaCatalogoItem) => materiaCatalogoItem.nombre.toLowerCase()),
-      );
-      const materiaInvalida = materiasNormalizadas.find(
-        (materia) => !setMaterias.has(materia.toLowerCase()),
-      );
-
-      if (materiaInvalida) {
-        throw new ApplicationError(
-          400,
-          `La materia "${materiaInvalida}" no existe en el catálogo oficial`,
-        );
-      }
-    }
+    // Auto-registra materias nuevas en el catálogo si aún no existen
+    await this.deps.materiaRepository.createCatalog(materiasNormalizadas);
 
     if (contrasena.length < 8) {
       throw new ApplicationError(400, 'La contraseña debe tener mínimo 8 caracteres');

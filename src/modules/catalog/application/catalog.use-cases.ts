@@ -13,19 +13,6 @@ const CARRERAS_OFICIALES = [
   'Licenciatura en Lenguas Modernas',
 ];
 
-const MATERIAS_BASE = [
-  'Cálculo I',
-  'Programación I',
-  'Estructuras de Datos',
-  'Base de Datos',
-  'Física I',
-  'Probabilidad y Estadística',
-  'Economía General',
-  'Inglés I',
-  'Álgebra Lineal',
-  'Química General',
-];
-
 export class CatalogUseCases {
   constructor(
     private readonly careerRepository: CareerRepository,
@@ -33,16 +20,12 @@ export class CatalogUseCases {
   ) {}
 
   async poblar() {
-    const [carrerasInsertadas, materiasInsertadas] = await Promise.all([
-      this.careerRepository.createCatalog(CARRERAS_OFICIALES),
-      this.materiaRepository.createCatalog(MATERIAS_BASE),
-    ]);
+    const carrerasInsertadas = await this.careerRepository.createCatalog(CARRERAS_OFICIALES);
 
     return {
       message: 'Catálogo oficial cargado',
       data: {
         carrerasInsertadas: carrerasInsertadas.count,
-        materiasInsertadas: materiasInsertadas.count,
       },
     };
   }
