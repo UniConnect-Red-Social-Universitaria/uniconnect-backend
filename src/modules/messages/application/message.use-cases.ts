@@ -1,6 +1,7 @@
 import {
   AuthenticatedUser,
   ContactRepository,
+  GroupRepository,
   MessageGateway,
   MessageRepository,
   UserRepository,
@@ -13,8 +14,9 @@ export class MessageUseCases {
     private readonly messageRepository: MessageRepository,
     private readonly userRepository: UserRepository,
     private readonly contactRepository: ContactRepository,
+    private readonly groupRepository: GroupRepository,
     private readonly messageGateway: MessageGateway,
-  ) {}
+  ) { }
 
   async enviarMensaje(
     usuario: AuthenticatedUser | undefined,
@@ -114,6 +116,96 @@ export class MessageUseCases {
     const mensajes = await this.messageRepository.getConversation(
       authUser.id,
       companeroId.trim(),
+      limitNormalizado,
+    );
+
+    return { data: mensajes };
+  }
+
+  async enviarMensajeGrupo(
+    usuario: AuthenticatedUser | undefined,
+    grupoId: unknown,
+    contenido: unknown,
+  ) {
+    const authUser = this.ensureAuthenticated(usuario);
+
+    if (typeof grupoId !== 'string' || !grupoId.trim()) {
+      throw new ApplicationError(400, 'Debes enviar un grupoId válido');
+    }
+
+    if (!isValidMongoId(grupoId.trim())) {
+      throw new ApplicationError(400, 'grupoId tiene formato inválido');
+    }
+
+    if (typeof contenido !== 'string' || !contenido.trim()) {
+      throw new ApplicationError(400, 'Debes enviar un contenido de mensaje válido');
+    }
+
+    const grupo = await this.groupRepository.findById(grupoId.trim());
+
+    if (!grupo) {
+      throw new ApplicationError(404, 'El grupo no existe');
+    }
+
+    const esMiembro = grupo.miembros.some(
+      (miembro) => miembro.usuarioId === authUser.id || miembro.usuario?.id === authUser.id,
+    );
+
+    if (!esMiembro) {
+      throw new ApplicationError(403, 'Solo los miembros pueden enviar mensajes al grupo');
+    }
+
+    const mensaje = await this.messageRepository.createGroupMessage({
+      contenido: contenido.trim(),
+      grupoId: grupoId.trim(),
+      emisorId: authUser.id,
+    });
+
+    this.messageGateway.emitNewGroupMessage(mensaje);
+
+    return {
+      message: 'Mensaje de grupo enviado correctamente',
+      data: mensaje,
+    };
+  }
+
+  async obtenerHistorialGrupo(
+    usuario: AuthenticatedUser | undefined,
+    grupoId: unknown,
+    limit: unknown,
+  ) {
+    const authUser = this.ensureAuthenticated(usuario);
+
+    if (typeof grupoId !== 'string' || !grupoId.trim()) {
+      throw new ApplicationError(400, 'Debes enviar un grupoId válido');
+    }
+
+    if (!isValidMongoId(grupoId.trim())) {
+      throw new ApplicationError(400, 'grupoId tiene formato inválido');
+    }
+
+    const grupo = await this.groupRepository.findById(grupoId.trim());
+
+    if (!grupo) {
+      throw new ApplicationError(404, 'El grupo no existe');
+    }
+
+    const esMiembro = grupo.miembros.some(
+      (miembro) => miembro.usuarioId === authUser.id || miembro.usuario?.id === authUser.id,
+    );
+
+    if (!esMiembro) {
+      throw new ApplicationError(403, 'Solo los miembros pueden consultar este chat de grupo');
+    }
+
+    const limitQuery = Number(limit ?? 50);
+    const limitNormalizado =
+      Number.isInteger(limitQuery) && limitQuery > 0 && limitQuery <= 200
+        ? limitQuery
+        : 50;
+
+    const mensajes = await this.messageRepository.getGroupHistory(
+      grupoId.trim(),
       limitNormalizado,
     );
 

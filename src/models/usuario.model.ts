@@ -1,6 +1,14 @@
 import prisma from '../lib/prisma';
 
 export class UsuarioModel {
+    private static normalizarTexto(texto: string) {
+        return texto
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .trim();
+    }
+
     // Crear un usuario registrado
     static async crear(data: {
         nombre: string;
@@ -72,17 +80,7 @@ export class UsuarioModel {
 
     // Buscar usuarios por materia excluyendo IDs específicos
     static async buscarPorMateriaExcluyendo(materia: string, usuarioActualId: string, idsExcluidos: string[]) {
-        // Normalizar búsqueda: quitar acentos, lowercase, trim, quitar caracteres especiales
-        const normalizarTexto = (texto: string) => {
-            return texto
-                .toLowerCase()
-                .normalize('NFD')
-                .replace(/[\u0300-\u036f]/g, '') // Quita acentos
-                .replace(/[%_]/g, '') // Quita wildcards SQL
-                .trim();
-        };
-
-        const materiaNormalizada = normalizarTexto(materia);
+        const materiaNormalizada = UsuarioModel.normalizarTexto(materia).replace(/[%_]/g, '');
 
         // Obtener todos los usuarios excluyendo IDs
         const usuarios = await prisma.usuario.findMany({
@@ -100,11 +98,45 @@ export class UsuarioModel {
                 : [];
             
             return materias.some((mat) => 
-                normalizarTexto(mat).includes(materiaNormalizada)
+                UsuarioModel.normalizarTexto(mat).includes(materiaNormalizada)
             );
         });
 
         return usuariosFiltrados.map((usuario) => ({
+            id: usuario.id,
+            nombre: usuario.nombre,
+            apellido: usuario.apellido,
+            correo: usuario.correo,
+            carrera: usuario.carrera,
+            semestre: usuario.semestre,
+            materiasCursando: usuario.materiasCursando
+        }));
+    }
+
+    static async buscarPorTexto(texto: string, usuarioActualId: string) {
+        const busquedaNormalizada = UsuarioModel.normalizarTexto(texto);
+
+        const usuarios = await prisma.usuario.findMany({
+            where: {
+                id: {
+                    not: usuarioActualId
+                }
+            }
+        });
+
+        const filtrados = usuarios.filter((usuario) => {
+            const nombre = UsuarioModel.normalizarTexto(usuario.nombre ?? '');
+            const apellido = UsuarioModel.normalizarTexto(usuario.apellido ?? '');
+            const correo = UsuarioModel.normalizarTexto(usuario.correo ?? '');
+
+            return (
+                nombre.includes(busquedaNormalizada)
+                || apellido.includes(busquedaNormalizada)
+                || correo.includes(busquedaNormalizada)
+            );
+        });
+
+        return filtrados.map((usuario) => ({
             id: usuario.id,
             nombre: usuario.nombre,
             apellido: usuario.apellido,
@@ -164,6 +196,105 @@ export class UsuarioModel {
     }
     //eliminar usuario sin importar si está autenticado o no
     static async eliminar(id: string) {
+        const gruposRelacionados = await prisma.grupo.findMany({
+            where: {
+                OR: [
+                    { administradorId: id },
+                    { creadorId: id }
+                ]
+            },
+            select: {
+                id: true,
+                nombre: true,
+                administradorId: true,
+                creadorId: true,
+                miembros: {
+                    select: {
+                        usuarioId: true
+                    }
+                }
+            }
+        });
+
+        const gruposSinReemplazo = gruposRelacionados.filter((grupo) =>
+            !grupo.miembros.some((miembro) => miembro.usuarioId !== id)
+        );
+
+        if (gruposSinReemplazo.length > 0) {
+            const nombres = gruposSinReemplazo.map((grupo) => grupo.nombre).slice(0, 3).join(', ');
+
+            throw new Error(
+                `No se puede eliminar el usuario porque quedarian grupos sin administrador ni creador valido: ${nombres}`
+            );
+        }
+
+        for (const grupo of gruposRelacionados) {
+            const reemplazo = grupo.miembros.find((miembro) => miembro.usuarioId !== id)?.usuarioId;
+
+            if (!reemplazo) {
+                continue;
+            }
+
+            const data: Record<string, string> = {};
+
+            if (grupo.administradorId === id) {
+                data.administradorId = reemplazo;
+            }
+
+            if (grupo.creadorId === id) {
+                data.creadorId = reemplazo;
+            }
+
+            if (Object.keys(data).length > 0) {
+                await prisma.grupo.update({
+                    where: { id: grupo.id },
+                    data
+                });
+            }
+        }
+
+        await prisma.contacto.deleteMany({
+            where: {
+                OR: [
+                    { solicitanteId: id },
+                    { receptorId: id }
+                ]
+            }
+        });
+
+        await prisma.mensaje.deleteMany({
+            where: {
+                OR: [
+                    { emisorId: id },
+                    { receptorId: id }
+                ]
+            }
+        });
+
+        await prisma.grupoMensaje.deleteMany({
+            where: {
+                emisorId: id
+            }
+        });
+
+        await prisma.grupoArchivo.deleteMany({
+            where: {
+                subidoPorId: id
+            }
+        });
+
+        await prisma.evento.deleteMany({
+            where: {
+                creadorId: id
+            }
+        });
+
+        await prisma.usuarioGrupo.deleteMany({
+            where: {
+                usuarioId: id
+            }
+        });
+
         return prisma.usuario.delete({
             where: { id }
         });

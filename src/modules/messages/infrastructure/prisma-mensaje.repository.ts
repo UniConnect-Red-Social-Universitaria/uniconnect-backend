@@ -9,4 +9,16 @@ export class PrismaMensajeRepository implements MessageRepository {
   async getConversation(usuarioAId: string, usuarioBId: string, limit: number) {
     return MensajeModel.obtenerConversacion(usuarioAId, usuarioBId, limit);
   }
+
+  async createGroupMessage(data: {
+    contenido: string;
+    grupoId: string;
+    emisorId: string;
+  }) {
+    return MensajeModel.crearMensajeGrupo(data);
+  }
+
+  async getGroupHistory(grupoId: string, limit: number) {
+    return MensajeModel.obtenerHistorialGrupo(grupoId, limit);
+  }
 }

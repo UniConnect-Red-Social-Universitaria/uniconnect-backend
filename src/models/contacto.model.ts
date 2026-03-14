@@ -1,6 +1,6 @@
 import prisma from '../lib/prisma';
 
-type EstadoContacto = 'PENDIENTE' | 'ACEPTADA';
+type EstadoContacto = 'PENDIENTE' | 'ACEPTADA' | 'RECHAZADA';
 
 interface UsuarioBasico {
     id: string;
@@ -199,6 +199,29 @@ export class ContactoModel {
         return contactoDelegate().update({
             where: { id: solicitudId },
             data: { estado: 'ACEPTADA' }
+        });
+    }
+
+    static async rechazarSolicitud(solicitudId: string, usuarioReceptorId: string) {
+        const solicitud = await contactoDelegate().findUnique({
+            where: { id: solicitudId }
+        });
+
+        if (!solicitud) {
+            throw new Error('Solicitud no encontrada');
+        }
+
+        if (solicitud.receptorId !== usuarioReceptorId) {
+            throw new Error('No tienes permiso para rechazar esta solicitud');
+        }
+
+        if (solicitud.estado !== 'PENDIENTE') {
+            throw new Error('La solicitud ya fue procesada');
+        }
+
+        return contactoDelegate().update({
+            where: { id: solicitudId },
+            data: { estado: 'RECHAZADA' }
         });
     }
 }

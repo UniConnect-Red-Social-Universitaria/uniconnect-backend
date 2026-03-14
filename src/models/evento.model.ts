@@ -7,6 +7,7 @@ function eventoDelegate() {
                 id: string;
                 titulo: string;
                 descripcion: string;
+                lugar: string | null;
                 fechaEvento: Date;
                 creadorId: string;
                 createdAt: Date;
@@ -15,6 +16,7 @@ function eventoDelegate() {
                 id: string;
                 titulo: string;
                 descripcion: string;
+                lugar: string | null;
                 fechaEvento: Date;
                 creadorId: string;
                 createdAt: Date;
@@ -35,6 +37,7 @@ export class EventoModel {
     static async crear(data: {
         titulo: string;
         descripcion: string;
+        lugar: string;
         fechaEvento: Date;
         creadorId: string;
     }) {

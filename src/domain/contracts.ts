@@ -1,4 +1,4 @@
-export type ContactStatus = 'PENDIENTE' | 'ACEPTADA';
+export type ContactStatus = 'PENDIENTE' | 'ACEPTADA' | 'RECHAZADA';
 
 export interface AuthenticatedUser {
   id: string;
@@ -108,6 +108,25 @@ export interface MessageRecord {
   emisorId: string;
   receptorId: string;
   createdAt: Date;
+  emisor?: {
+    id: string;
+    nombre: string;
+    apellido: string;
+  };
+}
+
+export interface GroupMessageRecord {
+  id: string;
+  contenido: string;
+  grupoId: string;
+  nombreGrupo?: string;
+  emisorId: string;
+  createdAt: Date;
+  emisor?: {
+    id: string;
+    nombre: string;
+    apellido: string;
+  };
 }
 
 export interface CreateMessageData {
@@ -127,6 +146,7 @@ export interface EventRecord {
   id: string;
   titulo: string;
   descripcion: string;
+  lugar?: string | null;
   fechaEvento: Date;
   creadorId: string;
   createdAt: Date;
@@ -136,6 +156,7 @@ export interface EventRecord {
 export interface CreateEventData {
   titulo: string;
   descripcion: string;
+  lugar: string;
   fechaEvento: Date;
   creadorId: string;
 }
@@ -220,6 +241,12 @@ export interface GroupRepository {
 export interface MessageRepository {
   create(data: CreateMessageData): Promise<MessageRecord>;
   getConversation(usuarioAId: string, usuarioBId: string, limit: number): Promise<MessageRecord[]>;
+  createGroupMessage(data: {
+    contenido: string;
+    grupoId: string;
+    emisorId: string;
+  }): Promise<GroupMessageRecord>;
+  getGroupHistory(grupoId: string, limit: number): Promise<GroupMessageRecord[]>;
 }
 
 export interface EventRepository {
@@ -255,4 +282,5 @@ export interface TokenBlacklistService {
 
 export interface MessageGateway {
   emitNewMessage(payload: MessageRecord): void;
+  emitNewGroupMessage(payload: GroupMessageRecord): void;
 }

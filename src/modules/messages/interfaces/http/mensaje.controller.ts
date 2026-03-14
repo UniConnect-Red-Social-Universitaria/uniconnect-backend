@@ -42,4 +42,43 @@ export class MensajeController {
             return handleControllerError(res, error, 'Error al obtener historial de mensajes');
         }
     }
+
+    static async enviarMensajeGrupo(req: Request, res: Response) {
+        try {
+            const resultado = await messageUseCases.enviarMensajeGrupo(
+                req.usuario,
+                req.body?.grupoId,
+                req.body?.contenido
+            );
+
+            console.log(
+                `👥 Mensaje grupo | ${resultado.data.emisorId} -> ${resultado.data.grupoId} | ${resultado.data.contenido}`
+            );
+
+            return res.status(201).json({
+                success: true,
+                message: resultado.message,
+                data: resultado.data
+            });
+        } catch (error) {
+            return handleControllerError(res, error, 'Error al enviar mensaje al grupo');
+        }
+    }
+
+    static async obtenerHistorialGrupo(req: Request, res: Response) {
+        try {
+            const resultado = await messageUseCases.obtenerHistorialGrupo(
+                req.usuario,
+                req.params.grupoId,
+                req.query.limit
+            );
+
+            return res.json({
+                success: true,
+                data: resultado.data
+            });
+        } catch (error) {
+            return handleControllerError(res, error, 'Error al obtener historial del grupo');
+        }
+    }
 }

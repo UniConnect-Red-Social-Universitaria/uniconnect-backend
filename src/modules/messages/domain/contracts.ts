@@ -1,1 +1,6 @@
-export type { MessageGateway, MessageRecord, MessageRepository } from '../../../domain/contracts';
+export type {
+    GroupMessageRecord,
+    MessageGateway,
+    MessageRecord,
+    MessageRepository,
+} from '../../../domain/contracts';

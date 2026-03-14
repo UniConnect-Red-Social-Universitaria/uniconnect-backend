@@ -8,6 +8,7 @@ export class EventUseCases {
     usuario: AuthenticatedUser | undefined,
     titulo: unknown,
     descripcion: unknown,
+    lugar: unknown,
     fechaEvento: unknown,
   ) {
     const authUser = this.ensureAuthenticated(usuario);
@@ -18,6 +19,10 @@ export class EventUseCases {
 
     if (typeof descripcion !== 'string' || !descripcion.trim()) {
       throw new ApplicationError(400, 'Debes enviar una descripción válida');
+    }
+
+    if (lugar !== undefined && typeof lugar !== 'string') {
+      throw new ApplicationError(400, 'Debes enviar un lugar válido');
     }
 
     if (typeof fechaEvento !== 'string') {
@@ -37,6 +42,7 @@ export class EventUseCases {
     const evento = await this.eventRepository.create({
       titulo: titulo.trim(),
       descripcion: descripcion.trim(),
+      lugar: typeof lugar === 'string' && lugar.trim() ? lugar.trim() : 'Por definir',
       fechaEvento: fecha,
       creadorId: authUser.id,
     });
