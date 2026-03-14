@@ -35,6 +35,9 @@ function mensajeDelegate() {
                 grupoId: string;
                 emisorId: string;
                 createdAt: Date;
+                grupo?: {
+                    nombre: string;
+                };
                 emisor?: {
                     id: string;
                     nombre: string;
@@ -47,6 +50,9 @@ function mensajeDelegate() {
                 grupoId: string;
                 emisorId: string;
                 createdAt: Date;
+                grupo?: {
+                    nombre: string;
+                };
                 emisor?: {
                     id: string;
                     nombre: string;
@@ -68,6 +74,9 @@ function grupoMensajeDelegate() {
                 grupoId: string;
                 emisorId: string;
                 createdAt: Date;
+                grupo?: {
+                    nombre: string;
+                };
                 emisor?: {
                     id: string;
                     nombre: string;
@@ -80,6 +89,9 @@ function grupoMensajeDelegate() {
                 grupoId: string;
                 emisorId: string;
                 createdAt: Date;
+                grupo?: {
+                    nombre: string;
+                };
                 emisor?: {
                     id: string;
                     nombre: string;
@@ -133,9 +145,14 @@ export class MensajeModel {
     }
 
     static async crearMensajeGrupo(data: { contenido: string; grupoId: string; emisorId: string }) {
-        return grupoMensajeDelegate().create({
+        const mensaje = await grupoMensajeDelegate().create({
             data,
             include: {
+                grupo: {
+                    select: {
+                        nombre: true
+                    }
+                },
                 emisor: {
                     select: {
                         id: true,
@@ -145,6 +162,11 @@ export class MensajeModel {
                 }
             }
         });
+
+        return {
+            ...mensaje,
+            nombreGrupo: mensaje.grupo?.nombre
+        };
     }
 
     static async obtenerHistorialGrupo(grupoId: string, limit: number) {
@@ -153,6 +175,11 @@ export class MensajeModel {
                 grupoId
             },
             include: {
+                grupo: {
+                    select: {
+                        nombre: true
+                    }
+                },
                 emisor: {
                     select: {
                         id: true,
@@ -168,6 +195,9 @@ export class MensajeModel {
         });
 
         // Return oldest -> newest for UI rendering, but query latest N first.
-        return mensajes.reverse();
+        return mensajes.reverse().map((mensaje) => ({
+            ...mensaje,
+            nombreGrupo: mensaje.grupo?.nombre
+        }));
     }
 }

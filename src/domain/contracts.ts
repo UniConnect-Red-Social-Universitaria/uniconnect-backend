@@ -119,6 +119,7 @@ export interface GroupMessageRecord {
   id: string;
   contenido: string;
   grupoId: string;
+  nombreGrupo?: string;
   emisorId: string;
   createdAt: Date;
   emisor?: {
