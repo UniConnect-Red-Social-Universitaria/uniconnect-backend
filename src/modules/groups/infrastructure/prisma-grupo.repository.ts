@@ -1,4 +1,5 @@
-import { GroupRepository } from '../../../domain/contracts';
+import { GroupRepository, GrupoArchivoRepository, GrupoArchivoRecord, CreateGrupoArchivoData } from '../../../domain/contracts';
+import { GrupoArchivoModel } from '../../../models/grupo-archivo.model';
 import { GrupoModel } from '../../../models/grupo.model';
 
 export class PrismaGrupoRepository implements GroupRepository {
@@ -28,5 +29,23 @@ export class PrismaGrupoRepository implements GroupRepository {
 
   async join(grupoId: string, usuarioId: string) {
     await GrupoModel.unirse(grupoId, usuarioId);
+  }
+
+  async updateAdministrador(grupoId: string, nuevoAdminId: string) {
+    await GrupoModel.actualizarAdministrador(grupoId, nuevoAdminId);
+  }
+}
+
+export class PrismaGrupoArchivoRepository implements GrupoArchivoRepository {
+  async crear(data: CreateGrupoArchivoData): Promise<GrupoArchivoRecord> {
+    return GrupoArchivoModel.crear(data);
+  }
+
+  async listarPorGrupo(grupoId: string): Promise<GrupoArchivoRecord[]> {
+    return GrupoArchivoModel.listarPorGrupo(grupoId);
+  }
+
+  async buscarPorId(archivoId: string): Promise<GrupoArchivoRecord | null> {
+    return GrupoArchivoModel.buscarPorId(archivoId);
   }
 }
