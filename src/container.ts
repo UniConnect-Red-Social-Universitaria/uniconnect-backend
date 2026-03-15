@@ -3,7 +3,7 @@ import { PrismaCarreraRepository } from './modules/catalog/infrastructure/prisma
 import { EventUseCases } from './modules/events/application/event.use-cases';
 import { PrismaEventoRepository } from './modules/events/infrastructure/prisma-evento.repository';
 import { GroupUseCases } from './modules/groups/application/group.use-cases';
-import { PrismaGrupoRepository } from './modules/groups/infrastructure/prisma-grupo.repository';
+import { PrismaGrupoRepository, PrismaGrupoArchivoRepository } from './modules/groups/infrastructure/prisma-grupo.repository';
 import { MateriaUseCases } from './modules/materias/application/materia.use-cases';
 import { PrismaMateriaRepository } from './modules/materias/infrastructure/prisma-materia.repository';
 import { MessageUseCases } from './modules/messages/application/message.use-cases';
@@ -22,6 +22,7 @@ const contactRepository = new PrismaContactRepository();
 const careerRepository = new PrismaCarreraRepository();
 const materiaRepository = new PrismaMateriaRepository();
 const grupoRepository = new PrismaGrupoRepository();
+const grupoArchivoRepository = new PrismaGrupoArchivoRepository();
 const mensajeRepository = new PrismaMensajeRepository();
 const eventoRepository = new PrismaEventoRepository();
 
@@ -42,7 +43,7 @@ export const usersUseCases = new UsersUseCases({
   tokenBlacklistService,
 });
 
-export const groupUseCases = new GroupUseCases(grupoRepository, materiaRepository);
+export const groupUseCases = new GroupUseCases(grupoRepository, materiaRepository, grupoArchivoRepository);
 export const materiaUseCases = new MateriaUseCases(materiaRepository);
 export const messageUseCases = new MessageUseCases(
   mensajeRepository,

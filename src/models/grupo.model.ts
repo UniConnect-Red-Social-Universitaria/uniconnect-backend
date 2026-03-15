@@ -8,6 +8,7 @@ function grupoDelegate() {
         nombre: string;
         materiaId: string;
         creadorId: string;
+        administradorId: string;
         createdAt: Date;
         materia: { id: string; nombre: string };
         miembros: Array<{ id: string }>;
@@ -18,6 +19,7 @@ function grupoDelegate() {
           nombre: string;
           materiaId: string;
           creadorId: string;
+          administradorId: string;
           createdAt: Date;
           materia: { id: string; nombre: string };
           miembros: Array<{
@@ -36,6 +38,7 @@ function grupoDelegate() {
         nombre: string;
         materiaId: string;
         creadorId: string;
+        administradorId: string;
         createdAt: Date;
         materia: { id: string; nombre: string };
         miembros: Array<{
@@ -60,6 +63,7 @@ export class GrupoModel {
         nombre: data.nombre,
         materiaId: data.materiaId,
         creadorId: data.creadorId,
+        administradorId: data.creadorId,
         miembros: {
           create: {
             usuarioId: data.creadorId,
@@ -164,6 +168,13 @@ export class GrupoModel {
   static async buscarPorNombre(nombre: string) {
     return prisma.grupo.findFirst({
       where: { nombre },
+    });
+  }
+
+  static async actualizarAdministrador(grupoId: string, nuevoAdminId: string) {
+    return prisma.grupo.update({
+      where: { id: grupoId },
+      data: { administradorId: nuevoAdminId },
     });
   }
 }
