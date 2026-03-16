@@ -110,7 +110,7 @@ export class GrupoModel {
     materiasCursando: string[],
     usuarioId: string,
   ) {
-    return grupoDelegate().findMany({
+    const gruposBrutos = await prisma.grupo.findMany({
       where: {
         materia: {
           nombre: { in: materiasCursando },
@@ -123,22 +123,45 @@ export class GrupoModel {
       },
       include: {
         materia: true,
-        miembros: {
-          include: {
-            usuario: {
-              select: {
-                id: true,
-                nombre: true,
-                apellido: true,
-              },
-            },
-          },
-        },
+        miembros: true,
       },
       orderBy: {
         createdAt: "desc",
       },
     });
+
+    const usuarioIds = [
+      ...new Set(
+        gruposBrutos.flatMap((g) => g.miembros.map((m) => m.usuarioId)),
+      ),
+    ];
+
+    const usuariosValidos = await prisma.usuario.findMany({
+      where: { id: { in: usuarioIds } },
+      select: {
+        id: true,
+        nombre: true,
+        apellido: true,
+      },
+    });
+
+    const usuariosMap = new Map(usuariosValidos.map((u) => [u.id, u]));
+
+    const gruposFiltrados = gruposBrutos
+      .filter((grupo) => {
+        return grupo.miembros.every((m) => usuariosMap.has(m.usuarioId));
+      })
+      .map((grupo) => {
+        return {
+          ...grupo,
+          miembros: grupo.miembros.map((m) => ({
+            ...m,
+            usuario: usuariosMap.get(m.usuarioId)!,
+          })),
+        };
+      });
+
+    return gruposFiltrados as any;
   }
 
   static async buscarPorId(id: string) {
