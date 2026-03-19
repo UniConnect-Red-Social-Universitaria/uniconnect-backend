@@ -8,7 +8,7 @@ export class CatalogoController {
         try {
             const resultado = await catalogUseCases.poblar();
 
-            return res.status(201).json({
+            return res.status(200).json({
                 success: true,
                 message: resultado.message,
                 data: resultado.data
