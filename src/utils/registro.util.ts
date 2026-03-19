@@ -84,13 +84,17 @@ export const validarTokenAuth0 = async (
 };
 
 export async function validarCorreoConGoogle(idToken: string, correo: string) {
+  const legacyClientId = process.env.GOOGLE_CLIENT_ID;
   const webClientId = process.env.GOOGLE_CLIENT_ID_WEB;
   const iosClientId = process.env.GOOGLE_CLIENT_ID_IOS;
   const androidClientId = process.env.GOOGLE_CLIENT_ID_ANDROID;
 
-  const allowedAudiences = [webClientId, iosClientId, androidClientId].filter(
-    Boolean,
-  ) as string[];
+  const allowedAudiences = [
+    webClientId,
+    iosClientId,
+    androidClientId,
+    legacyClientId,
+  ].filter(Boolean) as string[];
 
   if (allowedAudiences.length === 0) {
     throw new Error("Falta configurar los GOOGLE_CLIENT_IDs en el servidor");

@@ -45,6 +45,46 @@ type UsersUseCasesDependencies = {
 export class UsersUseCases {
   constructor(private readonly deps: UsersUseCasesDependencies) { }
 
+  private normalizarTexto(valor: string) {
+    return valor.trim().toLowerCase();
+  }
+
+  private resolverCarreraDesdeCatalogo(carrerasCatalogo: Array<{ id: string; nombre: string }>, valor: string) {
+    const valorLimpio = valor.trim();
+
+    return carrerasCatalogo.find(
+      (carreraCatalogoItem) =>
+        carreraCatalogoItem.id === valorLimpio ||
+        this.normalizarTexto(carreraCatalogoItem.nombre) === this.normalizarTexto(valorLimpio),
+    );
+  }
+
+  private resolverMateriasDesdeCatalogo(
+    materiasCatalogo: Array<{ id: string; nombre: string }>,
+    materiasEntrada: string[],
+  ) {
+    const materiasResueltas = materiasEntrada.map((materiaEntrada) => {
+      const materiaLimpia = materiaEntrada.trim();
+
+      return materiasCatalogo.find(
+        (materiaCatalogoItem) =>
+          materiaCatalogoItem.id === materiaLimpia ||
+          this.normalizarTexto(materiaCatalogoItem.nombre) === this.normalizarTexto(materiaLimpia),
+      );
+    });
+
+    const materiaInvalidaIndex = materiasResueltas.findIndex((materiaCatalogoItem) => !materiaCatalogoItem);
+
+    if (materiaInvalidaIndex >= 0) {
+      throw new ApplicationError(
+        400,
+        `La materia "${materiasEntrada[materiaInvalidaIndex]}" no existe en el catálogo oficial`,
+      );
+    }
+
+    return materiasResueltas.map((materiaCatalogoItem) => materiaCatalogoItem!.nombre);
+  }
+
   async buscarPorMateria(usuario: AuthenticatedUser | undefined, materiaQuery: unknown) {
     const authUser = this.ensureAuthenticated(usuario);
 
@@ -233,39 +273,33 @@ export class UsersUseCases {
       throw new ApplicationError(400, 'Debes enviar al menos una materia válida');
     }
 
-    const [cantidadCarreras, cantidadMaterias] = await Promise.all([
-      this.deps.careerRepository.count(),
-      this.deps.materiaRepository.count(),
+    const [carrerasCatalogo, materiasCatalogo] = await Promise.all([
+      this.deps.careerRepository.listAll(),
+      this.deps.materiaRepository.listAll(),
     ]);
 
     const carreraNormalizada = carrera.trim();
-    const materiasNormalizadas = materiasCursando.map((materia) => materia.trim());
+    const materiasNormalizadasEntrada = materiasCursando.map((materia) => materia.trim());
+    let materiasNormalizadas = materiasNormalizadasEntrada;
 
     let carreraCatalogo: { id: string; nombre: string } | null = null;
+    let carreraFinal = carreraNormalizada;
 
-    if (cantidadCarreras > 0) {
-      carreraCatalogo = await this.deps.careerRepository.findByName(carreraNormalizada);
+    if (carrerasCatalogo.length > 0) {
+      carreraCatalogo = this.resolverCarreraDesdeCatalogo(carrerasCatalogo, carreraNormalizada) ?? null;
 
       if (!carreraCatalogo) {
         throw new ApplicationError(400, 'La carrera no existe en el catálogo oficial');
       }
+
+      carreraFinal = carreraCatalogo.nombre;
     }
 
-    if (cantidadMaterias > 0) {
-      const materiasCatalogo = await this.deps.materiaRepository.listAll();
-      const setMaterias = new Set(
-        materiasCatalogo.map((materiaCatalogoItem) => materiaCatalogoItem.nombre.toLowerCase()),
+    if (materiasCatalogo.length > 0) {
+      materiasNormalizadas = this.resolverMateriasDesdeCatalogo(
+        materiasCatalogo,
+        materiasNormalizadasEntrada,
       );
-      const materiaInvalida = materiasNormalizadas.find(
-        (materia) => !setMaterias.has(materia.toLowerCase()),
-      );
-
-      if (materiaInvalida) {
-        throw new ApplicationError(
-          400,
-          `La materia "${materiaInvalida}" no existe en el catálogo oficial`,
-        );
-      }
     }
 
     if (contrasena.length < 8) {
@@ -278,10 +312,21 @@ export class UsersUseCases {
 
     const correoNormalizado = correo.trim().toLowerCase();
 
-    const verificacionIdentidad = await this.deps.identityVerificationService.verifyRegistrationIdentity(
-      String(googleIdToken),
-      correoNormalizado,
-    );
+    let verificacionIdentidad: { correoVerificado: boolean; googleSub?: string };
+
+    try {
+      verificacionIdentidad = await this.deps.identityVerificationService.verifyRegistrationIdentity(
+        String(googleIdToken),
+        correoNormalizado,
+      );
+    } catch (error) {
+      throw new ApplicationError(
+        401,
+        error instanceof Error
+          ? error.message
+          : 'No fue posible verificar la identidad con Google/Auth0',
+      );
+    }
 
     const existe = await this.deps.userRepository.findByEmail(correoNormalizado);
 
@@ -295,7 +340,7 @@ export class UsersUseCases {
       apellido: apellido.trim(),
       correo: correoNormalizado,
       contrasenaHash,
-      carrera: carreraNormalizada,
+      carrera: carreraFinal,
       carreraId: carreraCatalogo?.id,
       semestre: Number(semestre),
       materiasCursando: materiasNormalizadas,
@@ -310,7 +355,7 @@ export class UsersUseCases {
         nombre: nombre.trim(),
         apellido: apellido.trim(),
         correo: correoNormalizado,
-        carrera: carreraNormalizada,
+        carrera: carreraFinal,
         semestre: Number(semestre),
         materiasCursando: materiasNormalizadas,
         correoVerificado: verificacionIdentidad.correoVerificado,
@@ -408,26 +453,32 @@ export class UsersUseCases {
     const authUser = this.ensureAuthenticated(usuario);
     const { carrera, semestre, materiasCursando } = input;
 
-    const materiaCatalogo = await this.deps.materiaRepository.listAll();
-    const setMaterias = new Set(
-      materiaCatalogo.map((materiaCatalogoItem) => materiaCatalogoItem.nombre.toLowerCase()),
-    );
-    const cantidadCarreras = await this.deps.careerRepository.count();
+    const [carrerasCatalogo, materiasCatalogo] = await Promise.all([
+      this.deps.careerRepository.listAll(),
+      this.deps.materiaRepository.listAll(),
+    ]);
 
     let carreraId: string | undefined;
+    let carreraNormalizada: string | undefined;
+    let materiasNormalizadas: string[] | undefined;
 
     if (carrera !== undefined && typeof carrera !== 'string') {
       throw new ApplicationError(400, 'Carrera debe ser texto');
     }
 
-    if (typeof carrera === 'string' && cantidadCarreras > 0) {
-      const carreraCatalogo = await this.deps.careerRepository.findByName(carrera.trim());
+    if (typeof carrera === 'string') {
+      carreraNormalizada = carrera.trim();
 
-      if (!carreraCatalogo) {
-        throw new ApplicationError(400, 'La carrera no existe en el catálogo oficial');
+      if (carrerasCatalogo.length > 0) {
+        const carreraCatalogo = this.resolverCarreraDesdeCatalogo(carrerasCatalogo, carreraNormalizada);
+
+        if (!carreraCatalogo) {
+          throw new ApplicationError(400, 'La carrera no existe en el catálogo oficial');
+        }
+
+        carreraId = carreraCatalogo.id;
+        carreraNormalizada = carreraCatalogo.nombre;
       }
-
-      carreraId = carreraCatalogo.id;
     }
 
     if (
@@ -450,27 +501,20 @@ export class UsersUseCases {
         throw new ApplicationError(400, 'Todas las materias deben ser textos válidos');
       }
 
-      if (setMaterias.size > 0) {
-        const materiaInvalida = materiasCursando.find(
-          (materia) => !setMaterias.has(String(materia).trim().toLowerCase()),
-        );
+      const materiasEntrada = materiasCursando.map((materia) => String(materia).trim());
 
-        if (materiaInvalida) {
-          throw new ApplicationError(
-            400,
-            `La materia "${String(materiaInvalida)}" no existe en el catálogo oficial`,
-          );
-        }
+      if (materiasCatalogo.length > 0) {
+        materiasNormalizadas = this.resolverMateriasDesdeCatalogo(materiasCatalogo, materiasEntrada);
+      } else {
+        materiasNormalizadas = materiasEntrada;
       }
     }
 
     const usuarioActualizado = await this.deps.userRepository.updateProfile(authUser.id, {
-      carrera: typeof carrera === 'string' ? carrera.trim() : undefined,
+      carrera: carreraNormalizada,
       carreraId,
       semestre: Number.isInteger(semestre) ? Number(semestre) : undefined,
-      materiasCursando: Array.isArray(materiasCursando)
-        ? materiasCursando.map((materia) => String(materia).trim())
-        : undefined,
+      materiasCursando: materiasNormalizadas,
     });
 
     return {
