@@ -114,6 +114,24 @@ export class UsuarioController {
     }
   }
 
+  // Rechazar solicitud de conexión
+  static async rechazarSolicitud(req: Request, res: Response) {
+    try {
+      const resultado = await usersUseCases.rechazarSolicitud(
+        req.usuario,
+        req.body?.solicitudId,
+      );
+
+      res.json({
+        success: true,
+        message: resultado.message,
+        data: resultado.data,
+      });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al rechazar solicitud');
+    }
+  }
+
   // Registrar usuario
   static async registrar(req: Request, res: Response) {
     try {

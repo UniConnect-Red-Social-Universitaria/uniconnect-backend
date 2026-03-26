@@ -256,6 +256,49 @@ export class UsersUseCases {
     }
   }
 
+  async rechazarSolicitud(usuario: AuthenticatedUser | undefined, solicitudId: unknown) {
+    const authUser = this.ensureAuthenticated(usuario);
+
+    if (typeof solicitudId !== 'string' || !solicitudId.trim()) {
+      throw new ApplicationError(400, 'solicitudId es obligatorio');
+    }
+
+    if (!isValidMongoId(solicitudId.trim())) {
+      throw new ApplicationError(400, 'solicitudId tiene formato inválido');
+    }
+
+    try {
+      const solicitudActualizada = await this.deps.contactRepository.rejectRequest(
+        solicitudId.trim(),
+        authUser.id,
+      );
+
+      return {
+        message: 'Solicitud rechazada correctamente',
+        data: {
+          id: solicitudActualizada.id,
+          estado: solicitudActualizada.estado,
+          updatedAt: solicitudActualizada.updatedAt,
+        },
+      };
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message === 'Solicitud no encontrada') {
+          throw new ApplicationError(404, error.message);
+        }
+
+        if (
+          error.message === 'No tienes permiso para rechazar esta solicitud' ||
+          error.message === 'La solicitud ya fue procesada'
+        ) {
+          throw new ApplicationError(403, error.message);
+        }
+      }
+
+      throw error;
+    }
+  }
+
   async registrar(input: RegisterInput) {
     const {
       nombre,
