@@ -15,7 +15,7 @@ export class GroupUseCases {
   constructor(
     private readonly groupRepository: GroupRepository,
     private readonly materiaRepository: MateriaRepository,
-  ) {}
+  ) { }
 
   async crearGrupo(usuario: AuthenticatedUser | undefined, input: CreateGroupInput) {
     const authUser = this.ensureAuthenticated(usuario);
@@ -86,6 +86,17 @@ export class GroupUseCases {
       authUser.materiasCursando,
       authUser.id,
     );
+    return { data: grupos.map(formatearGrupo) };
+  }
+
+  async buscarPorTexto(usuario: AuthenticatedUser | undefined, texto: unknown) {
+    this.ensureAuthenticated(usuario);
+
+    if (typeof texto !== 'string' || !texto.trim()) {
+      return { data: [] };
+    }
+
+    const grupos = await this.groupRepository.searchByText(texto.trim());
     return { data: grupos.map(formatearGrupo) };
   }
 

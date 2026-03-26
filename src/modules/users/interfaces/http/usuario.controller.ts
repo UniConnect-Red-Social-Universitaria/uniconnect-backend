@@ -4,6 +4,23 @@ import { usersUseCases } from '../../../../container';
 import { handleControllerError } from '../../../../shared/controller-error';
 
 export class UsuarioController {
+  static async buscarGlobal(req: Request, res: Response) {
+    try {
+      const resultado = await usersUseCases.buscarGlobal(req.usuario, req.query.q);
+
+      res.json({
+        success: true,
+        data: resultado.data,
+      });
+    } catch (error) {
+      return handleControllerError(
+        res,
+        error,
+        'Error al buscar usuarios y materias',
+      );
+    }
+  }
+
   // Buscar estudiantes por materia (excluye al usuario autenticado y relaciones existentes)
   static async buscarPorMateria(req: Request, res: Response) {
     try {

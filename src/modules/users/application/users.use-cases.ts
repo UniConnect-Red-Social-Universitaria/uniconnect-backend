@@ -102,6 +102,38 @@ export class UsersUseCases {
     return { data: resultados };
   }
 
+  async buscarGlobal(usuario: AuthenticatedUser | undefined, qQuery: unknown) {
+    const authUser = this.ensureAuthenticated(usuario);
+
+    if (typeof qQuery !== 'string' || !qQuery.trim()) {
+      return {
+        data: {
+          estudiantes: [],
+          materias: [],
+        },
+      };
+    }
+
+    const termino = qQuery.trim();
+    const terminoNormalizado = this.normalizarTexto(termino);
+
+    const [estudiantes, materiasCatalogo] = await Promise.all([
+      this.deps.userRepository.searchByText(termino, authUser.id),
+      this.deps.materiaRepository.listAll(),
+    ]);
+
+    const materias = materiasCatalogo.filter((materia) =>
+      this.normalizarTexto(materia.nombre).includes(terminoNormalizado),
+    );
+
+    return {
+      data: {
+        estudiantes,
+        materias,
+      },
+    };
+  }
+
   async enviarSolicitudConexion(
     usuario: AuthenticatedUser | undefined,
     usuarioDestinoId: unknown,
