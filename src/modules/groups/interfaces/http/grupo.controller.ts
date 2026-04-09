@@ -135,4 +135,18 @@ export class GrupoController {
       return handleControllerError(res, error, 'Error al ceder la administración');
     }
   }
+
+  static async agregarMiembro(req: Request, res: Response) {
+    try {
+      const resultado = await groupUseCases.agregarMiembro(
+        req.usuario,
+        req.params.id,
+        req.body?.usuarioId,
+      );
+
+      return res.status(201).json({ success: true, message: resultado.message });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al agregar miembro');
+    }
+  }
 }

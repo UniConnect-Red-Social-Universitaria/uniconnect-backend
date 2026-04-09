@@ -11,6 +11,7 @@ router.get('/', verificarJWT, GrupoController.listarMisGrupos);
 router.get('/buscar', verificarJWT, GrupoController.buscar);
 router.get('/disponibles', verificarJWT, GrupoController.listarGruposDisponibles);
 router.post('/:id/unirse', verificarJWT, GrupoController.unirseAGrupo);
+router.post('/:id/miembros', verificarJWT, GrupoController.agregarMiembro);
 router.post('/:id/archivos', verificarJWT, procesarUploadArchivoGrupo, GrupoController.subirArchivo);
 router.get('/:id/archivos', verificarJWT, GrupoController.listarArchivos);
 router.get('/:id/archivos/:archivoId/descargar', verificarJWT, GrupoController.descargarArchivo);

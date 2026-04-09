@@ -4,6 +4,7 @@ import {
   GroupRepository,
   GrupoArchivoRepository,
   MateriaRepository,
+  UserRepository,
 } from '../../../domain/contracts';
 import { ApplicationError } from '../../../shared/application-error';
 
@@ -25,7 +26,8 @@ export class GroupUseCases {
     private readonly groupRepository: GroupRepository,
     private readonly materiaRepository: MateriaRepository,
     private readonly grupoArchivoRepository: GrupoArchivoRepository,
-  ) {}
+    private readonly userRepository: UserRepository,
+  ) { }
 
   async crearGrupo(usuario: AuthenticatedUser | undefined, input: CreateGroupInput) {
     const authUser = this.ensureAuthenticated(usuario);
@@ -291,6 +293,50 @@ export class GroupUseCases {
     return { message: 'Administración cedida correctamente' };
   }
 
+  async agregarMiembro(
+    usuario: AuthenticatedUser | undefined,
+    grupoId: unknown,
+    nuevoMiembroId: unknown,
+  ) {
+    const authUser = this.ensureAuthenticated(usuario);
+
+    if (!grupoId || typeof grupoId !== 'string') {
+      throw new ApplicationError(400, 'ID de grupo inválido');
+    }
+
+    if (!nuevoMiembroId || typeof nuevoMiembroId !== 'string') {
+      throw new ApplicationError(400, 'ID del miembro inválido');
+    }
+
+    const grupo = await this.groupRepository.findById(grupoId);
+    if (!grupo) throw new ApplicationError(404, 'Grupo no encontrado');
+
+    if (grupo.administradorId !== authUser.id) {
+      throw new ApplicationError(403, 'Solo el administrador puede agregar miembros');
+    }
+
+    const yaMiembro = grupo.miembros.some((m) => m.usuarioId === nuevoMiembroId);
+    if (yaMiembro) {
+      throw new ApplicationError(409, 'El usuario ya es miembro del grupo');
+    }
+
+    const usuarioDestino = await this.userRepository.findSafeById(nuevoMiembroId);
+    if (!usuarioDestino) {
+      throw new ApplicationError(404, 'Usuario no encontrado');
+    }
+
+    if (!usuarioDestino.materiasCursando.includes(grupo.materia.nombre)) {
+      throw new ApplicationError(
+        403,
+        'Solo puedes agregar usuarios que estén cursando esta materia',
+      );
+    }
+
+    await this.groupRepository.join(grupo.id, nuevoMiembroId);
+
+    return { message: 'Miembro agregado correctamente' };
+  }
+
   private ensureAuthenticated(usuario: AuthenticatedUser | undefined) {
     if (!usuario) {
       throw new ApplicationError(401, 'Usuario no autenticado');
@@ -309,6 +355,7 @@ function formatearGrupo(grupo: GroupRecord) {
       nombre: grupo.materia.nombre,
     },
     creadorId: grupo.creadorId,
+    administradorId: grupo.administradorId,
     cantidadMiembros: grupo.miembros.length,
     miembros: grupo.miembros
       .filter((miembro) => miembro.usuario)
