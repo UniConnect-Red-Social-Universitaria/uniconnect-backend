@@ -23,7 +23,7 @@ export class CatalogUseCases {
     const carrerasInsertadas = await this.careerRepository.createCatalog(CARRERAS_OFICIALES);
 
     return {
-      message: 'Catálogo oficial cargado',
+      message: 'Catálogo consumido desde MongoDB',
       data: {
         carrerasInsertadas: carrerasInsertadas.count,
       },

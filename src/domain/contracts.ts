@@ -216,6 +216,18 @@ export interface UserRepository {
     semestre: number;
     materiasCursando: string[];
   }>>;
+  searchByText(
+    texto: string,
+    usuarioActualId: string,
+  ): Promise<Array<{
+    id: string;
+    nombre: string;
+    apellido: string;
+    correo: string;
+    carrera: string;
+    semestre: number;
+    materiasCursando: string[];
+  }>>;
   updateProfile(id: string, data: UpdateUserProfileData): Promise<UserSummary>;
   delete(id: string): Promise<void>;
 }
@@ -235,6 +247,10 @@ export interface ContactRepository {
     usuarioId: string,
   ): Promise<ReceivedContactRequestView[]>;
   acceptRequest(
+    solicitudId: string,
+    usuarioReceptorId: string,
+  ): Promise<ContactRequestRecord>;
+  rejectRequest(
     solicitudId: string,
     usuarioReceptorId: string,
   ): Promise<ContactRequestRecord>;
@@ -260,6 +276,7 @@ export interface GroupRepository {
   create(data: CreateGroupData): Promise<GroupRecord>;
   listByUser(usuarioId: string): Promise<GroupRecord[]>;
   listAvailable(materiasCursando: string[], usuarioId: string): Promise<GroupRecord[]>;
+  searchByText(texto: string): Promise<GroupRecord[]>;
   findById(id: string): Promise<GroupRecord | null>;
   findByName(nombre: string): Promise<{ id: string } | null>;
   countByMateria(materiaId: string): Promise<number>;

@@ -53,6 +53,14 @@ function grupoDelegate() {
 }
 
 export class GrupoModel {
+  private static normalizarTexto(texto: string) {
+    return texto
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+  }
+
   static async crear(data: {
     nombre: string;
     materiaId: string;
@@ -171,6 +179,79 @@ export class GrupoModel {
         materia: true,
         miembros: true,
       },
+    });
+  }
+
+  static async buscarPorTexto(texto: string) {
+    const busquedaNormalizada = GrupoModel.normalizarTexto(texto);
+
+    const grupos = await prisma.grupo.findMany({
+      select: {
+        id: true,
+        nombre: true,
+        materiaId: true,
+        creadorId: true,
+        createdAt: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    const materiaIds = Array.from(new Set(grupos.map((grupo) => grupo.materiaId)));
+    const materias = await prisma.materia.findMany({
+      where: {
+        id: { in: materiaIds },
+      },
+      select: {
+        id: true,
+        nombre: true,
+      },
+    });
+
+    const materiasPorId = new Map(materias.map((materia) => [materia.id, materia]));
+
+    const gruposNormalizados = grupos
+      .map((grupo) => {
+        const materia = materiasPorId.get(grupo.materiaId);
+
+        if (!materia) {
+          return null;
+        }
+
+        return {
+          id: grupo.id,
+          nombre: grupo.nombre,
+          materiaId: grupo.materiaId,
+          creadorId: grupo.creadorId,
+          createdAt: grupo.createdAt,
+          materia,
+          miembros: [],
+        };
+      })
+      .filter(
+        (
+          grupo,
+        ): grupo is {
+          id: string;
+          nombre: string;
+          materiaId: string;
+          creadorId: string;
+          createdAt: Date;
+          materia: { id: string; nombre: string };
+          miembros: [];
+        } => !!grupo,
+      );
+
+    return gruposNormalizados.filter((grupo) => {
+
+      const nombreGrupo = GrupoModel.normalizarTexto(grupo.nombre ?? '');
+      const nombreMateria = GrupoModel.normalizarTexto(grupo.materia?.nombre ?? '');
+
+      return (
+        nombreGrupo.includes(busquedaNormalizada) ||
+        nombreMateria.includes(busquedaNormalizada)
+      );
     });
   }
 

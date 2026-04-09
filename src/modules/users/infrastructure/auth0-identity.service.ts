@@ -2,7 +2,7 @@ import {
   IdentityVerificationService,
   IdentityVerificationResult,
 } from '../../../domain/contracts';
-import { validarTokenAuth0 } from '../../../utils/registro.util';
+import { validarCorreoConGoogle, validarTokenAuth0 } from '../../../utils/registro.util';
 
 export class Auth0IdentityVerificationService
   implements IdentityVerificationService
@@ -18,6 +18,19 @@ export class Auth0IdentityVerificationService
       };
     }
 
-    return validarTokenAuth0(googleIdToken, correo);
+    try {
+      return await validarTokenAuth0(googleIdToken, correo);
+    } catch (auth0Error) {
+      try {
+        return await validarCorreoConGoogle(googleIdToken, correo);
+      } catch (googleError) {
+        const detalleAuth0 =
+          auth0Error instanceof Error ? auth0Error.message : 'Error desconocido al validar con Auth0';
+        const detalleGoogle =
+          googleError instanceof Error ? googleError.message : 'Error desconocido al validar con Google';
+
+        throw new Error(`${detalleAuth0} ${detalleGoogle}`.trim());
+      }
+    }
   }
 }

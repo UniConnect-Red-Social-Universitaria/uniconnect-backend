@@ -4,6 +4,19 @@ import { groupUseCases, materiaUseCases } from '../../../../container';
 import { handleControllerError } from '../../../../shared/controller-error';
 
 export class GrupoController {
+  static async buscar(req: Request, res: Response) {
+    try {
+      const resultado = await groupUseCases.buscarPorTexto(req.usuario, req.query.q);
+
+      return res.json({
+        success: true,
+        data: resultado.data,
+      });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al buscar grupos');
+    }
+  }
+
   static async crearMateria(req: Request, res: Response) {
     try {
       const resultado = await materiaUseCases.crear(req.body?.nombre);
