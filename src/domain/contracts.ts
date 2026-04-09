@@ -91,9 +91,37 @@ export interface GroupRecord {
   nombre: string;
   materiaId: string;
   creadorId: string;
+  administradorId: string;
   createdAt: Date;
   materia: CatalogItem;
   miembros: GroupMemberView[];
+}
+
+export interface GrupoArchivoRecord {
+  id: string;
+  nombre: string;
+  nombreFisico: string;
+  ruta: string;
+  mimeType: string;
+  tamanoBytes: number;
+  grupoId: string;
+  subidoPorId: string;
+  createdAt: Date;
+  subidoPor?: {
+    id: string;
+    nombre: string;
+    apellido: string;
+  };
+}
+
+export interface CreateGrupoArchivoData {
+  nombre: string;
+  nombreFisico: string;
+  ruta: string;
+  mimeType: string;
+  tamanoBytes: number;
+  grupoId: string;
+  subidoPorId: string;
 }
 
 export interface CreateGroupData {
@@ -253,6 +281,13 @@ export interface GroupRepository {
   findByName(nombre: string): Promise<{ id: string } | null>;
   countByMateria(materiaId: string): Promise<number>;
   join(grupoId: string, usuarioId: string): Promise<void>;
+  updateAdministrador(grupoId: string, nuevoAdminId: string): Promise<void>;
+}
+
+export interface GrupoArchivoRepository {
+  crear(data: CreateGrupoArchivoData): Promise<GrupoArchivoRecord>;
+  listarPorGrupo(grupoId: string): Promise<GrupoArchivoRecord[]>;
+  buscarPorId(archivoId: string): Promise<GrupoArchivoRecord | null>;
 }
 
 export interface MessageRepository {

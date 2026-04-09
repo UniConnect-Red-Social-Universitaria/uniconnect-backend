@@ -86,4 +86,53 @@ export class GrupoController {
       return handleControllerError(res, error, 'Error al unirte al grupo');
     }
   }
+
+  static async subirArchivo(req: Request, res: Response) {
+    try {
+      const resultado = await groupUseCases.subirArchivo(
+        req.usuario,
+        req.params.id,
+        req.file,
+        req.body?.nombre,
+      );
+      return res.status(201).json({ success: true, message: resultado.message, data: resultado.data });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al subir el archivo');
+    }
+  }
+
+  static async listarArchivos(req: Request, res: Response) {
+    try {
+      const resultado = await groupUseCases.listarArchivos(req.usuario, req.params.id);
+      return res.json({ success: true, data: resultado.data });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al listar archivos');
+    }
+  }
+
+  static async descargarArchivo(req: Request, res: Response) {
+    try {
+      const resultado = await groupUseCases.obtenerRutaArchivo(
+        req.usuario,
+        req.params.id,
+        req.params.archivoId,
+      );
+      return res.download(resultado.data.ruta, resultado.data.nombre);
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al descargar el archivo');
+    }
+  }
+
+  static async cederAdministracion(req: Request, res: Response) {
+    try {
+      const resultado = await groupUseCases.cederAdministracion(
+        req.usuario,
+        req.params.id,
+        req.body?.nuevoAdminId,
+      );
+      return res.json({ success: true, message: resultado.message });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al ceder la administración');
+    }
+  }
 }

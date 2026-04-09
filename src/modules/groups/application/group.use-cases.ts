@@ -2,6 +2,7 @@ import {
   AuthenticatedUser,
   GroupRecord,
   GroupRepository,
+  GrupoArchivoRepository,
   MateriaRepository,
 } from '../../../domain/contracts';
 import { ApplicationError } from '../../../shared/application-error';
@@ -11,11 +12,20 @@ type CreateGroupInput = {
   materiaId: unknown;
 };
 
+type UploadedFile = {
+  filename: string;
+  originalname: string;
+  path: string;
+  mimetype: string;
+  size: number;
+};
+
 export class GroupUseCases {
   constructor(
     private readonly groupRepository: GroupRepository,
     private readonly materiaRepository: MateriaRepository,
-  ) { }
+    private readonly grupoArchivoRepository: GrupoArchivoRepository,
+  ) {}
 
   async crearGrupo(usuario: AuthenticatedUser | undefined, input: CreateGroupInput) {
     const authUser = this.ensureAuthenticated(usuario);
@@ -137,6 +147,148 @@ export class GroupUseCases {
     return {
       message: 'Te has unido al grupo correctamente',
     };
+  }
+
+  async subirArchivo(
+    usuario: AuthenticatedUser | undefined,
+    grupoId: unknown,
+    file: UploadedFile | undefined,
+    nombreMostrar: unknown,
+  ) {
+    const authUser = this.ensureAuthenticated(usuario);
+
+    if (!grupoId || typeof grupoId !== 'string') {
+      throw new ApplicationError(400, 'ID de grupo inválido');
+    }
+
+    if (!file) {
+      throw new ApplicationError(400, 'Debes adjuntar un archivo PDF');
+    }
+
+    const grupo = await this.groupRepository.findById(grupoId);
+    if (!grupo) throw new ApplicationError(404, 'Grupo no encontrado');
+
+    const esMiembro = grupo.miembros.some((m) => m.usuarioId === authUser.id);
+    if (!esMiembro) throw new ApplicationError(403, 'No eres miembro de este grupo');
+
+    const nombre =
+      typeof nombreMostrar === 'string' && nombreMostrar.trim()
+        ? nombreMostrar.trim()
+        : file.originalname;
+
+    const archivo = await this.grupoArchivoRepository.crear({
+      nombre,
+      nombreFisico: file.filename,
+      ruta: file.path,
+      mimeType: file.mimetype,
+      tamanoBytes: file.size,
+      grupoId: grupo.id,
+      subidoPorId: authUser.id,
+    });
+
+    return {
+      message: 'Archivo subido correctamente',
+      data: {
+        id: archivo.id,
+        nombre: archivo.nombre,
+        mimeType: archivo.mimeType,
+        tamanoBytes: archivo.tamanoBytes,
+        subidoPor: archivo.subidoPor,
+        createdAt: archivo.createdAt,
+      },
+    };
+  }
+
+  async listarArchivos(
+    usuario: AuthenticatedUser | undefined,
+    grupoId: unknown,
+  ) {
+    const authUser = this.ensureAuthenticated(usuario);
+
+    if (!grupoId || typeof grupoId !== 'string') {
+      throw new ApplicationError(400, 'ID de grupo inválido');
+    }
+
+    const grupo = await this.groupRepository.findById(grupoId);
+    if (!grupo) throw new ApplicationError(404, 'Grupo no encontrado');
+
+    const esMiembro = grupo.miembros.some((m) => m.usuarioId === authUser.id);
+    if (!esMiembro) throw new ApplicationError(403, 'No eres miembro de este grupo');
+
+    const archivos = await this.grupoArchivoRepository.listarPorGrupo(grupo.id);
+    return {
+      data: archivos.map((a) => ({
+        id: a.id,
+        nombre: a.nombre,
+        mimeType: a.mimeType,
+        tamanoBytes: a.tamanoBytes,
+        subidoPor: a.subidoPor,
+        createdAt: a.createdAt,
+      })),
+    };
+  }
+
+  async obtenerRutaArchivo(
+    usuario: AuthenticatedUser | undefined,
+    grupoId: unknown,
+    archivoId: unknown,
+  ) {
+    const authUser = this.ensureAuthenticated(usuario);
+
+    if (!grupoId || typeof grupoId !== 'string') {
+      throw new ApplicationError(400, 'ID de grupo inválido');
+    }
+
+    if (!archivoId || typeof archivoId !== 'string') {
+      throw new ApplicationError(400, 'ID de archivo inválido');
+    }
+
+    const grupo = await this.groupRepository.findById(grupoId);
+    if (!grupo) throw new ApplicationError(404, 'Grupo no encontrado');
+
+    const esMiembro = grupo.miembros.some((m) => m.usuarioId === authUser.id);
+    if (!esMiembro) throw new ApplicationError(403, 'No eres miembro de este grupo');
+
+    const archivo = await this.grupoArchivoRepository.buscarPorId(archivoId);
+    if (!archivo || archivo.grupoId !== grupo.id) {
+      throw new ApplicationError(404, 'Archivo no encontrado');
+    }
+
+    return { data: { ruta: archivo.ruta, nombre: archivo.nombre } };
+  }
+
+  async cederAdministracion(
+    usuario: AuthenticatedUser | undefined,
+    grupoId: unknown,
+    nuevoAdminId: unknown,
+  ) {
+    const authUser = this.ensureAuthenticated(usuario);
+
+    if (!grupoId || typeof grupoId !== 'string') {
+      throw new ApplicationError(400, 'ID de grupo inválido');
+    }
+
+    if (!nuevoAdminId || typeof nuevoAdminId !== 'string') {
+      throw new ApplicationError(400, 'ID del nuevo administrador inválido');
+    }
+
+    const grupo = await this.groupRepository.findById(grupoId);
+    if (!grupo) throw new ApplicationError(404, 'Grupo no encontrado');
+
+    if (grupo.administradorId !== authUser.id) {
+      throw new ApplicationError(403, 'Solo el administrador puede ceder la administración');
+    }
+
+    if (nuevoAdminId === authUser.id) {
+      throw new ApplicationError(400, 'Ya eres el administrador del grupo');
+    }
+
+    const esMiembro = grupo.miembros.some((m) => m.usuarioId === nuevoAdminId);
+    if (!esMiembro) throw new ApplicationError(404, 'El usuario no es miembro del grupo');
+
+    await this.groupRepository.updateAdministrador(grupo.id, nuevoAdminId);
+
+    return { message: 'Administración cedida correctamente' };
   }
 
   private ensureAuthenticated(usuario: AuthenticatedUser | undefined) {

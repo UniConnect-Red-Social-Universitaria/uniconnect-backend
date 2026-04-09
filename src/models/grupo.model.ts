@@ -8,6 +8,7 @@ function grupoDelegate() {
         nombre: string;
         materiaId: string;
         creadorId: string;
+        administradorId: string;
         createdAt: Date;
         materia: { id: string; nombre: string };
         miembros: Array<{ id: string }>;
@@ -18,6 +19,7 @@ function grupoDelegate() {
           nombre: string;
           materiaId: string;
           creadorId: string;
+          administradorId: string;
           createdAt: Date;
           materia: { id: string; nombre: string };
           miembros: Array<{
@@ -36,6 +38,7 @@ function grupoDelegate() {
         nombre: string;
         materiaId: string;
         creadorId: string;
+        administradorId: string;
         createdAt: Date;
         materia: { id: string; nombre: string };
         miembros: Array<{
@@ -68,6 +71,7 @@ export class GrupoModel {
         nombre: data.nombre,
         materiaId: data.materiaId,
         creadorId: data.creadorId,
+        administradorId: data.creadorId,
         miembros: {
           create: {
             usuarioId: data.creadorId,
@@ -114,7 +118,7 @@ export class GrupoModel {
     materiasCursando: string[],
     usuarioId: string,
   ) {
-    return grupoDelegate().findMany({
+    const gruposBrutos = await prisma.grupo.findMany({
       where: {
         materia: {
           nombre: { in: materiasCursando },
@@ -127,22 +131,45 @@ export class GrupoModel {
       },
       include: {
         materia: true,
-        miembros: {
-          include: {
-            usuario: {
-              select: {
-                id: true,
-                nombre: true,
-                apellido: true,
-              },
-            },
-          },
-        },
+        miembros: true,
       },
       orderBy: {
         createdAt: "desc",
       },
     });
+
+    const usuarioIds = [
+      ...new Set(
+        gruposBrutos.flatMap((g) => g.miembros.map((m) => m.usuarioId)),
+      ),
+    ];
+
+    const usuariosValidos = await prisma.usuario.findMany({
+      where: { id: { in: usuarioIds } },
+      select: {
+        id: true,
+        nombre: true,
+        apellido: true,
+      },
+    });
+
+    const usuariosMap = new Map(usuariosValidos.map((u) => [u.id, u]));
+
+    const gruposFiltrados = gruposBrutos
+      .filter((grupo) => {
+        return grupo.miembros.every((m) => usuariosMap.has(m.usuarioId));
+      })
+      .map((grupo) => {
+        return {
+          ...grupo,
+          miembros: grupo.miembros.map((m) => ({
+            ...m,
+            usuario: usuariosMap.get(m.usuarioId)!,
+          })),
+        };
+      });
+
+    return gruposFiltrados as any;
   }
 
   static async buscarPorId(id: string) {
@@ -245,6 +272,13 @@ export class GrupoModel {
   static async buscarPorNombre(nombre: string) {
     return prisma.grupo.findFirst({
       where: { nombre },
+    });
+  }
+
+  static async actualizarAdministrador(grupoId: string, nuevoAdminId: string) {
+    return prisma.grupo.update({
+      where: { id: grupoId },
+      data: { administradorId: nuevoAdminId },
     });
   }
 }

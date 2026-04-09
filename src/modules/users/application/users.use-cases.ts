@@ -348,10 +348,7 @@ export class UsersUseCases {
       throw new ApplicationError(400, 'Debes enviar al menos una materia válida');
     }
 
-    const [carrerasCatalogo, materiasCatalogo] = await Promise.all([
-      this.deps.careerRepository.listAll(),
-      this.deps.materiaRepository.listAll(),
-    ]);
+    const cantidadCarreras = await this.deps.careerRepository.count();
 
     const carreraNormalizada = carrera.trim();
     const materiasNormalizadasEntrada = materiasCursando.map((materia) => materia.trim());
@@ -370,12 +367,8 @@ export class UsersUseCases {
       carreraFinal = carreraCatalogo.nombre;
     }
 
-    if (materiasCatalogo.length > 0) {
-      materiasNormalizadas = this.resolverMateriasDesdeCatalogo(
-        materiasCatalogo,
-        materiasNormalizadasEntrada,
-      );
-    }
+    // Auto-registra materias nuevas en el catálogo si aún no existen
+    await this.deps.materiaRepository.createCatalog(materiasNormalizadas);
 
     if (contrasena.length < 8) {
       throw new ApplicationError(400, 'La contraseña debe tener mínimo 8 caracteres');
