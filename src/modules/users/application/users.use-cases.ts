@@ -348,7 +348,7 @@ export class UsersUseCases {
       throw new ApplicationError(400, 'Debes enviar al menos una materia válida');
     }
 
-    const cantidadCarreras = await this.deps.careerRepository.count();
+    const carrerasCatalogo = await this.deps.careerRepository.listAll();
 
     const carreraNormalizada = carrera.trim();
     const materiasNormalizadasEntrada = materiasCursando.map((materia) => materia.trim());
