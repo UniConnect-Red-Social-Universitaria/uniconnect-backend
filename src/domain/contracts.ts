@@ -245,6 +245,10 @@ export interface ContactRepository {
     solicitudId: string,
     usuarioReceptorId: string,
   ): Promise<ContactRequestRecord>;
+  rejectRequest(
+    solicitudId: string,
+    usuarioReceptorId: string,
+  ): Promise<ContactRequestRecord>;
 }
 
 export interface CareerRepository {
