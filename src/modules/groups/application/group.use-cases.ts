@@ -29,6 +29,26 @@ export class GroupUseCases {
     private readonly userRepository: UserRepository,
   ) { }
 
+  private normalizarMateria(valor: string) {
+    return valor
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+  }
+
+  private async obtenerMateriasCursandoActuales(authUser: AuthenticatedUser) {
+    const perfilActual = await this.userRepository.findSafeById(authUser.id);
+
+    if (!perfilActual) {
+      throw new ApplicationError(404, 'Usuario no encontrado');
+    }
+
+    return (perfilActual.materiasCursando || []).map((materia) =>
+      this.normalizarMateria(materia),
+    );
+  }
+
   async crearGrupo(usuario: AuthenticatedUser | undefined, input: CreateGroupInput) {
     const authUser = this.ensureAuthenticated(usuario);
     const { nombre, materiaId } = input;
@@ -54,7 +74,10 @@ export class GroupUseCases {
       throw new ApplicationError(404, 'La materia asociada no existe');
     }
 
-    if (!authUser.materiasCursando.includes(materia.nombre)) {
+    const materiasCursando = await this.obtenerMateriasCursandoActuales(authUser);
+    const materiaGrupo = this.normalizarMateria(materia.nombre);
+
+    if (!materiasCursando.includes(materiaGrupo)) {
       throw new ApplicationError(
         403,
         'No puedes crear grupos de materias que no estás cursando',
@@ -94,8 +117,14 @@ export class GroupUseCases {
 
   async listarGruposDisponibles(usuario: AuthenticatedUser | undefined) {
     const authUser = this.ensureAuthenticated(usuario);
+    const perfilActual = await this.userRepository.findSafeById(authUser.id);
+
+    if (!perfilActual) {
+      throw new ApplicationError(404, 'Usuario no encontrado');
+    }
+
     const grupos = await this.groupRepository.listAvailable(
-      authUser.materiasCursando,
+      perfilActual.materiasCursando,
       authUser.id,
     );
     return { data: grupos.map(formatearGrupo) };
@@ -125,7 +154,10 @@ export class GroupUseCases {
       throw new ApplicationError(404, 'Grupo no encontrado');
     }
 
-    if (!authUser.materiasCursando.includes(grupo.materia.nombre)) {
+    const materiasCursando = await this.obtenerMateriasCursandoActuales(authUser);
+    const materiaGrupo = this.normalizarMateria(grupo.materia.nombre);
+
+    if (!materiasCursando.includes(materiaGrupo)) {
       throw new ApplicationError(
         403,
         'No puedes unirte a grupos de materias que no estás cursando',
@@ -325,7 +357,12 @@ export class GroupUseCases {
       throw new ApplicationError(404, 'Usuario no encontrado');
     }
 
-    if (!usuarioDestino.materiasCursando.includes(grupo.materia.nombre)) {
+    const materiasUsuarioDestino = (usuarioDestino.materiasCursando || []).map((materia) =>
+      this.normalizarMateria(materia),
+    );
+    const materiaGrupo = this.normalizarMateria(grupo.materia.nombre);
+
+    if (!materiasUsuarioDestino.includes(materiaGrupo)) {
       throw new ApplicationError(
         403,
         'Solo puedes agregar usuarios que estén cursando esta materia',
