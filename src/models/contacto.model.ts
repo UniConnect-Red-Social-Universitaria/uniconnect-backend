@@ -21,6 +21,14 @@ interface ContactoConUsuarios {
     receptor: UsuarioBasico;
 }
 
+interface ContactoBasico {
+    id: string;
+    estado: EstadoContacto;
+    solicitanteId: string;
+    receptorId: string;
+    createdAt?: Date;
+}
+
 function contactoDelegate() {
     const prismaDinamico = prisma as unknown as {
         contacto: {
@@ -147,33 +155,74 @@ export class ContactoModel {
                     { receptorId: usuarioId }
                 ]
             },
-            include: {
-                solicitante: true,
-                receptor: true
+            select: {
+                id: true,
+                estado: true,
+                solicitanteId: true,
+                receptorId: true,
             }
         });
 
-        const contactos = contactosRaw as unknown as ContactoConUsuarios[];
+        const contactos = contactosRaw as unknown as ContactoBasico[];
 
-        return contactos.map((contacto: ContactoConUsuarios) => {
-            const companero = contacto.solicitanteId === usuarioId
-                ? contacto.receptor
-                : contacto.solicitante;
+        const idsCompaneros = Array.from(
+            new Set(
+                contactos.map((contacto) =>
+                    contacto.solicitanteId === usuarioId
+                        ? contacto.receptorId
+                        : contacto.solicitanteId,
+                ),
+            ),
+        );
 
-            return {
-                contactoId: contacto.id,
-                estado: contacto.estado,
-                usuario: {
-                    id: companero.id,
-                    nombre: companero.nombre,
-                    apellido: companero.apellido,
-                    correo: companero.correo,
-                    carrera: companero.carrera,
-                    semestre: companero.semestre,
-                    materiasCursando: companero.materiasCursando
-                }
-            };
+        const usuarios = await prisma.usuario.findMany({
+            where: {
+                id: { in: idsCompaneros },
+            },
+            select: {
+                id: true,
+                nombre: true,
+                apellido: true,
+                correo: true,
+                carrera: true,
+                semestre: true,
+                materiasCursando: true,
+            },
         });
+
+        const usuariosPorId = new Map(usuarios.map((usuario) => [usuario.id, usuario]));
+
+        return contactos
+            .map((contacto) => {
+                const companeroId =
+                    contacto.solicitanteId === usuarioId
+                        ? contacto.receptorId
+                        : contacto.solicitanteId;
+
+                const companero = usuariosPorId.get(companeroId);
+                if (!companero) {
+                    return null;
+                }
+
+                return {
+                    contactoId: contacto.id,
+                    estado: contacto.estado,
+                    usuario: {
+                        id: companero.id,
+                        nombre: companero.nombre,
+                        apellido: companero.apellido,
+                        correo: companero.correo,
+                        carrera: companero.carrera,
+                        semestre: companero.semestre,
+                        materiasCursando: companero.materiasCursando,
+                    },
+                };
+            })
+            .filter((item): item is {
+                contactoId: string;
+                estado: EstadoContacto;
+                usuario: UsuarioBasico;
+            } => item !== null);
     }
 
     static async listarSolicitudesRecibidas(usuarioId: string) {
@@ -182,8 +231,11 @@ export class ContactoModel {
                 receptorId: usuarioId,
                 estado: 'PENDIENTE'
             },
-            include: {
-                solicitante: true
+            select: {
+                id: true,
+                estado: true,
+                createdAt: true,
+                solicitanteId: true,
             }
         });
 
@@ -191,23 +243,60 @@ export class ContactoModel {
             id: string;
             estado: EstadoContacto;
             createdAt: Date;
-            solicitante: UsuarioBasico;
+            solicitanteId: string;
         }>;
 
-        return solicitudes.map((solicitud) => ({
-            solicitudId: solicitud.id,
-            estado: solicitud.estado,
-            createdAt: solicitud.createdAt,
-            solicitante: {
-                id: solicitud.solicitante.id,
-                nombre: solicitud.solicitante.nombre,
-                apellido: solicitud.solicitante.apellido,
-                correo: solicitud.solicitante.correo,
-                carrera: solicitud.solicitante.carrera,
-                semestre: solicitud.solicitante.semestre,
-                materiasCursando: solicitud.solicitante.materiasCursando
-            }
-        }));
+        const solicitanteIds = Array.from(
+            new Set(solicitudes.map((solicitud) => solicitud.solicitanteId)),
+        );
+
+        const usuariosSolicitantes = await prisma.usuario.findMany({
+            where: {
+                id: { in: solicitanteIds },
+            },
+            select: {
+                id: true,
+                nombre: true,
+                apellido: true,
+                correo: true,
+                carrera: true,
+                semestre: true,
+                materiasCursando: true,
+            },
+        });
+
+        const solicitantesPorId = new Map(
+            usuariosSolicitantes.map((usuario) => [usuario.id, usuario]),
+        );
+
+        return solicitudes
+            .map((solicitud) => {
+                const solicitante = solicitantesPorId.get(solicitud.solicitanteId);
+                if (!solicitante) {
+                    return null;
+                }
+
+                return {
+                    solicitudId: solicitud.id,
+                    estado: solicitud.estado,
+                    createdAt: solicitud.createdAt,
+                    solicitante: {
+                        id: solicitante.id,
+                        nombre: solicitante.nombre,
+                        apellido: solicitante.apellido,
+                        correo: solicitante.correo,
+                        carrera: solicitante.carrera,
+                        semestre: solicitante.semestre,
+                        materiasCursando: solicitante.materiasCursando,
+                    },
+                };
+            })
+            .filter((item): item is {
+                solicitudId: string;
+                estado: EstadoContacto;
+                createdAt: Date;
+                solicitante: UsuarioBasico;
+            } => item !== null);
     }
 
     static async aceptarSolicitud(solicitudId: string, usuarioReceptorId: string) {
