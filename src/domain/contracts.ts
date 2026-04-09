@@ -51,7 +51,10 @@ export interface UpdateUserProfileData {
 }
 
 export interface ContactRelation {
+  id: string;
   estado: ContactStatus;
+  solicitanteId: string;
+  receptorId: string;
 }
 
 export interface ContactRequestRecord {
@@ -238,6 +241,10 @@ export interface ContactRepository {
     usuarioBId: string,
   ): Promise<ContactRelation | null>;
   createRequest(
+    solicitanteId: string,
+    receptorId: string,
+  ): Promise<ContactRequestRecord>;
+  reactivateRejectedRequest(
     solicitanteId: string,
     receptorId: string,
   ): Promise<ContactRequestRecord>;

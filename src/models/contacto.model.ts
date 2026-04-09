@@ -24,7 +24,7 @@ interface ContactoConUsuarios {
 function contactoDelegate() {
     const prismaDinamico = prisma as unknown as {
         contacto: {
-            findFirst: (args: unknown) => Promise<{ estado: EstadoContacto } | null>;
+            findFirst: (args: unknown) => Promise<{ id: string; estado: EstadoContacto; solicitanteId: string; receptorId: string } | null>;
             findUnique: (args: unknown) => Promise<{ id: string; estado: EstadoContacto; solicitanteId: string; receptorId: string } | null>;
             create: (args: unknown) => Promise<{
                 id: string;
@@ -67,6 +67,37 @@ export class ContactoModel {
 
     static async crearSolicitud(solicitanteId: string, receptorId: string) {
         return contactoDelegate().create({
+            data: {
+                solicitanteId,
+                receptorId,
+                estado: 'PENDIENTE'
+            }
+        });
+    }
+
+    static async reactivarSolicitudRechazada(solicitanteId: string, receptorId: string) {
+        const relacion = await contactoDelegate().findFirst({
+            where: {
+                estado: 'RECHAZADA',
+                OR: [
+                    {
+                        solicitanteId,
+                        receptorId
+                    },
+                    {
+                        solicitanteId: receptorId,
+                        receptorId: solicitanteId
+                    }
+                ]
+            }
+        });
+
+        if (!relacion) {
+            throw new Error('No existe una solicitud rechazada para reactivar');
+        }
+
+        return contactoDelegate().update({
+            where: { id: relacion.id },
             data: {
                 solicitanteId,
                 receptorId,

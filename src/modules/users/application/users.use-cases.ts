@@ -12,7 +12,10 @@ import {
 import { ApplicationError } from '../../../shared/application-error';
 import { esCorreoInstitucional } from '../../../utils/registro.util';
 import { isValidMongoId } from '../../../shared/mongo-id';
-import { emitirSolicitudContactoTiempoReal } from '../../../lib/socket';
+import {
+  emitirSolicitudContactoRechazadaTiempoReal,
+  emitirSolicitudContactoTiempoReal,
+} from '../../../lib/socket';
 
 type RegisterInput = {
   nombre: unknown;
@@ -163,21 +166,30 @@ export class UsersUseCases {
       usuarioDestinoId.trim(),
     );
 
+    let solicitud;
+
     if (relacionExistente) {
       if (relacionExistente.estado === 'ACEPTADA') {
         throw new ApplicationError(409, 'Este compañero ya está agregado');
       }
 
-      throw new ApplicationError(
-        409,
-        'Ya existe una solicitud de conexión entre estos usuarios',
+      if (relacionExistente.estado === 'RECHAZADA') {
+        solicitud = await this.deps.contactRepository.reactivateRejectedRequest(
+          authUser.id,
+          usuarioDestinoId.trim(),
+        );
+      } else {
+        throw new ApplicationError(
+          409,
+          'Ya existe una solicitud de conexión entre estos usuarios',
+        );
+      }
+    } else {
+      solicitud = await this.deps.contactRepository.createRequest(
+        authUser.id,
+        usuarioDestinoId.trim(),
       );
     }
-
-    const solicitud = await this.deps.contactRepository.createRequest(
-      authUser.id,
-      usuarioDestinoId.trim(),
-    );
 
     const solicitante = await this.deps.userRepository.findSafeById(authUser.id);
     emitirSolicitudContactoTiempoReal({
@@ -272,6 +284,13 @@ export class UsersUseCases {
         solicitudId.trim(),
         authUser.id,
       );
+
+      emitirSolicitudContactoRechazadaTiempoReal({
+        solicitudId: solicitudActualizada.id,
+        receptorId: solicitudActualizada.receptorId,
+        solicitanteId: solicitudActualizada.solicitanteId,
+        updatedAt: solicitudActualizada.updatedAt,
+      });
 
       return {
         message: 'Solicitud rechazada correctamente',
