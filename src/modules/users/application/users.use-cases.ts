@@ -88,6 +88,19 @@ export class UsersUseCases {
     return materiasResueltas.map((materiaCatalogoItem) => materiaCatalogoItem!.nombre);
   }
 
+  private validarMateriasSinCatalogo(materiasEntrada: string[]) {
+    const materiaConFormatoId = materiasEntrada.find((materiaEntrada) =>
+      isValidMongoId(materiaEntrada.trim()),
+    );
+
+    if (materiaConFormatoId) {
+      throw new ApplicationError(
+        400,
+        'Las materias deben enviarse por nombre cuando el catálogo no está disponible',
+      );
+    }
+  }
+
   async buscarPorMateria(usuario: AuthenticatedUser | undefined, materiaQuery: unknown) {
     const authUser = this.ensureAuthenticated(usuario);
 
@@ -102,38 +115,6 @@ export class UsersUseCases {
     );
 
     return { data: resultados };
-  }
-
-  async buscarGlobal(usuario: AuthenticatedUser | undefined, qQuery: unknown) {
-    const authUser = this.ensureAuthenticated(usuario);
-
-    if (typeof qQuery !== 'string' || !qQuery.trim()) {
-      return {
-        data: {
-          estudiantes: [],
-          materias: [],
-        },
-      };
-    }
-
-    const termino = qQuery.trim();
-    const terminoNormalizado = this.normalizarTexto(termino);
-
-    const [estudiantes, materiasCatalogo] = await Promise.all([
-      this.deps.userRepository.searchByText(termino, authUser.id),
-      this.deps.materiaRepository.listAll(),
-    ]);
-
-    const materias = materiasCatalogo.filter((materia) =>
-      this.normalizarTexto(materia.nombre).includes(terminoNormalizado),
-    );
-
-    return {
-      data: {
-        estudiantes,
-        materias,
-      },
-    };
   }
 
   async enviarSolicitudConexion(
@@ -366,7 +347,10 @@ export class UsersUseCases {
       throw new ApplicationError(400, 'Debes enviar al menos una materia válida');
     }
 
-    const carrerasCatalogo = await this.deps.careerRepository.listAll();
+    const [carrerasCatalogo, materiasCatalogo] = await Promise.all([
+      this.deps.careerRepository.listAll(),
+      this.deps.materiaRepository.listAll(),
+    ]);
 
     const carreraNormalizada = carrera.trim();
     const materiasNormalizadasEntrada = materiasCursando.map((materia) => materia.trim());
@@ -385,7 +369,15 @@ export class UsersUseCases {
       carreraFinal = carreraCatalogo.nombre;
     }
 
-    // Auto-registra materias nuevas en el catálogo si aún no existen
+    if (materiasCatalogo.length > 0) {
+      materiasNormalizadas = this.resolverMateriasDesdeCatalogo(
+        materiasCatalogo,
+        materiasNormalizadasEntrada,
+      );
+    } else {
+      this.validarMateriasSinCatalogo(materiasNormalizadasEntrada);
+    }
+
     await this.deps.materiaRepository.createCatalog(materiasNormalizadas);
 
     if (contrasena.length < 8) {
@@ -592,8 +584,11 @@ export class UsersUseCases {
       if (materiasCatalogo.length > 0) {
         materiasNormalizadas = this.resolverMateriasDesdeCatalogo(materiasCatalogo, materiasEntrada);
       } else {
+        this.validarMateriasSinCatalogo(materiasEntrada);
         materiasNormalizadas = materiasEntrada;
       }
+
+      await this.deps.materiaRepository.createCatalog(materiasNormalizadas);
     }
 
     const usuarioActualizado = await this.deps.userRepository.updateProfile(authUser.id, {

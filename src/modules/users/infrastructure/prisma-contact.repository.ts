@@ -49,11 +49,4 @@ export class PrismaContactRepository implements ContactRepository {
   ): Promise<ContactRequestRecord> {
     return ContactoModel.aceptarSolicitud(solicitudId, usuarioReceptorId);
   }
-
-  async rejectRequest(
-    solicitudId: string,
-    usuarioReceptorId: string,
-  ): Promise<ContactRequestRecord> {
-    return ContactoModel.rechazarSolicitud(solicitudId, usuarioReceptorId);
-  }
 }

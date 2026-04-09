@@ -15,10 +15,6 @@ export class PrismaGrupoRepository implements GroupRepository {
     return GrupoModel.listarDisponibles(materiasCursando, usuarioId);
   }
 
-  async searchByText(texto: string) {
-    return GrupoModel.buscarPorTexto(texto);
-  }
-
   async findById(id: string) {
     return GrupoModel.buscarPorId(id);
   }

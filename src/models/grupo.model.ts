@@ -257,7 +257,6 @@ export class GrupoModel {
       );
     });
   }
-
   static async contarGruposPorMateria(materiaId: string) {
     return prisma.grupo.count({
       where: { materiaId },

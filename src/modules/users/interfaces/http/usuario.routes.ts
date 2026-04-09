@@ -12,13 +12,11 @@ router.get('/', UsuarioController.obtenerTodos);
 router.get('/perfil', verificarJWT, UsuarioController.obtenerPerfil);
 router.put('/perfil', verificarJWT, UsuarioController.actualizarPerfil);
 router.post('/logout', verificarJWT, UsuarioController.logout);
-router.get('/buscar', verificarJWT, UsuarioController.buscarGlobal);
 router.get('/buscar-por-materia', verificarJWT, UsuarioController.buscarPorMateria);
 router.post('/buscar-por-materia', verificarJWT, UsuarioController.buscarPorMateria);
 router.post('/solicitudes', verificarJWT, UsuarioController.enviarSolicitudConexion);
 router.get('/solicitudes-recibidas', verificarJWT, UsuarioController.listarSolicitudesRecibidas);
 router.post('/solicitudes/aceptar', verificarJWT, UsuarioController.aceptarSolicitud);
-router.post('/solicitudes/rechazar', verificarJWT, UsuarioController.rechazarSolicitud);
 router.get('/companeros', verificarJWT, UsuarioController.listarCompaneros);
 router.delete('/:id', UsuarioController.eliminarUsuario);
 
