@@ -18,7 +18,7 @@ export class MateriaController {
         }
     }
 
-    static async listar(req: Request, res: Response) {
+    static async listar(_req: Request, res: Response) {
         try {
             const resultado = await materiaUseCases.listar();
 
@@ -28,6 +28,19 @@ export class MateriaController {
             });
         } catch (error) {
             return handleControllerError(res, error, 'Error al listar materias');
+        }
+    }
+
+    static async buscar(req: Request, res: Response) {
+        try {
+            const resultado = await materiaUseCases.buscar(req.query.q);
+
+            return res.json({
+                success: true,
+                data: resultado.data
+            });
+        } catch (error) {
+            return handleControllerError(res, error, 'Error al buscar materias');
         }
     }
 }

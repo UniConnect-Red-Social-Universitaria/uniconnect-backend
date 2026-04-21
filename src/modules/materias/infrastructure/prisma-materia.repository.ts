@@ -18,6 +18,10 @@ export class PrismaMateriaRepository implements MateriaRepository {
     return MateriaModel.listarTodas();
   }
 
+  async searchByText(texto: string) {
+    return MateriaModel.buscarPorTexto(texto);
+  }
+
   async count() {
     return MateriaModel.contar();
   }

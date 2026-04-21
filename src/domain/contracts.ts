@@ -268,6 +268,7 @@ export interface MateriaRepository {
   findById(id: string): Promise<CatalogItem | null>;
   findByName(nombre: string): Promise<CatalogItem | null>;
   listAll(): Promise<CatalogItem[]>;
+  searchByText(texto: string): Promise<CatalogItem[]>;
   count(): Promise<number>;
   createCatalog(nombres: string[]): Promise<CountResult>;
 }

@@ -32,4 +32,12 @@ export class MateriaUseCases {
     const materias = await this.materiaRepository.listAll();
     return { data: materias };
   }
+
+  async buscar(q: unknown) {
+    if (typeof q !== 'string' || !q.trim()) {
+      return { data: [] };
+    }
+    const materias = await this.materiaRepository.searchByText(q.trim());
+    return { data: materias };
+  }
 }
