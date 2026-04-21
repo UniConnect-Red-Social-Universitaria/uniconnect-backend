@@ -163,6 +163,10 @@ export interface CreateMessageData {
   receptorId: string;
 }
 
+export type CategoriaEvento = 'academico' | 'cultural' | 'deportivo' | 'otro';
+
+export const CATEGORIAS_EVENTO: CategoriaEvento[] = ['academico', 'cultural', 'deportivo', 'otro'];
+
 export interface EventCreator {
   id: string;
   nombre: string;
@@ -176,6 +180,7 @@ export interface EventRecord {
   descripcion: string;
   lugar?: string | null;
   fechaEvento: Date;
+  categoria: CategoriaEvento;
   creadorId: string;
   createdAt: Date;
   creador?: EventCreator;
@@ -186,6 +191,7 @@ export interface CreateEventData {
   descripcion: string;
   lugar: string;
   fechaEvento: Date;
+  categoria: CategoriaEvento;
   creadorId: string;
 }
 
@@ -305,6 +311,7 @@ export interface MessageRepository {
 export interface EventRepository {
   create(data: CreateEventData): Promise<EventRecord>;
   listUpcoming(): Promise<EventRecord[]>;
+  listByCategoria(categoria: CategoriaEvento): Promise<EventRecord[]>;
 }
 
 export interface PasswordService {

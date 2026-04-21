@@ -112,6 +112,14 @@ export function emitirMensajeGrupoTiempoReal(payload: {
     ioInstance.to(`grupo:${payload.grupoId}`).emit('grupo:mensaje:nuevo', payload);
 }
 
+export function emitirEventoNuevoPorCategoria(usuarioId: string, evento: object) {
+    if (!ioInstance) {
+        return;
+    }
+
+    ioInstance.to(`usuario:${usuarioId}`).emit('evento:nuevo:categoria', evento);
+}
+
 export function emitirNotificacion(destinatario: string, datos: object) {
     if (!ioInstance) {
         return;

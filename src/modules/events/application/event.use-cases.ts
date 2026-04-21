@@ -1,8 +1,18 @@
-import { AuthenticatedUser, EventRepository } from '../../../domain/contracts';
+import {
+  AuthenticatedUser,
+  CategoriaEvento,
+  CATEGORIAS_EVENTO,
+  EventRecord,
+  EventRepository,
+} from '../../../domain/contracts';
 import { ApplicationError } from '../../../shared/application-error';
+import { EventoPublicador } from '../../../shared/eventos-observer/EventoPublicador';
 
 export class EventUseCases {
-  constructor(private readonly eventRepository: EventRepository) {}
+  constructor(
+    private readonly eventRepository: EventRepository,
+    private readonly publicador: EventoPublicador = EventoPublicador.getInstance(),
+  ) {}
 
   async crear(
     usuario: AuthenticatedUser | undefined,
@@ -10,6 +20,7 @@ export class EventUseCases {
     descripcion: unknown,
     lugar: unknown,
     fechaEvento: unknown,
+    categoria: unknown,
   ) {
     const authUser = this.ensureAuthenticated(usuario);
 
@@ -39,13 +50,21 @@ export class EventUseCases {
       throw new ApplicationError(400, 'La fecha del evento debe ser futura');
     }
 
+    const categoriaValida: CategoriaEvento =
+      typeof categoria === 'string' && (CATEGORIAS_EVENTO as string[]).includes(categoria)
+        ? (categoria as CategoriaEvento)
+        : 'otro';
+
     const evento = await this.eventRepository.create({
       titulo: titulo.trim(),
       descripcion: descripcion.trim(),
       lugar: typeof lugar === 'string' && lugar.trim() ? lugar.trim() : 'Por definir',
       fechaEvento: fecha,
+      categoria: categoriaValida,
       creadorId: authUser.id,
     });
+
+    this.publicador.notificar(categoriaValida, evento as EventRecord);
 
     return {
       message: 'Evento creado correctamente',
@@ -55,6 +74,15 @@ export class EventUseCases {
 
   async listarGlobal() {
     const eventos = await this.eventRepository.listUpcoming();
+    return { data: eventos };
+  }
+
+  async filtrarPorCategoria(categoria: unknown) {
+    if (typeof categoria !== 'string' || !(CATEGORIAS_EVENTO as string[]).includes(categoria)) {
+      throw new ApplicationError(400, `Categoría inválida. Valores posibles: ${CATEGORIAS_EVENTO.join(', ')}`);
+    }
+
+    const eventos = await this.eventRepository.listByCategoria(categoria as CategoriaEvento);
     return { data: eventos };
   }
 

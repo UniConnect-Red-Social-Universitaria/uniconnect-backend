@@ -133,6 +133,7 @@ model Evento {
   descripcion String
   lugar       String?
   fechaEvento DateTime
+  categoria   String   @default("otro")
   creadorId   String   @db.ObjectId
   creador     Usuario  @relation("EventosCreados", fields: [creadorId], references: [id])
   createdAt   DateTime @default(now())
