@@ -349,6 +349,7 @@ export class UsersUseCases {
     }
 
     const cantidadCarreras = await this.deps.careerRepository.count();
+    const carrerasCatalogo = cantidadCarreras > 0 ? await this.deps.careerRepository.listAll() : [];
 
     const carreraNormalizada = carrera.trim();
     const materiasNormalizadasEntrada = materiasCursando.map((materia) => materia.trim());

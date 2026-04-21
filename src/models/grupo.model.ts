@@ -191,6 +191,7 @@ export class GrupoModel {
         nombre: true,
         materiaId: true,
         creadorId: true,
+        administradorId: true,
         createdAt: true,
       },
       orderBy: {
@@ -224,6 +225,7 @@ export class GrupoModel {
           nombre: grupo.nombre,
           materiaId: grupo.materiaId,
           creadorId: grupo.creadorId,
+          administradorId: grupo.administradorId,
           createdAt: grupo.createdAt,
           materia,
           miembros: [],
@@ -237,6 +239,7 @@ export class GrupoModel {
           nombre: string;
           materiaId: string;
           creadorId: string;
+          administradorId: string;
           createdAt: Date;
           materia: { id: string; nombre: string };
           miembros: [];
