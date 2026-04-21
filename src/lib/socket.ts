@@ -112,6 +112,14 @@ export function emitirMensajeGrupoTiempoReal(payload: {
     ioInstance.to(`grupo:${payload.grupoId}`).emit('grupo:mensaje:nuevo', payload);
 }
 
+export function emitirNotificacion(destinatario: string, datos: object) {
+    if (!ioInstance) {
+        return;
+    }
+
+    ioInstance.to(`usuario:${destinatario}`).emit('notificacion:nueva', datos);
+}
+
 export function emitirSolicitudContactoTiempoReal(payload: {
     solicitudId: string;
     receptorId: string;
