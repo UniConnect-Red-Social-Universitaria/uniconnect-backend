@@ -1,4 +1,5 @@
-FROM node:20-alpine
+# ── Etapa 1: builder ──────────────────────────────────────────
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -10,9 +11,21 @@ RUN npx prisma generate
 
 COPY tsconfig*.json ./
 COPY src ./src
-COPY docker-entrypoint.sh ./
-RUN chmod +x docker-entrypoint.sh
+RUN npm run build
 
-EXPOSE 3000
+# ── Etapa 2: runner ───────────────────────────────────────────
+FROM node:20-alpine AS runner
 
-ENTRYPOINT ["./docker-entrypoint.sh"]
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+COPY prisma ./prisma
+RUN npx prisma generate
+
+COPY --from=builder /app/dist ./dist
+
+EXPOSE ${PORT:-3000}
+
+CMD ["node", "dist/server.js"]
