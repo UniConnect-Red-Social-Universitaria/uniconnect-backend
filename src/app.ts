@@ -20,6 +20,10 @@ app.use('/api/mensajes', mensajeRoutes);
 app.use('/api/eventos', eventoRoutes);
 app.use('/api/catalogos', catalogoRoutes);
 
+app.get('/health', (_req, res) => {
+    res.status(200).json({ status: 'ok' });
+});
+
 app.get('/', (req, res) => {
     res.json({
         mensaje: '🚀 API de UniConnect con MongoDB',
