@@ -51,10 +51,7 @@ export interface UpdateUserProfileData {
 }
 
 export interface ContactRelation {
-  id: string;
   estado: ContactStatus;
-  solicitanteId: string;
-  receptorId: string;
 }
 
 export interface ContactRequestRecord {
@@ -225,6 +222,18 @@ export interface UserRepository {
     semestre: number;
     materiasCursando: string[];
   }>>;
+  searchByText(
+    texto: string,
+    usuarioActualId: string,
+  ): Promise<Array<{
+    id: string;
+    nombre: string;
+    apellido: string;
+    correo: string;
+    carrera: string;
+    semestre: number;
+    materiasCursando: string[];
+  }>>;
   updateProfile(id: string, data: UpdateUserProfileData): Promise<UserSummary>;
   delete(id: string): Promise<void>;
 }
@@ -235,10 +244,6 @@ export interface ContactRepository {
     usuarioBId: string,
   ): Promise<ContactRelation | null>;
   createRequest(
-    solicitanteId: string,
-    receptorId: string,
-  ): Promise<ContactRequestRecord>;
-  reactivateRejectedRequest(
     solicitanteId: string,
     receptorId: string,
   ): Promise<ContactRequestRecord>;
@@ -278,12 +283,12 @@ export interface GroupRepository {
   create(data: CreateGroupData): Promise<GroupRecord>;
   listByUser(usuarioId: string): Promise<GroupRecord[]>;
   listAvailable(materiasCursando: string[], usuarioId: string): Promise<GroupRecord[]>;
+  searchByText(texto: string): Promise<GroupRecord[]>;
   findById(id: string): Promise<GroupRecord | null>;
   findByName(nombre: string): Promise<{ id: string } | null>;
   countByMateria(materiaId: string): Promise<number>;
   join(grupoId: string, usuarioId: string): Promise<void>;
   updateAdministrador(grupoId: string, nuevoAdminId: string): Promise<void>;
-  leave(grupoId: string, usuarioId: string): Promise<void>;
 }
 
 export interface GrupoArchivoRepository {

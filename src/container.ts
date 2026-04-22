@@ -43,12 +43,7 @@ export const usersUseCases = new UsersUseCases({
   tokenBlacklistService,
 });
 
-export const groupUseCases = new GroupUseCases(
-  grupoRepository,
-  materiaRepository,
-  grupoArchivoRepository,
-  userRepository,
-);
+export const groupUseCases = new GroupUseCases(grupoRepository, materiaRepository, grupoArchivoRepository);
 export const materiaUseCases = new MateriaUseCases(materiaRepository);
 export const messageUseCases = new MessageUseCases(
   mensajeRepository,

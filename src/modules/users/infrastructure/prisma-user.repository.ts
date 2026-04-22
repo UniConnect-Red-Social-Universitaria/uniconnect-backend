@@ -84,6 +84,10 @@ export class PrismaUserRepository implements UserRepository {
     );
   }
 
+  async searchByText(texto: string, usuarioActualId: string) {
+    return UsuarioModel.buscarPorTexto(texto, usuarioActualId);
+  }
+
   async updateProfile(id: string, data: UpdateUserProfileData): Promise<UserSummary> {
     const usuario = await UsuarioModel.actualizar(id, data);
     const usuarioDinamico = usuario as Record<string, unknown>;

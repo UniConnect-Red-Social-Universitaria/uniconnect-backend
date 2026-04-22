@@ -4,7 +4,6 @@ import {
   GroupRepository,
   GrupoArchivoRepository,
   MateriaRepository,
-  UserRepository,
 } from '../../../domain/contracts';
 import { ApplicationError } from '../../../shared/application-error';
 
@@ -26,28 +25,7 @@ export class GroupUseCases {
     private readonly groupRepository: GroupRepository,
     private readonly materiaRepository: MateriaRepository,
     private readonly grupoArchivoRepository: GrupoArchivoRepository,
-    private readonly userRepository: UserRepository,
-  ) { }
-
-  private normalizarMateria(valor: string) {
-    return valor
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .trim();
-  }
-
-  private async obtenerMateriasCursandoActuales(authUser: AuthenticatedUser) {
-    const perfilActual = await this.userRepository.findSafeById(authUser.id);
-
-    if (!perfilActual) {
-      throw new ApplicationError(404, 'Usuario no encontrado');
-    }
-
-    return (perfilActual.materiasCursando || []).map((materia) =>
-      this.normalizarMateria(materia),
-    );
-  }
+  ) {}
 
   async crearGrupo(usuario: AuthenticatedUser | undefined, input: CreateGroupInput) {
     const authUser = this.ensureAuthenticated(usuario);
@@ -74,10 +52,7 @@ export class GroupUseCases {
       throw new ApplicationError(404, 'La materia asociada no existe');
     }
 
-    const materiasCursando = await this.obtenerMateriasCursandoActuales(authUser);
-    const materiaGrupo = this.normalizarMateria(materia.nombre);
-
-    if (!materiasCursando.includes(materiaGrupo)) {
+    if (!authUser.materiasCursando.includes(materia.nombre)) {
       throw new ApplicationError(
         403,
         'No puedes crear grupos de materias que no estás cursando',
@@ -117,16 +92,21 @@ export class GroupUseCases {
 
   async listarGruposDisponibles(usuario: AuthenticatedUser | undefined) {
     const authUser = this.ensureAuthenticated(usuario);
-    const perfilActual = await this.userRepository.findSafeById(authUser.id);
-
-    if (!perfilActual) {
-      throw new ApplicationError(404, 'Usuario no encontrado');
-    }
-
     const grupos = await this.groupRepository.listAvailable(
-      perfilActual.materiasCursando,
+      authUser.materiasCursando,
       authUser.id,
     );
+    return { data: grupos.map(formatearGrupo) };
+  }
+
+  async buscarPorTexto(usuario: AuthenticatedUser | undefined, texto: unknown) {
+    this.ensureAuthenticated(usuario);
+
+    if (typeof texto !== 'string' || !texto.trim()) {
+      return { data: [] };
+    }
+
+    const grupos = await this.groupRepository.searchByText(texto.trim());
     return { data: grupos.map(formatearGrupo) };
   }
 
@@ -143,10 +123,7 @@ export class GroupUseCases {
       throw new ApplicationError(404, 'Grupo no encontrado');
     }
 
-    const materiasCursando = await this.obtenerMateriasCursandoActuales(authUser);
-    const materiaGrupo = this.normalizarMateria(grupo.materia.nombre);
-
-    if (!materiasCursando.includes(materiaGrupo)) {
+    if (!authUser.materiasCursando.includes(grupo.materia.nombre)) {
       throw new ApplicationError(
         403,
         'No puedes unirte a grupos de materias que no estás cursando',
@@ -314,122 +291,6 @@ export class GroupUseCases {
     return { message: 'Administración cedida correctamente' };
   }
 
-  async agregarMiembro(
-    usuario: AuthenticatedUser | undefined,
-    grupoId: unknown,
-    nuevoMiembroId: unknown,
-  ) {
-    const authUser = this.ensureAuthenticated(usuario);
-
-    if (!grupoId || typeof grupoId !== 'string') {
-      throw new ApplicationError(400, 'ID de grupo inválido');
-    }
-
-    if (!nuevoMiembroId || typeof nuevoMiembroId !== 'string') {
-      throw new ApplicationError(400, 'ID del miembro inválido');
-    }
-
-    const grupo = await this.groupRepository.findById(grupoId);
-    if (!grupo) throw new ApplicationError(404, 'Grupo no encontrado');
-
-    if (grupo.administradorId !== authUser.id) {
-      throw new ApplicationError(403, 'Solo el administrador puede agregar miembros');
-    }
-
-    const yaMiembro = grupo.miembros.some((m) => m.usuarioId === nuevoMiembroId);
-    if (yaMiembro) {
-      throw new ApplicationError(409, 'El usuario ya es miembro del grupo');
-    }
-
-    const usuarioDestino = await this.userRepository.findSafeById(nuevoMiembroId);
-    if (!usuarioDestino) {
-      throw new ApplicationError(404, 'Usuario no encontrado');
-    }
-
-    const materiasUsuarioDestino = (usuarioDestino.materiasCursando || []).map((materia) =>
-      this.normalizarMateria(materia),
-    );
-    const materiaGrupo = this.normalizarMateria(grupo.materia.nombre);
-
-    if (!materiasUsuarioDestino.includes(materiaGrupo)) {
-      throw new ApplicationError(
-        403,
-        'Solo puedes agregar usuarios que estén cursando esta materia',
-      );
-    }
-
-    await this.groupRepository.join(grupo.id, nuevoMiembroId);
-
-    return { message: 'Miembro agregado correctamente' };
-  }
-
-  async abandonarGrupo(usuario: AuthenticatedUser | undefined, grupoId: unknown) {
-    const authUser = this.ensureAuthenticated(usuario);
-
-    if (!grupoId || typeof grupoId !== 'string') {
-      throw new ApplicationError(400, 'ID de grupo inválido');
-    }
-
-    const grupo = await this.groupRepository.findById(grupoId);
-    if (!grupo) throw new ApplicationError(404, 'Grupo no encontrado');
-
-    const esMiembro = grupo.miembros.some((m) => m.usuarioId === authUser.id);
-    if (!esMiembro) throw new ApplicationError(403, 'No eres miembro de este grupo');
-
-    // Si es administrador, asignar administración a otro miembro aleatorio
-    if (grupo.administradorId === authUser.id) {
-      const otrosMiembros = grupo.miembros.filter(
-        (m) => m.usuarioId !== authUser.id && m.usuarioId,
-      );
-
-      if (otrosMiembros.length > 0) {
-        // Seleccionar un miembro aleatorio de los otros
-        const indiceAleatorio = Math.floor(Math.random() * otrosMiembros.length);
-        const nuevoAdmin = otrosMiembros[indiceAleatorio].usuarioId!;
-        await this.groupRepository.updateAdministrador(grupo.id, nuevoAdmin);
-      }
-    }
-
-    // Remover al usuario del grupo
-    await this.groupRepository.leave(grupo.id, authUser.id);
-
-    return {
-      message: 'Has abandonado el grupo correctamente',
-    };
-  }
-
-  async obtenerMiembrosGrupo(usuario: AuthenticatedUser | undefined, grupoId: unknown) {
-    const authUser = this.ensureAuthenticated(usuario);
-
-    if (!grupoId || typeof grupoId !== 'string') {
-      throw new ApplicationError(400, 'ID de grupo inválido');
-    }
-
-    const grupo = await this.groupRepository.findById(grupoId);
-    if (!grupo) throw new ApplicationError(404, 'Grupo no encontrado');
-
-    const esMiembro = grupo.miembros.some((m) => m.usuarioId === authUser.id);
-    if (!esMiembro) throw new ApplicationError(403, 'No eres miembro de este grupo');
-
-    const miembros = grupo.miembros
-      .filter((miembro) => miembro.usuario)
-      .map((miembro) => ({
-        id: miembro.usuario!.id,
-        nombre: miembro.usuario!.nombre,
-        apellido: miembro.usuario!.apellido,
-        esAdministrador: miembro.usuario!.id === grupo.administradorId,
-      }));
-
-    return {
-      data: {
-        grupoId: grupo.id,
-        grupoNombre: grupo.nombre,
-        cantidadMiembros: miembros.length,
-        miembros,
-      },
-    };
-  }
-
   private ensureAuthenticated(usuario: AuthenticatedUser | undefined) {
     if (!usuario) {
       throw new ApplicationError(401, 'Usuario no autenticado');
@@ -448,7 +309,6 @@ function formatearGrupo(grupo: GroupRecord) {
       nombre: grupo.materia.nombre,
     },
     creadorId: grupo.creadorId,
-    administradorId: grupo.administradorId,
     cantidadMiembros: grupo.miembros.length,
     miembros: grupo.miembros
       .filter((miembro) => miembro.usuario)

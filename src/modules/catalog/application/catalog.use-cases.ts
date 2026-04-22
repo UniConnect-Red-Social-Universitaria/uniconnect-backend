@@ -1,4 +1,5 @@
 import { CareerRepository, MateriaRepository } from '../../../domain/contracts';
+
 const CARRERAS_OFICIALES = [
   'Ingeniería de Sistemas y Computación',
   'Ingeniería Industrial',
@@ -11,6 +12,7 @@ const CARRERAS_OFICIALES = [
   'Licenciatura en Matemáticas',
   'Licenciatura en Lenguas Modernas',
 ];
+
 export class CatalogUseCases {
   constructor(
     private readonly careerRepository: CareerRepository,
@@ -19,17 +21,10 @@ export class CatalogUseCases {
 
   async poblar() {
     const carrerasInsertadas = await this.careerRepository.createCatalog(CARRERAS_OFICIALES);
-    const [carreras, materias] = await Promise.all([
-      this.careerRepository.listAll(),
-      this.materiaRepository.listAll(),
-    ]);
+
     return {
       message: 'Catálogo consumido desde MongoDB',
       data: {
-        carreras,
-        materias,
-        carrerasTotal: carreras.length,
-        materiasTotal: materias.length,
         carrerasInsertadas: carrerasInsertadas.count,
       },
     };
