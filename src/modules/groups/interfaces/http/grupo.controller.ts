@@ -4,6 +4,19 @@ import { groupUseCases, materiaUseCases } from '../../../../container';
 import { handleControllerError } from '../../../../shared/controller-error';
 
 export class GrupoController {
+  static async buscar(req: Request, res: Response) {
+    try {
+      const resultado = await groupUseCases.buscarPorTexto(req.usuario, req.query.q);
+
+      return res.json({
+        success: true,
+        data: resultado.data,
+      });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al buscar grupos');
+    }
+  }
+
   static async crearMateria(req: Request, res: Response) {
     try {
       const resultado = await materiaUseCases.crear(req.body?.nombre);
@@ -120,38 +133,6 @@ export class GrupoController {
       return res.json({ success: true, message: resultado.message });
     } catch (error) {
       return handleControllerError(res, error, 'Error al ceder la administración');
-    }
-  }
-
-  static async agregarMiembro(req: Request, res: Response) {
-    try {
-      const resultado = await groupUseCases.agregarMiembro(
-        req.usuario,
-        req.params.id,
-        req.body?.usuarioId,
-      );
-
-      return res.status(201).json({ success: true, message: resultado.message });
-    } catch (error) {
-      return handleControllerError(res, error, 'Error al agregar miembro');
-    }
-  }
-
-  static async abandonarGrupo(req: Request, res: Response) {
-    try {
-      const resultado = await groupUseCases.abandonarGrupo(req.usuario, req.params.id);
-      return res.json({ success: true, message: resultado.message });
-    } catch (error) {
-      return handleControllerError(res, error, 'Error al abandonar el grupo');
-    }
-  }
-
-  static async obtenerMiembrosGrupo(req: Request, res: Response) {
-    try {
-      const resultado = await groupUseCases.obtenerMiembrosGrupo(req.usuario, req.params.id);
-      return res.json({ success: true, data: resultado.data });
-    } catch (error) {
-      return handleControllerError(res, error, 'Error al obtener miembros del grupo');
     }
   }
 }

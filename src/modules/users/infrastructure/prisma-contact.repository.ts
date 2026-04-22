@@ -22,13 +22,6 @@ export class PrismaContactRepository implements ContactRepository {
     return ContactoModel.crearSolicitud(solicitanteId, receptorId);
   }
 
-  async reactivateRejectedRequest(
-    solicitanteId: string,
-    receptorId: string,
-  ): Promise<ContactRequestRecord> {
-    return ContactoModel.reactivarSolicitudRechazada(solicitanteId, receptorId);
-  }
-
   async getRelatedIds(usuarioId: string) {
     return ContactoModel.obtenerIdsRelacionados(usuarioId);
   }
