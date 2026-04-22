@@ -12,7 +12,10 @@ import {
 import { ApplicationError } from '../../../shared/application-error';
 import { esCorreoInstitucional } from '../../../utils/registro.util';
 import { isValidMongoId } from '../../../shared/mongo-id';
-import { emitirSolicitudContactoTiempoReal } from '../../../lib/socket';
+import {
+  emitirSolicitudContactoRechazadaTiempoReal,
+  emitirSolicitudContactoTiempoReal,
+} from '../../../lib/socket';
 
 type RegisterInput = {
   nombre: unknown;
@@ -85,6 +88,19 @@ export class UsersUseCases {
     return materiasResueltas.map((materiaCatalogoItem) => materiaCatalogoItem!.nombre);
   }
 
+  private validarMateriasSinCatalogo(materiasEntrada: string[]) {
+    const materiaConFormatoId = materiasEntrada.find((materiaEntrada) =>
+      isValidMongoId(materiaEntrada.trim()),
+    );
+
+    if (materiaConFormatoId) {
+      throw new ApplicationError(
+        400,
+        'Las materias deben enviarse por nombre cuando el catálogo no está disponible',
+      );
+    }
+  }
+
   async buscarPorMateria(usuario: AuthenticatedUser | undefined, materiaQuery: unknown) {
     const authUser = this.ensureAuthenticated(usuario);
 
@@ -92,46 +108,13 @@ export class UsersUseCases {
       throw new ApplicationError(400, 'Debes enviar la materia a buscar');
     }
 
-    const idsRelacionados = await this.deps.contactRepository.getRelatedIds(authUser.id);
     const resultados = await this.deps.userRepository.searchByMateriaExcluding(
       materiaQuery.trim(),
       authUser.id,
-      idsRelacionados,
+      [],
     );
 
     return { data: resultados };
-  }
-
-  async buscarGlobal(usuario: AuthenticatedUser | undefined, qQuery: unknown) {
-    const authUser = this.ensureAuthenticated(usuario);
-
-    if (typeof qQuery !== 'string' || !qQuery.trim()) {
-      return {
-        data: {
-          estudiantes: [],
-          materias: [],
-        },
-      };
-    }
-
-    const termino = qQuery.trim();
-    const terminoNormalizado = this.normalizarTexto(termino);
-
-    const [estudiantes, materiasCatalogo] = await Promise.all([
-      this.deps.userRepository.searchByText(termino, authUser.id),
-      this.deps.materiaRepository.listAll(),
-    ]);
-
-    const materias = materiasCatalogo.filter((materia) =>
-      this.normalizarTexto(materia.nombre).includes(terminoNormalizado),
-    );
-
-    return {
-      data: {
-        estudiantes,
-        materias,
-      },
-    };
   }
 
   async enviarSolicitudConexion(
@@ -163,21 +146,30 @@ export class UsersUseCases {
       usuarioDestinoId.trim(),
     );
 
+    let solicitud;
+
     if (relacionExistente) {
       if (relacionExistente.estado === 'ACEPTADA') {
         throw new ApplicationError(409, 'Este compañero ya está agregado');
       }
 
-      throw new ApplicationError(
-        409,
-        'Ya existe una solicitud de conexión entre estos usuarios',
+      if (relacionExistente.estado === 'RECHAZADA') {
+        solicitud = await this.deps.contactRepository.reactivateRejectedRequest(
+          authUser.id,
+          usuarioDestinoId.trim(),
+        );
+      } else {
+        throw new ApplicationError(
+          409,
+          'Ya existe una solicitud de conexión entre estos usuarios',
+        );
+      }
+    } else {
+      solicitud = await this.deps.contactRepository.createRequest(
+        authUser.id,
+        usuarioDestinoId.trim(),
       );
     }
-
-    const solicitud = await this.deps.contactRepository.createRequest(
-      authUser.id,
-      usuarioDestinoId.trim(),
-    );
 
     const solicitante = await this.deps.userRepository.findSafeById(authUser.id);
     emitirSolicitudContactoTiempoReal({
@@ -273,6 +265,13 @@ export class UsersUseCases {
         authUser.id,
       );
 
+      emitirSolicitudContactoRechazadaTiempoReal({
+        solicitudId: solicitudActualizada.id,
+        receptorId: solicitudActualizada.receptorId,
+        solicitanteId: solicitudActualizada.solicitanteId,
+        updatedAt: solicitudActualizada.updatedAt,
+      });
+
       return {
         message: 'Solicitud rechazada correctamente',
         data: {
@@ -348,6 +347,10 @@ export class UsersUseCases {
       throw new ApplicationError(400, 'Debes enviar al menos una materia válida');
     }
 
+    const [carrerasCatalogo, materiasCatalogo] = await Promise.all([
+      this.deps.careerRepository.listAll(),
+      this.deps.materiaRepository.listAll(),
+    ]);
     const cantidadCarreras = await this.deps.careerRepository.count();
     const carrerasCatalogo = cantidadCarreras > 0 ? await this.deps.careerRepository.listAll() : [];
 
@@ -368,7 +371,15 @@ export class UsersUseCases {
       carreraFinal = carreraCatalogo.nombre;
     }
 
-    // Auto-registra materias nuevas en el catálogo si aún no existen
+    if (materiasCatalogo.length > 0) {
+      materiasNormalizadas = this.resolverMateriasDesdeCatalogo(
+        materiasCatalogo,
+        materiasNormalizadasEntrada,
+      );
+    } else {
+      this.validarMateriasSinCatalogo(materiasNormalizadasEntrada);
+    }
+
     await this.deps.materiaRepository.createCatalog(materiasNormalizadas);
 
     if (contrasena.length < 8) {
@@ -575,8 +586,11 @@ export class UsersUseCases {
       if (materiasCatalogo.length > 0) {
         materiasNormalizadas = this.resolverMateriasDesdeCatalogo(materiasCatalogo, materiasEntrada);
       } else {
+        this.validarMateriasSinCatalogo(materiasEntrada);
         materiasNormalizadas = materiasEntrada;
       }
+
+      await this.deps.materiaRepository.createCatalog(materiasNormalizadas);
     }
 
     const usuarioActualizado = await this.deps.userRepository.updateProfile(authUser.id, {

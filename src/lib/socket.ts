@@ -144,3 +144,18 @@ export function emitirSolicitudContactoTiempoReal(payload: {
         .to(`usuario:${payload.receptorId}`)
         .emit('contacto:solicitud:nueva', payload);
 }
+
+export function emitirSolicitudContactoRechazadaTiempoReal(payload: {
+    solicitudId: string;
+    receptorId: string;
+    solicitanteId: string;
+    updatedAt?: Date;
+}) {
+    if (!ioInstance) {
+        return;
+    }
+
+    ioInstance
+        .to(`usuario:${payload.solicitanteId}`)
+        .emit('contacto:solicitud:rechazada', payload);
+}

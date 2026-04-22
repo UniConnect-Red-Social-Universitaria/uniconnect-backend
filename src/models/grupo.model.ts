@@ -177,7 +177,17 @@ export class GrupoModel {
       where: { id },
       include: {
         materia: true,
-        miembros: true,
+        miembros: {
+          include: {
+            usuario: {
+              select: {
+                id: true,
+                nombre: true,
+                apellido: true,
+              },
+            },
+          },
+        },
       },
     });
   }
@@ -257,7 +267,6 @@ export class GrupoModel {
       );
     });
   }
-
   static async contarGruposPorMateria(materiaId: string) {
     return prisma.grupo.count({
       where: { materiaId },
@@ -282,6 +291,24 @@ export class GrupoModel {
     return prisma.grupo.update({
       where: { id: grupoId },
       data: { administradorId: nuevoAdminId },
+    });
+  }
+
+  static async abandonarGrupo(grupoId: string, usuarioId: string) {
+    return prisma.usuarioGrupo.deleteMany({
+      where: {
+        grupoId,
+        usuarioId,
+      },
+    });
+  }
+
+  static async obtenerMiembrosDelGrupo(grupoId: string) {
+    return prisma.usuarioGrupo.findMany({
+      where: { grupoId },
+      select: {
+        usuarioId: true,
+      },
     });
   }
 }
