@@ -4,6 +4,7 @@ import {
   GroupRepository,
   GrupoArchivoRepository,
   MateriaRepository,
+  UserRepository,
 } from '../../../domain/contracts';
 import { ApplicationError } from '../../../shared/application-error';
 
@@ -24,6 +25,7 @@ export class GroupUseCases {
   constructor(
     private readonly groupRepository: GroupRepository,
     private readonly materiaRepository: MateriaRepository,
+    private readonly userRepository: UserRepository,
     private readonly grupoArchivoRepository: GrupoArchivoRepository,
   ) {}
 
@@ -289,6 +291,127 @@ export class GroupUseCases {
     await this.groupRepository.updateAdministrador(grupo.id, nuevoAdminId);
 
     return { message: 'Administración cedida correctamente' };
+  }
+
+  async agregarMiembro(
+    usuario: AuthenticatedUser | undefined,
+    grupoId: unknown,
+    nuevoMiembroId: unknown,
+  ) {
+    const authUser = this.ensureAuthenticated(usuario);
+
+    if (!grupoId || typeof grupoId !== 'string') {
+      throw new ApplicationError(400, 'ID de grupo inválido');
+    }
+
+    if (!nuevoMiembroId || typeof nuevoMiembroId !== 'string') {
+      throw new ApplicationError(400, 'ID del miembro inválido');
+    }
+
+    const grupo = await this.groupRepository.findById(grupoId);
+    if (!grupo) throw new ApplicationError(404, 'Grupo no encontrado');
+
+    if (grupo.administradorId !== authUser.id) {
+      throw new ApplicationError(403, 'Solo el administrador puede agregar miembros');
+    }
+
+    const yaMiembro = grupo.miembros.some((m) => m.usuarioId === nuevoMiembroId);
+    if (yaMiembro) {
+      throw new ApplicationError(409, 'El usuario ya es miembro del grupo');
+    }
+
+    const usuarioDestino = await this.userRepository.findSafeById(nuevoMiembroId);
+    if (!usuarioDestino) {
+      throw new ApplicationError(404, 'Usuario no encontrado');
+    }
+
+    const materiasUsuarioDestino = (usuarioDestino.materiasCursando || []).map((materia) =>
+      this.normalizarMateria(materia),
+    );
+    const materiaGrupo = this.normalizarMateria(grupo.materia.nombre);
+
+    if (!materiasUsuarioDestino.includes(materiaGrupo)) {
+      throw new ApplicationError(
+        403,
+        'Solo puedes agregar usuarios que estén cursando esta materia',
+      );
+    }
+
+    await this.groupRepository.join(grupo.id, nuevoMiembroId);
+
+    return { message: 'Miembro agregado correctamente' };
+  }
+
+  async abandonarGrupo(usuario: AuthenticatedUser | undefined, grupoId: unknown) {
+    const authUser = this.ensureAuthenticated(usuario);
+
+    if (!grupoId || typeof grupoId !== 'string') {
+      throw new ApplicationError(400, 'ID de grupo inválido');
+    }
+
+    const grupo = await this.groupRepository.findById(grupoId);
+    if (!grupo) throw new ApplicationError(404, 'Grupo no encontrado');
+
+    const esMiembro = grupo.miembros.some((m) => m.usuarioId === authUser.id);
+    if (!esMiembro) throw new ApplicationError(403, 'No eres miembro de este grupo');
+
+    // Si es administrador, asignar administración a otro miembro aleatorio
+    if (grupo.administradorId === authUser.id) {
+      const otrosMiembros = grupo.miembros.filter(
+        (m) => m.usuarioId !== authUser.id && m.usuarioId,
+      );
+
+      if (otrosMiembros.length > 0) {
+        // Seleccionar un miembro aleatorio de los otros
+        const indiceAleatorio = Math.floor(Math.random() * otrosMiembros.length);
+        const nuevoAdmin = otrosMiembros[indiceAleatorio].usuarioId!;
+        await this.groupRepository.updateAdministrador(grupo.id, nuevoAdmin);
+      }
+    }
+
+    // Remover al usuario del grupo
+    await this.groupRepository.leave(grupo.id, authUser.id);
+
+    return {
+      message: 'Has abandonado el grupo correctamente',
+    };
+  }
+
+  async obtenerMiembrosGrupo(usuario: AuthenticatedUser | undefined, grupoId: unknown) {
+    const authUser = this.ensureAuthenticated(usuario);
+
+    if (!grupoId || typeof grupoId !== 'string') {
+      throw new ApplicationError(400, 'ID de grupo inválido');
+    }
+
+    const grupo = await this.groupRepository.findById(grupoId);
+    if (!grupo) throw new ApplicationError(404, 'Grupo no encontrado');
+
+    const esMiembro = grupo.miembros.some((m) => m.usuarioId === authUser.id);
+    if (!esMiembro) throw new ApplicationError(403, 'No eres miembro de este grupo');
+
+    const miembros = grupo.miembros
+      .filter((miembro) => miembro.usuario)
+      .map((miembro) => ({
+        id: miembro.usuario!.id,
+        nombre: miembro.usuario!.nombre,
+        apellido: miembro.usuario!.apellido,
+        esAdministrador: miembro.usuario!.id === grupo.administradorId,
+      }));
+
+    return {
+      data: {
+        grupoId: grupo.id,
+        grupoNombre: grupo.nombre,
+        cantidadMiembros: miembros.length,
+        miembros,
+      },
+    };
+  }
+
+  private normalizarMateria(materia: unknown) {
+    if (typeof materia !== 'string') return '';
+    return materia.trim().toLowerCase();
   }
 
   private ensureAuthenticated(usuario: AuthenticatedUser | undefined) {

@@ -38,6 +38,10 @@ export class PrismaGrupoRepository implements GroupRepository {
   async updateAdministrador(grupoId: string, nuevoAdminId: string) {
     await GrupoModel.actualizarAdministrador(grupoId, nuevoAdminId);
   }
+
+  async leave(grupoId: string, usuarioId: string) {
+    await GrupoModel.abandonarGrupo(grupoId, usuarioId);
+  }
 }
 
 export class PrismaGrupoArchivoRepository implements GrupoArchivoRepository {
