@@ -363,6 +363,73 @@ export class GroupUseCases {
     return { message: 'Miembro agregado correctamente' };
   }
 
+  async abandonarGrupo(usuario: AuthenticatedUser | undefined, grupoId: unknown) {
+    const authUser = this.ensureAuthenticated(usuario);
+
+    if (!grupoId || typeof grupoId !== 'string') {
+      throw new ApplicationError(400, 'ID de grupo inválido');
+    }
+
+    const grupo = await this.groupRepository.findById(grupoId);
+    if (!grupo) throw new ApplicationError(404, 'Grupo no encontrado');
+
+    const esMiembro = grupo.miembros.some((m) => m.usuarioId === authUser.id);
+    if (!esMiembro) throw new ApplicationError(403, 'No eres miembro de este grupo');
+
+    // Si es administrador, asignar administración a otro miembro aleatorio
+    if (grupo.administradorId === authUser.id) {
+      const otrosMiembros = grupo.miembros.filter(
+        (m) => m.usuarioId !== authUser.id && m.usuarioId,
+      );
+
+      if (otrosMiembros.length > 0) {
+        // Seleccionar un miembro aleatorio de los otros
+        const indiceAleatorio = Math.floor(Math.random() * otrosMiembros.length);
+        const nuevoAdmin = otrosMiembros[indiceAleatorio].usuarioId!;
+        await this.groupRepository.updateAdministrador(grupo.id, nuevoAdmin);
+      }
+    }
+
+    // Remover al usuario del grupo
+    await this.groupRepository.leave(grupo.id, authUser.id);
+
+    return {
+      message: 'Has abandonado el grupo correctamente',
+    };
+  }
+
+  async obtenerMiembrosGrupo(usuario: AuthenticatedUser | undefined, grupoId: unknown) {
+    const authUser = this.ensureAuthenticated(usuario);
+
+    if (!grupoId || typeof grupoId !== 'string') {
+      throw new ApplicationError(400, 'ID de grupo inválido');
+    }
+
+    const grupo = await this.groupRepository.findById(grupoId);
+    if (!grupo) throw new ApplicationError(404, 'Grupo no encontrado');
+
+    const esMiembro = grupo.miembros.some((m) => m.usuarioId === authUser.id);
+    if (!esMiembro) throw new ApplicationError(403, 'No eres miembro de este grupo');
+
+    const miembros = grupo.miembros
+      .filter((miembro) => miembro.usuario)
+      .map((miembro) => ({
+        id: miembro.usuario!.id,
+        nombre: miembro.usuario!.nombre,
+        apellido: miembro.usuario!.apellido,
+        esAdministrador: miembro.usuario!.id === grupo.administradorId,
+      }));
+
+    return {
+      data: {
+        grupoId: grupo.id,
+        grupoNombre: grupo.nombre,
+        cantidadMiembros: miembros.length,
+        miembros,
+      },
+    };
+  }
+
   private ensureAuthenticated(usuario: AuthenticatedUser | undefined) {
     if (!usuario) {
       throw new ApplicationError(401, 'Usuario no autenticado');

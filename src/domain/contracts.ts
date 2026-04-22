@@ -276,6 +276,7 @@ export interface GroupRepository {
   countByMateria(materiaId: string): Promise<number>;
   join(grupoId: string, usuarioId: string): Promise<void>;
   updateAdministrador(grupoId: string, nuevoAdminId: string): Promise<void>;
+  leave(grupoId: string, usuarioId: string): Promise<void>;
 }
 
 export interface GrupoArchivoRepository {
