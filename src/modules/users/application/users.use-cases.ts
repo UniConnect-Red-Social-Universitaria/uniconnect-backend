@@ -12,7 +12,10 @@ import {
 import { ApplicationError } from '../../../shared/application-error';
 import { esCorreoInstitucional } from '../../../utils/registro.util';
 import { isValidMongoId } from '../../../shared/mongo-id';
-import { emitirSolicitudContactoTiempoReal } from '../../../lib/socket';
+import {
+  emitirSolicitudContactoRechazadaTiempoReal,
+  emitirSolicitudContactoTiempoReal,
+} from '../../../lib/socket';
 
 type RegisterInput = {
   nombre: unknown;
@@ -272,6 +275,17 @@ export class UsersUseCases {
         solicitudId.trim(),
         authUser.id,
       );
+
+      const usuarioReceptor = await this.deps.userRepository.findSafeById(authUser.id);
+
+      emitirSolicitudContactoRechazadaTiempoReal({
+        solicitudId: solicitudActualizada.id,
+        solicitanteId: solicitudActualizada.solicitanteId,
+        receptorId: solicitudActualizada.receptorId,
+        receptorNombre: usuarioReceptor?.nombre ?? authUser.nombre,
+        receptorApellido: usuarioReceptor?.apellido,
+        updatedAt: solicitudActualizada.updatedAt,
+      });
 
       return {
         message: 'Solicitud rechazada correctamente',
