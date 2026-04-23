@@ -40,6 +40,13 @@ function contactoDelegate() {
                 receptorId: string;
                 updatedAt: Date;
             }>;
+            delete: (args: unknown) => Promise<{
+                id: string;
+                estado: EstadoContacto;
+                solicitanteId: string;
+                receptorId: string;
+                updatedAt: Date;
+            }>;
             findMany: (args: unknown) => Promise<Array<Record<string, unknown>>>;
         };
     };
@@ -117,8 +124,28 @@ export class ContactoModel {
                 ]
             },
             include: {
-                solicitante: true,
-                receptor: true
+                solicitante: {
+                    select: {
+                        id: true,
+                        nombre: true,
+                        apellido: true,
+                        correo: true,
+                        carrera: true,
+                        semestre: true,
+                        materiasCursando: true
+                    }
+                },
+                receptor: {
+                    select: {
+                        id: true,
+                        nombre: true,
+                        apellido: true,
+                        correo: true,
+                        carrera: true,
+                        semestre: true,
+                        materiasCursando: true
+                    }
+                }
             }
         });
 
@@ -219,9 +246,10 @@ export class ContactoModel {
             throw new Error('La solicitud ya fue procesada');
         }
 
-        return contactoDelegate().update({
-            where: { id: solicitudId },
-            data: { estado: 'RECHAZADA' }
+        // Eliminar la solicitud en lugar de cambiar el estado a RECHAZADA
+        // Esto permite que se pueda enviar una nueva solicitud después del rechazo
+        return contactoDelegate().delete({
+            where: { id: solicitudId }
         });
     }
 }
