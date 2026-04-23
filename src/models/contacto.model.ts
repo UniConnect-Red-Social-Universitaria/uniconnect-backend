@@ -151,7 +151,9 @@ export class ContactoModel {
 
         const contactos = contactosRaw as unknown as ContactoConUsuarios[];
 
-        return contactos.map((contacto: ContactoConUsuarios) => {
+        return contactos
+            .filter((contacto) => contacto.solicitante && contacto.receptor)
+            .map((contacto: ContactoConUsuarios) => {
             const companero = contacto.solicitanteId === usuarioId
                 ? contacto.receptor
                 : contacto.solicitante;
@@ -190,7 +192,9 @@ export class ContactoModel {
             solicitante: UsuarioBasico;
         }>;
 
-        return solicitudes.map((solicitud) => ({
+        return solicitudes
+            .filter((solicitud) => solicitud.solicitante)
+            .map((solicitud) => ({
             solicitudId: solicitud.id,
             estado: solicitud.estado,
             createdAt: solicitud.createdAt,

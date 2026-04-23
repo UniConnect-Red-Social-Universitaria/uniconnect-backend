@@ -74,6 +74,7 @@ export class UsuarioController {
         data: resultado.data,
       });
     } catch (error) {
+      require('fs').appendFileSync('error_debug.txt', '\nERROR LISTAR COMPANEROS: ' + (error instanceof Error ? error.stack : String(error)));
       return handleControllerError(res, error, 'Error al listar compañeros');
     }
   }
