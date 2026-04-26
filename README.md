@@ -199,3 +199,7 @@ ngrok config add-authtoken TU_TOKEN_AQUI
 ngrok http 3001
 
 ```
+
+## Despliegue
+- **URL Base:** https://tu-app.fly.dev
+- **Health Check:** https://tu-app.fly.dev/health
