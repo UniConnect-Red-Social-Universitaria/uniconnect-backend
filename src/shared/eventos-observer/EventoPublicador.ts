@@ -26,7 +26,13 @@ export class EventoPublicador {
   }
 
   notificar(categoria: CategoriaEvento, evento: EventRecord): void {
-    this.suscriptores.get(categoria)?.forEach((obs) => obs.onNuevoEvento(evento));
+    this.suscriptores.get(categoria)?.forEach((obs) => {
+      try {
+        obs.onNuevoEvento(evento);
+      } catch (error) {
+        console.error('Error al notificar al observer:', error);
+      }
+    });
   }
 
   contarSuscriptores(categoria: CategoriaEvento): number {

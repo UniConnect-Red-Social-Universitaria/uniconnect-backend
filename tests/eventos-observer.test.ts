@@ -124,6 +124,29 @@ describe('EventoPublicador', () => {
     expect(obsA.llamadas[0].categoria).toBe('academico');
     expect(obsB.llamadas[0].categoria).toBe('deportivo');
   });
+
+  it('el fallo de un observer no debe interrumpir la notificación a los demás', () => {
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    const obsFalla = crearObserverMock();
+    obsFalla.onNuevoEvento = jest.fn(() => {
+      throw new Error('Fallo simulado');
+    });
+
+    const obsExitoso = crearObserverMock();
+
+    publicador.suscribir('academico', obsFalla);
+    publicador.suscribir('academico', obsExitoso);
+
+    expect(() => {
+      publicador.notificar('academico', crearEventoMock('academico'));
+    }).not.toThrow();
+
+    expect(obsFalla.onNuevoEvento).toHaveBeenCalled();
+    expect(obsExitoso.llamadas).toHaveLength(1);
+
+    consoleErrorSpy.mockRestore();
+  });
 });
 
 describe('SocketEventoObserver', () => {
