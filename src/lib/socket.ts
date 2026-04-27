@@ -161,3 +161,62 @@ export function emitirSolicitudContactoRechazadaTiempoReal(payload: {
         .to(`usuario:${payload.solicitanteId}`)
         .emit('contacto:solicitud:rechazada', payload);
 }
+
+// ── Eventos de grupo ──
+
+export function emitirSolicitudGrupoNueva(payload: {
+    solicitudId: string;
+    grupoId: string;
+    grupoNombre: string;
+    administradorId: string;
+    solicitanteId: string;
+    solicitanteNombre: string;
+    solicitanteApellido?: string;
+}) {
+    if (!ioInstance) {
+        return;
+    }
+
+    ioInstance
+        .to(`usuario:${payload.administradorId}`)
+        .emit('grupo:solicitud:nueva', payload);
+}
+
+export function emitirSolicitudGrupoResuelta(payload: {
+    solicitudId: string;
+    grupoId: string;
+    grupoNombre: string;
+    solicitanteId: string;
+    estado: 'APROBADA' | 'RECHAZADA';
+}) {
+    if (!ioInstance) {
+        return;
+    }
+
+    ioInstance
+        .to(`usuario:${payload.solicitanteId}`)
+        .emit('grupo:solicitud:resuelta', payload);
+}
+
+export function emitirTransferenciaAdmin(payload: {
+    grupoId: string;
+    grupoNombre: string;
+    anteriorAdminId: string;
+    anteriorAdminNombre: string;
+    nuevoAdminId: string;
+    nuevoAdminNombre: string;
+}) {
+    if (!ioInstance) {
+        return;
+    }
+
+    // Notificar al nuevo admin
+    ioInstance
+        .to(`usuario:${payload.nuevoAdminId}`)
+        .emit('grupo:admin:transferido', payload);
+
+    // Notificar al anterior admin
+    ioInstance
+        .to(`usuario:${payload.anteriorAdminId}`)
+        .emit('grupo:admin:transferido', payload);
+}
