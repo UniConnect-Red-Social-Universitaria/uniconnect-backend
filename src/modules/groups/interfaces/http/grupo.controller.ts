@@ -74,16 +74,61 @@ export class GrupoController {
     }
   }
 
-  static async unirseAGrupo(req: Request, res: Response) {
+  static async solicitarIngreso(req: Request, res: Response) {
     try {
-      const resultado = await groupUseCases.unirseAGrupo(req.usuario, req.params.id);
+      const resultado = await groupUseCases.solicitarIngreso(req.usuario, req.params.id);
 
-      return res.status(200).json({
+      return res.status(201).json({
         success: true,
         message: resultado.message,
+        data: resultado.data,
       });
     } catch (error) {
-      return handleControllerError(res, error, 'Error al unirte al grupo');
+      return handleControllerError(res, error, 'Error al solicitar ingreso al grupo');
+    }
+  }
+
+  static async listarSolicitudesGrupo(req: Request, res: Response) {
+    try {
+      const resultado = await groupUseCases.listarSolicitudesGrupo(req.usuario, req.params.id);
+      return res.json({ success: true, data: resultado.data });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al listar solicitudes del grupo');
+    }
+  }
+
+  static async listarMisSolicitudes(req: Request, res: Response) {
+    try {
+      const resultado = await groupUseCases.listarMisSolicitudes(req.usuario);
+      return res.json({ success: true, data: resultado.data });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al listar mis solicitudes');
+    }
+  }
+
+  static async aprobarSolicitud(req: Request, res: Response) {
+    try {
+      const resultado = await groupUseCases.aprobarSolicitud(
+        req.usuario,
+        req.params.id,
+        req.params.solicitudId,
+      );
+      return res.json({ success: true, message: resultado.message });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al aprobar solicitud');
+    }
+  }
+
+  static async rechazarSolicitud(req: Request, res: Response) {
+    try {
+      const resultado = await groupUseCases.rechazarSolicitud(
+        req.usuario,
+        req.params.id,
+        req.params.solicitudId,
+      );
+      return res.json({ success: true, message: resultado.message });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al rechazar solicitud');
     }
   }
 

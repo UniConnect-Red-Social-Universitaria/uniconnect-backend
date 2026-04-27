@@ -27,6 +27,7 @@ model Usuario {
   grupos UsuarioGrupo[]
   gruposCreados Grupo[] @relation("GruposCreados")
   gruposAdministrados Grupo[] @relation("GruposAdministrados")
+  solicitudesGrupoEnviadas SolicitudGrupo[] @relation("SolicitudesGrupoEnviadas")
   mensajesEnviados Mensaje[] @relation("MensajesEnviados")
   mensajesRecibidos Mensaje[] @relation("MensajesRecibidos")
   mensajesGrupoEnviados GrupoMensaje[] @relation("MensajesGrupoEnviados")
@@ -76,6 +77,7 @@ model Grupo {
   creador   Usuario       @relation("GruposCreados", fields: [creadorId], references: [id])
   administrador Usuario   @relation("GruposAdministrados", fields: [administradorId], references: [id])
   miembros  UsuarioGrupo[]
+  solicitudesIngreso SolicitudGrupo[]
   mensajes  GrupoMensaje[]
   archivos  GrupoArchivo[]
   createdAt DateTime      @default(now())
@@ -91,6 +93,19 @@ model UsuarioGrupo {
   createdAt DateTime @default(now())
 
   @@unique([usuarioId, grupoId])
+}
+
+model SolicitudGrupo {
+  id            String                @id @default(auto()) @map("_id") @db.ObjectId
+  solicitanteId String                @db.ObjectId
+  grupoId       String                @db.ObjectId
+  estado        EstadoSolicitudGrupo  @default(PENDIENTE)
+  solicitante   Usuario               @relation("SolicitudesGrupoEnviadas", fields: [solicitanteId], references: [id])
+  grupo         Grupo                 @relation(fields: [grupoId], references: [id])
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  @@unique([solicitanteId, grupoId])
 }
 
 model Mensaje {
@@ -149,4 +164,10 @@ enum EstadoContacto {
 enum EstadoGrupo {
   ACTIVO
   CERRADO
+}
+
+enum EstadoSolicitudGrupo {
+  PENDIENTE
+  APROBADA
+  RECHAZADA
 }

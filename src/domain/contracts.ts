@@ -345,3 +345,69 @@ export interface MessageGateway {
   emitNewMessage(payload: MessageRecord): void;
   emitNewGroupMessage(payload: GroupMessageRecord): void;
 }
+
+// ── Eventos de Grupo (Observer Pattern) ──
+
+export interface GroupEventObserver {
+  onSolicitudNueva(payload: {
+    solicitudId: string;
+    grupoId: string;
+    grupoNombre: string;
+    administradorId: string;
+    solicitanteId: string;
+    solicitanteNombre: string;
+    solicitanteApellido?: string;
+  }): void;
+
+  onSolicitudResuelta(payload: {
+    solicitudId: string;
+    grupoId: string;
+    grupoNombre: string;
+    solicitanteId: string;
+    estado: 'APROBADA' | 'RECHAZADA';
+  }): void;
+
+  onAdminTransferido(payload: {
+    grupoId: string;
+    grupoNombre: string;
+    anteriorAdminId: string;
+    anteriorAdminNombre: string;
+    nuevoAdminId: string;
+    nuevoAdminNombre: string;
+  }): void;
+}
+
+// ── Solicitudes de ingreso a grupo ──
+
+export type SolicitudGrupoStatus = 'PENDIENTE' | 'APROBADA' | 'RECHAZADA';
+
+export interface SolicitudGrupoRecord {
+  id: string;
+  solicitanteId: string;
+  grupoId: string;
+  estado: SolicitudGrupoStatus;
+  createdAt: Date;
+  updatedAt: Date;
+  solicitante?: {
+    id: string;
+    nombre: string;
+    apellido: string;
+    correo: string;
+  };
+  grupo?: {
+    id: string;
+    nombre: string;
+    materia: { id: string; nombre: string };
+  };
+}
+
+export interface SolicitudGrupoRepository {
+  crear(solicitanteId: string, grupoId: string): Promise<SolicitudGrupoRecord>;
+  buscarPendiente(solicitanteId: string, grupoId: string): Promise<SolicitudGrupoRecord | null>;
+  listarPorGrupo(grupoId: string): Promise<SolicitudGrupoRecord[]>;
+  listarPorUsuario(solicitanteId: string): Promise<SolicitudGrupoRecord[]>;
+  aprobar(solicitudId: string): Promise<SolicitudGrupoRecord>;
+  rechazar(solicitudId: string): Promise<SolicitudGrupoRecord>;
+  buscarPorId(solicitudId: string): Promise<SolicitudGrupoRecord | null>;
+  eliminarRechazada(solicitanteId: string, grupoId: string): Promise<void>;
+}
