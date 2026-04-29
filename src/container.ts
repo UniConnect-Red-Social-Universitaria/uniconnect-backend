@@ -8,6 +8,7 @@ import { PrismaSolicitudGrupoRepository } from './modules/groups/infrastructure/
 import { SocketGroupObserver } from './modules/groups/infrastructure/socket-group.observer';
 import { MateriaUseCases } from './modules/materias/application/materia.use-cases';
 import { PrismaMateriaRepository } from './modules/materias/infrastructure/prisma-materia.repository';
+import { ChatSubject } from './modules/messages/domain/chat-subject';
 import { MessageUseCases } from './modules/messages/application/message.use-cases';
 import { PrismaMensajeRepository } from './modules/messages/infrastructure/prisma-mensaje.repository';
 import { SocketMessageGateway } from './modules/messages/infrastructure/socket-message.gateway';
@@ -36,6 +37,9 @@ const tokenBlacklistService = new InMemoryTokenBlacklistService();
 const messageGateway = new SocketMessageGateway();
 const groupEventObserver = new SocketGroupObserver();
 
+// ── ChatSubject para mensajes de grupo (Patrón Observer) ──
+const chatSubject = ChatSubject.getInstance();
+
 export const usersUseCases = new UsersUseCases({
   userRepository,
   contactRepository,
@@ -62,6 +66,10 @@ export const messageUseCases = new MessageUseCases(
   contactRepository,
   grupoRepository,
   messageGateway,
+  chatSubject,
 );
 export const eventUseCases = new EventUseCases(eventoRepository);
 export const catalogUseCases = new CatalogUseCases(careerRepository, materiaRepository);
+
+// ── Exportar ChatSubject para uso en socket.ts ──
+export { chatSubject };

@@ -7,6 +7,7 @@ import {
   emitirMensajeGrupoTiempoReal,
   emitirMensajeTiempoReal,
   emitirNotificacion,
+  emitirNotificacionGrupo,
 } from '../../../lib/socket';
 import {
   NotificacionBase,
@@ -33,7 +34,8 @@ export class SocketMessageGateway implements MessageGateway {
   }
 
   emitNewGroupMessage(payload: GroupMessageRecord) {
-    emitirMensajeGrupoTiempoReal(payload);
+    // Nota: emitirMensajeGrupoTiempoReal ya no se llama aquí porque el 
+    // patrón Observer (ChatSubject) se encarga de emitir el mensaje real.
 
     const notificacion = new NotificacionConAccion(
       new NotificacionConPrioridad(
@@ -46,6 +48,6 @@ export class SocketMessageGateway implements MessageGateway {
       },
     );
 
-    emitirNotificacion(payload.grupoId, notificacion.render());
+    emitirNotificacionGrupo(payload.grupoId, notificacion.render());
   }
 }

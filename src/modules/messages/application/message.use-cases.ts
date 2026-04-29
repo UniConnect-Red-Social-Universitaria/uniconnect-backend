@@ -8,7 +8,18 @@ import {
 } from '../../../domain/contracts';
 import { ApplicationError } from '../../../shared/application-error';
 import { isValidMongoId } from '../../../shared/mongo-id';
+import { ChatSubject } from '../domain/chat-subject';
 
+/**
+ * MessageUseCases - Casos de uso para mensajes (privados y de grupo)
+ * 
+ * Responsabilidades:
+ * - Validar permisos y datos de entrada
+ * - Persistir mensajes en base de datos (MessageRepository)
+ * - Disparar notificaciones a través de:
+ *   1. MessageGateway (para avisos/notificaciones)
+ *   2. ChatSubject (para entrega en tiempo real a observadores)
+ */
 export class MessageUseCases {
   constructor(
     private readonly messageRepository: MessageRepository,
@@ -16,6 +27,7 @@ export class MessageUseCases {
     private readonly contactRepository: ContactRepository,
     private readonly groupRepository: GroupRepository,
     private readonly messageGateway: MessageGateway,
+    private readonly chatSubject: ChatSubject,
   ) { }
 
   async enviarMensaje(
@@ -155,13 +167,19 @@ export class MessageUseCases {
       throw new ApplicationError(403, 'Solo los miembros pueden enviar mensajes al grupo');
     }
 
+    // Persistir el mensaje en base de datos
     const mensaje = await this.messageRepository.createGroupMessage({
       contenido: contenido.trim(),
       grupoId: grupoId.trim(),
       emisorId: authUser.id,
     });
 
+    // Emitir notificación (avisos, badges, etc.)
     this.messageGateway.emitNewGroupMessage(mensaje);
+
+    // Emitir mensaje decorado a través del patrón Observer (ChatSubject)
+    // Este es el canal independiente para chat grupal en tiempo real
+    this.chatSubject.emitirNuevoMensaje(grupoId.trim(), mensaje);
 
     return {
       message: 'Mensaje de grupo enviado correctamente',
