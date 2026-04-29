@@ -141,3 +141,90 @@ describe('Composicion de decoradores', () => {
     expect(opcion1.render()).toEqual(opcion2.render());
   });
 });
+
+describe('Validacion de responsabilidades del Decorator', () => {
+  it('NotificacionConPrioridad añade nivel SIN romper comportamiento base', () => {
+    const base = new NotificacionBase('Alerta critica', 'admin', TIMESTAMP);
+    const conPrioridad = new NotificacionConPrioridad(base, 'critica');
+
+    // Verificar que el comportamiento base se mantiene intacto
+    const renderBase = base.render();
+    const renderDecorado = conPrioridad.render();
+
+    expect(renderDecorado.mensaje).toBe(renderBase.mensaje);
+    expect(renderDecorado.destinatario).toBe(renderBase.destinatario);
+    expect(renderDecorado.timestamp).toBe(renderBase.timestamp);
+
+    // Verificar que SOLO se añadió el nivel
+    expect(renderDecorado).toHaveProperty('nivel', 'critica');
+    expect(Object.keys(renderDecorado)).toContain('nivel');
+  });
+
+  it('NotificacionConAccion añade accion SIN romper comportamiento base', () => {
+    const base = new NotificacionBase('Tienes un mensaje', 'usuario-456', TIMESTAMP);
+    const accion = { label: 'Leer', endpoint: '/api/mensajes/123' };
+    const conAccion = new NotificacionConAccion(base, accion);
+
+    // Verificar que el comportamiento base se mantiene intacto
+    const renderBase = base.render();
+    const renderDecorado = conAccion.render();
+
+    expect(renderDecorado.mensaje).toBe(renderBase.mensaje);
+    expect(renderDecorado.destinatario).toBe(renderBase.destinatario);
+    expect(renderDecorado.timestamp).toBe(renderBase.timestamp);
+
+    // Verificar que SOLO se añadió la accion
+    expect(renderDecorado).toHaveProperty('accion', accion);
+    expect(Object.keys(renderDecorado)).toContain('accion');
+  });
+
+  it('multiples decoradores en cadena mantienen el comportamiento base intacto', () => {
+    const base = new NotificacionBase('Evento importante', 'grupo-789', TIMESTAMP);
+    const accion = { label: 'Detalles', endpoint: '/api/eventos/456' };
+
+    const decorada = new NotificacionConAccion(
+      new NotificacionConPrioridad(base, 'alta'),
+      accion,
+    );
+
+    const renderBase = base.render();
+    const renderDecorada = decorada.render();
+
+    // Campos base deben ser idénticos
+    expect(renderDecorada.mensaje).toBe(renderBase.mensaje);
+    expect(renderDecorada.destinatario).toBe(renderBase.destinatario);
+    expect(renderDecorada.timestamp).toBe(renderBase.timestamp);
+
+    // Campos añadidos por decoradores
+    expect(renderDecorada.nivel).toBe('alta');
+    expect(renderDecorada.accion).toEqual(accion);
+  });
+
+  it('los getters del decorador delegan correctamente al base sin modificar', () => {
+    const base = new NotificacionBase('Test mensaje', 'test-dest', TIMESTAMP);
+    const conPrioridad = new NotificacionConPrioridad(base, 'normal');
+    const conAccion = new NotificacionConAccion(conPrioridad, { label: 'Go', endpoint: '/test' });
+
+    expect(conAccion.getMensaje()).toBe('Test mensaje');
+    expect(conAccion.getDestinatario()).toBe('test-dest');
+    expect(conAccion.getTimestamp()).toBe(TIMESTAMP);
+
+    // Verificar que los valores no han sido modificados
+    expect(conAccion.getMensaje()).toBe(base.getMensaje());
+    expect(conAccion.getDestinatario()).toBe(base.getDestinatario());
+  });
+
+  it('cada decorador es independiente y no interfiere con otros', () => {
+    const base1 = new NotificacionBase('Msg1', 'dest1', TIMESTAMP);
+    const base2 = new NotificacionBase('Msg2', 'dest2', TIMESTAMP);
+
+    const dec1 = new NotificacionConPrioridad(base1, 'urgente');
+    const dec2 = new NotificacionConAccion(base2, { label: 'Ver', endpoint: '/api/test' });
+
+    expect(dec1.render()).toHaveProperty('nivel');
+    expect(dec1.render()).not.toHaveProperty('accion');
+
+    expect(dec2.render()).toHaveProperty('accion');
+    expect(dec2.render()).not.toHaveProperty('nivel');
+  });
+});
