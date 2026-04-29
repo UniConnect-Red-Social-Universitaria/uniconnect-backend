@@ -3,6 +3,7 @@ import express from 'express';
 import { GrupoController } from './grupo.controller';
 import { verificarJWT } from '../../../../middleware/autenticacion.middleware';
 import { procesarUploadArchivoGrupo } from '../../../../middleware/archivo-grupo.middleware';
+import { MensajeController } from '../../../messages/interfaces/http/mensaje.controller';
 
 const router = express.Router();
 
@@ -22,6 +23,9 @@ router.post('/:id/archivos', verificarJWT, procesarUploadArchivoGrupo, GrupoCont
 router.get('/:id/archivos', verificarJWT, GrupoController.listarArchivos);
 router.get('/:id/archivos/:archivoId/descargar', verificarJWT, GrupoController.descargarArchivo);
 router.patch('/:id/administrador', verificarJWT, GrupoController.cederAdministracion);
+
+router.post('/:id/mensajes', verificarJWT, MensajeController.enviarMensajeGrupo);
+router.get('/:id/mensajes', verificarJWT, MensajeController.obtenerHistorialGrupo);
 
 export default router;
 

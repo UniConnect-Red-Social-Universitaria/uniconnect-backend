@@ -45,9 +45,10 @@ export class MensajeController {
 
     static async enviarMensajeGrupo(req: Request, res: Response) {
         try {
+            const grupoId = req.params.id || req.params.grupoId || req.body?.grupoId;
             const resultado = await messageUseCases.enviarMensajeGrupo(
                 req.usuario,
-                req.body?.grupoId,
+                grupoId,
                 req.body?.contenido
             );
 
@@ -67,9 +68,10 @@ export class MensajeController {
 
     static async obtenerHistorialGrupo(req: Request, res: Response) {
         try {
+            const grupoId = req.params.id || req.params.grupoId;
             const resultado = await messageUseCases.obtenerHistorialGrupo(
                 req.usuario,
-                req.params.grupoId,
+                grupoId,
                 req.query.limit
             );
 
