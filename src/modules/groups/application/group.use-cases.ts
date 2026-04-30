@@ -446,15 +446,7 @@ export class GroupUseCases {
       throw new ApplicationError(404, 'Archivo no encontrado');
     }
 
-    const expiracion = Math.floor(Date.now() / 1000) + 3600;
-    const urlFirmada = cloudinary.utils.private_download_url(archivo.nombreFisico, 'pdf', {
-      resource_type: 'raw',
-      type: 'upload',
-      expires_at: expiracion,
-      attachment: true,
-    });
-
-    return { data: { ruta: urlFirmada, nombre: archivo.nombre } };
+    return { data: { ruta: archivo.ruta, nombre: archivo.nombre } };
   }
 
   async cederAdministracion(
