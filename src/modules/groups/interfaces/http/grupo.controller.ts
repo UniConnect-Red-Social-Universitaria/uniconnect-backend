@@ -162,7 +162,7 @@ export class GrupoController {
         req.params.id,
         req.params.archivoId,
       );
-      return res.json({ success: true, data: { url: resultado.data.ruta, nombre: resultado.data.nombre } });
+      return res.json({ success: true, data: { url: resultado.data.url, nombre: resultado.data.nombre } });
     } catch (error) {
       return handleControllerError(res, error, 'Error al descargar el archivo');
     }
