@@ -3,7 +3,7 @@ import { IEventoObserver } from './IEventoObserver';
 
 export class EventoPublicador {
   private static instance: EventoPublicador;
-  private suscriptores = new Map<CategoriaEvento, Set<IEventoObserver>>();
+  private suscriptores = new Map<CategoriaEvento, Map<string, IEventoObserver>>();
 
   private constructor() {}
 
@@ -16,13 +16,13 @@ export class EventoPublicador {
 
   suscribir(categoria: CategoriaEvento, observer: IEventoObserver): void {
     if (!this.suscriptores.has(categoria)) {
-      this.suscriptores.set(categoria, new Set());
+      this.suscriptores.set(categoria, new Map());
     }
-    this.suscriptores.get(categoria)!.add(observer);
+    this.suscriptores.get(categoria)!.set(observer.getUsuarioId(), observer);
   }
 
   desuscribir(categoria: CategoriaEvento, observer: IEventoObserver): void {
-    this.suscriptores.get(categoria)?.delete(observer);
+    this.suscriptores.get(categoria)?.delete(observer.getUsuarioId());
   }
 
   notificar(categoria: CategoriaEvento, evento: EventRecord): void {
@@ -33,6 +33,16 @@ export class EventoPublicador {
         console.error('Error al notificar al observer:', error);
       }
     });
+  }
+
+  listarCategoriasSuscritas(usuarioId: string): CategoriaEvento[] {
+    const categorias: CategoriaEvento[] = [];
+    for (const [categoria, mapa] of this.suscriptores) {
+      if (mapa.has(usuarioId)) {
+        categorias.push(categoria);
+      }
+    }
+    return categorias;
   }
 
   contarSuscriptores(categoria: CategoriaEvento): number {

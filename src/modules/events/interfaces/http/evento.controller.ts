@@ -71,6 +71,22 @@ export class EventoController {
     }
   }
 
+  static async listarSuscripciones(req: Request, res: Response) {
+    try {
+      const usuarioId = req.usuario?.id;
+      if (!usuarioId) {
+        return res.status(401).json({ success: false, message: 'Usuario no autenticado' });
+      }
+
+      const publicador = EventoPublicador.getInstance();
+      const categorias = publicador.listarCategoriasSuscritas(usuarioId);
+
+      return res.json({ success: true, data: categorias });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al listar suscripciones');
+    }
+  }
+
   static async desuscribir(req: Request, res: Response) {
     try {
       const usuarioId = req.usuario?.id;
