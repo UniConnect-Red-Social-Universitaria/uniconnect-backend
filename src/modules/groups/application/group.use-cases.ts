@@ -446,7 +446,7 @@ export class GroupUseCases {
       throw new ApplicationError(404, 'Archivo no encontrado');
     }
 
-    return { data: { ruta: archivo.ruta, nombre: archivo.nombre } };
+    return { data: { url: archivo.ruta, nombre: archivo.nombre } };
   }
 
   async cederAdministracion(
