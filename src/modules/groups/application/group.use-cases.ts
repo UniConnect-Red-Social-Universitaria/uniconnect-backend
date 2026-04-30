@@ -358,7 +358,7 @@ export class GroupUseCases {
     const uploadResult = await new Promise<{ secure_url: string; public_id: string }>(
       (resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
-          { folder: 'uniconnect/grupos', resource_type: 'raw', format: 'pdf' },
+          { folder: 'uniconnect/grupos', resource_type: 'raw', format: 'pdf', type: 'upload', access_mode: 'public' },
           (error, result) => {
             if (error || !result) return reject(error ?? new Error('Error al subir a Cloudinary'));
             resolve(result as { secure_url: string; public_id: string });
@@ -446,7 +446,15 @@ export class GroupUseCases {
       throw new ApplicationError(404, 'Archivo no encontrado');
     }
 
-    return { data: { ruta: archivo.ruta, nombre: archivo.nombre } };
+    const expiracion = Math.floor(Date.now() / 1000) + 3600;
+    const urlFirmada = cloudinary.utils.private_download_url(archivo.nombreFisico, 'pdf', {
+      resource_type: 'raw',
+      type: 'upload',
+      expires_at: expiracion,
+      attachment: true,
+    });
+
+    return { data: { ruta: urlFirmada, nombre: archivo.nombre } };
   }
 
   async cederAdministracion(
