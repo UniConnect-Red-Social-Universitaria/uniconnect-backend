@@ -198,7 +198,7 @@ export class GrupoController {
   static async abandonarGrupo(req: Request, res: Response) {
     try {
       const resultado = await groupUseCases.abandonarGrupo(req.usuario, req.params.id);
-      return res.json({ success: true, message: resultado.message });
+      return res.json({ success: true, message: resultado.message, grupoEliminado: resultado.grupoEliminado });
     } catch (error) {
       return handleControllerError(res, error, 'Error al abandonar el grupo');
     }

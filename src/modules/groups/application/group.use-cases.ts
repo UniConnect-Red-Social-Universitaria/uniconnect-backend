@@ -33,7 +33,7 @@ export class GroupUseCases {
     private readonly grupoArchivoRepository: GrupoArchivoRepository,
     private readonly solicitudGrupoRepository: SolicitudGrupoRepository,
     private readonly observers: GroupEventObserver[] = [],
-  ) {}
+  ) { }
 
   async crearGrupo(usuario: AuthenticatedUser | undefined, input: CreateGroupInput) {
     const authUser = this.ensureAuthenticated(usuario);
@@ -557,17 +557,21 @@ export class GroupUseCases {
     const esMiembro = grupo.miembros.some((m) => m.usuarioId === authUser.id);
     if (!esMiembro) throw new ApplicationError(403, 'No eres miembro de este grupo');
 
-    // Si es administrador, asignar administración a otro miembro aleatorio
+    // Si es administrador
     if (grupo.administradorId === authUser.id) {
-      const otrosMiembros = grupo.miembros.filter(
-        (m) => m.usuarioId !== authUser.id && m.usuarioId,
-      );
-
-      if (otrosMiembros.length > 0) {
-        // Seleccionar un miembro aleatorio de los otros
-        const indiceAleatorio = Math.floor(Math.random() * otrosMiembros.length);
-        const nuevoAdmin = otrosMiembros[indiceAleatorio].usuarioId!;
-        await this.groupRepository.updateAdministrador(grupo.id, nuevoAdmin);
+      if (grupo.miembros.length > 1) {
+        throw new ApplicationError(
+          400,
+          'Debes transferir la administración a otro miembro antes de salir del grupo',
+        );
+      } else {
+        // En este caso es el único miembro (1 total)
+        // entonces al salirse, debemos eliminar el grupo
+        await this.groupRepository.deleteGroup(grupo.id);
+        return {
+          message: 'Has abandonado el grupo correctamente. Al ser el único miembro, el grupo fue eliminado.',
+          grupoEliminado: true,
+        };
       }
     }
 
@@ -576,6 +580,7 @@ export class GroupUseCases {
 
     return {
       message: 'Has abandonado el grupo correctamente',
+      grupoEliminado: false,
     };
   }
 

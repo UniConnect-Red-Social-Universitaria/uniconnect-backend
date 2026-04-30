@@ -42,6 +42,10 @@ export class PrismaGrupoRepository implements GroupRepository {
   async leave(grupoId: string, usuarioId: string) {
     await GrupoModel.abandonarGrupo(grupoId, usuarioId);
   }
+
+  async deleteGroup(grupoId: string) {
+    await GrupoModel.eliminarGrupo(grupoId);
+  }
 }
 
 export class PrismaGrupoArchivoRepository implements GrupoArchivoRepository {
