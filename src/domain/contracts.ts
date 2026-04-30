@@ -290,6 +290,7 @@ export interface GroupRepository {
   join(grupoId: string, usuarioId: string): Promise<void>;
   updateAdministrador(grupoId: string, nuevoAdminId: string): Promise<void>;
   leave(grupoId: string, usuarioId: string): Promise<void>;
+  deleteGroup(grupoId: string): Promise<void>;
 }
 
 export interface GrupoArchivoRepository {

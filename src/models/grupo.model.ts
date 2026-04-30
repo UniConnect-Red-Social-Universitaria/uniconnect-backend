@@ -304,6 +304,19 @@ export class GrupoModel {
     });
   }
 
+  static async eliminarGrupo(grupoId: string) {
+    // Delete all dependencies first
+    await prisma.grupoMensaje.deleteMany({ where: { grupoId } });
+    await prisma.grupoArchivo.deleteMany({ where: { grupoId } });
+    await prisma.solicitudGrupo.deleteMany({ where: { grupoId } });
+    await prisma.usuarioGrupo.deleteMany({ where: { grupoId } });
+
+    // Then delete the group
+    return prisma.grupo.delete({
+      where: { id: grupoId }
+    });
+  }
+
   static async obtenerMiembrosDelGrupo(grupoId: string) {
     return prisma.usuarioGrupo.findMany({
       where: { grupoId },
