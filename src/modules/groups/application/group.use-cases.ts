@@ -9,6 +9,7 @@ import {
   UserRepository,
 } from '../../../domain/contracts';
 import { ApplicationError } from '../../../shared/application-error';
+import { cloudinary } from '../../../lib/cloudinary';
 
 type CreateGroupInput = {
   nombre: unknown;
@@ -18,7 +19,8 @@ type CreateGroupInput = {
 type UploadedFile = {
   filename: string;
   originalname: string;
-  path: string;
+  path?: string;
+  buffer?: Buffer;
   mimetype: string;
   size: number;
 };
@@ -349,10 +351,27 @@ export class GroupUseCases {
         ? nombreMostrar.trim()
         : file.originalname;
 
+    if (!file.buffer) {
+      throw new ApplicationError(500, 'No se recibió el contenido del archivo');
+    }
+
+    const uploadResult = await new Promise<{ secure_url: string; public_id: string }>(
+      (resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: 'uniconnect/grupos', resource_type: 'raw', format: 'pdf' },
+          (error, result) => {
+            if (error || !result) return reject(error ?? new Error('Error al subir a Cloudinary'));
+            resolve(result as { secure_url: string; public_id: string });
+          },
+        );
+        stream.end(file.buffer);
+      },
+    );
+
     const archivo = await this.grupoArchivoRepository.crear({
       nombre,
-      nombreFisico: file.filename,
-      ruta: file.path,
+      nombreFisico: uploadResult.public_id,
+      ruta: uploadResult.secure_url,
       mimeType: file.mimetype,
       tamanoBytes: file.size,
       grupoId: grupo.id,
