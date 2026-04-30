@@ -4,9 +4,12 @@ import {
   GroupRepository,
   GrupoArchivoRepository,
   MateriaRepository,
+  SolicitudGrupoRepository,
+  GroupEventObserver,
   UserRepository,
 } from '../../../domain/contracts';
 import { ApplicationError } from '../../../shared/application-error';
+import { cloudinary } from '../../../lib/cloudinary';
 
 type CreateGroupInput = {
   nombre: unknown;
@@ -16,7 +19,8 @@ type CreateGroupInput = {
 type UploadedFile = {
   filename: string;
   originalname: string;
-  path: string;
+  path?: string;
+  buffer?: Buffer;
   mimetype: string;
   size: number;
 };
@@ -25,29 +29,11 @@ export class GroupUseCases {
   constructor(
     private readonly groupRepository: GroupRepository,
     private readonly materiaRepository: MateriaRepository,
-    private readonly grupoArchivoRepository: GrupoArchivoRepository,
     private readonly userRepository: UserRepository,
-  ) { }
-
-  private normalizarMateria(valor: string) {
-    return valor
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .trim();
-  }
-
-  private async obtenerMateriasCursandoActuales(authUser: AuthenticatedUser) {
-    const perfilActual = await this.userRepository.findSafeById(authUser.id);
-
-    if (!perfilActual) {
-      throw new ApplicationError(404, 'Usuario no encontrado');
-    }
-
-    return (perfilActual.materiasCursando || []).map((materia) =>
-      this.normalizarMateria(materia),
-    );
-  }
+    private readonly grupoArchivoRepository: GrupoArchivoRepository,
+    private readonly solicitudGrupoRepository: SolicitudGrupoRepository,
+    private readonly observers: GroupEventObserver[] = [],
+  ) {}
 
   async crearGrupo(usuario: AuthenticatedUser | undefined, input: CreateGroupInput) {
     const authUser = this.ensureAuthenticated(usuario);
@@ -74,10 +60,7 @@ export class GroupUseCases {
       throw new ApplicationError(404, 'La materia asociada no existe');
     }
 
-    const materiasCursando = await this.obtenerMateriasCursandoActuales(authUser);
-    const materiaGrupo = this.normalizarMateria(materia.nombre);
-
-    if (!materiasCursando.includes(materiaGrupo)) {
+    if (!authUser.materiasCursando.includes(materia.nombre)) {
       throw new ApplicationError(
         403,
         'No puedes crear grupos de materias que no estás cursando',
@@ -117,20 +100,25 @@ export class GroupUseCases {
 
   async listarGruposDisponibles(usuario: AuthenticatedUser | undefined) {
     const authUser = this.ensureAuthenticated(usuario);
-    const perfilActual = await this.userRepository.findSafeById(authUser.id);
-
-    if (!perfilActual) {
-      throw new ApplicationError(404, 'Usuario no encontrado');
-    }
-
     const grupos = await this.groupRepository.listAvailable(
-      perfilActual.materiasCursando,
+      authUser.materiasCursando,
       authUser.id,
     );
     return { data: grupos.map(formatearGrupo) };
   }
 
-  async unirseAGrupo(usuario: AuthenticatedUser | undefined, grupoId: unknown) {
+  async buscarPorTexto(usuario: AuthenticatedUser | undefined, texto: unknown) {
+    this.ensureAuthenticated(usuario);
+
+    if (typeof texto !== 'string' || !texto.trim()) {
+      return { data: [] };
+    }
+
+    const grupos = await this.groupRepository.searchByText(texto.trim());
+    return { data: grupos.map(formatearGrupo) };
+  }
+
+  async solicitarIngreso(usuario: AuthenticatedUser | undefined, grupoId: unknown) {
     const authUser = this.ensureAuthenticated(usuario);
 
     if (!grupoId || typeof grupoId !== 'string') {
@@ -143,13 +131,10 @@ export class GroupUseCases {
       throw new ApplicationError(404, 'Grupo no encontrado');
     }
 
-    const materiasCursando = await this.obtenerMateriasCursandoActuales(authUser);
-    const materiaGrupo = this.normalizarMateria(grupo.materia.nombre);
-
-    if (!materiasCursando.includes(materiaGrupo)) {
+    if (!authUser.materiasCursando.includes(grupo.materia.nombre)) {
       throw new ApplicationError(
         403,
-        'No puedes unirte a grupos de materias que no estás cursando',
+        'No puedes solicitar ingreso a grupos de materias que no estás cursando',
       );
     }
 
@@ -159,16 +144,183 @@ export class GroupUseCases {
       throw new ApplicationError(409, 'Ya eres miembro de este grupo');
     }
 
-    const count = await this.groupRepository.countByMateria(grupo.materiaId);
+    // Limpiar solicitudes rechazadas previas para permitir reenvío
+    await this.solicitudGrupoRepository.eliminarRechazada(authUser.id, grupo.id);
 
-    if (count >= 3) {
-      throw new ApplicationError(409, 'Ya hay 3 grupos para esta materia');
+    // Verificar que no haya solicitud pendiente
+    const solicitudExistente = await this.solicitudGrupoRepository.buscarPendiente(
+      authUser.id,
+      grupo.id,
+    );
+
+    if (solicitudExistente) {
+      throw new ApplicationError(409, 'Ya tienes una solicitud pendiente para este grupo');
     }
 
-    await this.groupRepository.join(grupo.id, authUser.id);
+    const solicitud = await this.solicitudGrupoRepository.crear(authUser.id, grupo.id);
+
+    // Notificar al administrador del grupo
+    const solicitante = await this.userRepository.findSafeById(authUser.id);
+    this.observers.forEach(obs => obs.onSolicitudNueva({
+      solicitudId: solicitud.id,
+      grupoId: grupo.id,
+      grupoNombre: grupo.nombre,
+      administradorId: grupo.administradorId,
+      solicitanteId: authUser.id,
+      solicitanteNombre: solicitante?.nombre || '',
+      solicitanteApellido: solicitante?.apellido || '',
+    }));
 
     return {
-      message: 'Te has unido al grupo correctamente',
+      message: 'Solicitud de ingreso enviada correctamente',
+      data: {
+        id: solicitud.id,
+        grupoId: solicitud.grupoId,
+        estado: solicitud.estado,
+        createdAt: solicitud.createdAt,
+      },
+    };
+  }
+
+  async listarSolicitudesGrupo(
+    usuario: AuthenticatedUser | undefined,
+    grupoId: unknown,
+  ) {
+    const authUser = this.ensureAuthenticated(usuario);
+
+    if (!grupoId || typeof grupoId !== 'string') {
+      throw new ApplicationError(400, 'ID de grupo inválido');
+    }
+
+    const grupo = await this.groupRepository.findById(grupoId);
+    if (!grupo) throw new ApplicationError(404, 'Grupo no encontrado');
+
+    if (grupo.administradorId !== authUser.id) {
+      throw new ApplicationError(403, 'Solo el administrador puede ver las solicitudes');
+    }
+
+    const solicitudes = await this.solicitudGrupoRepository.listarPorGrupo(grupo.id);
+
+    return {
+      data: solicitudes.map((s) => ({
+        id: s.id,
+        estado: s.estado,
+        createdAt: s.createdAt,
+        solicitante: s.solicitante,
+      })),
+    };
+  }
+
+  async listarMisSolicitudes(usuario: AuthenticatedUser | undefined) {
+    const authUser = this.ensureAuthenticated(usuario);
+
+    const solicitudes = await this.solicitudGrupoRepository.listarPorUsuario(authUser.id);
+
+    return {
+      data: solicitudes.map((s) => ({
+        id: s.id,
+        estado: s.estado,
+        createdAt: s.createdAt,
+        grupo: s.grupo,
+      })),
+    };
+  }
+
+  async aprobarSolicitud(
+    usuario: AuthenticatedUser | undefined,
+    grupoId: unknown,
+    solicitudId: unknown,
+  ) {
+    const authUser = this.ensureAuthenticated(usuario);
+
+    if (!grupoId || typeof grupoId !== 'string') {
+      throw new ApplicationError(400, 'ID de grupo inválido');
+    }
+
+    if (!solicitudId || typeof solicitudId !== 'string') {
+      throw new ApplicationError(400, 'ID de solicitud inválido');
+    }
+
+    const grupo = await this.groupRepository.findById(grupoId);
+    if (!grupo) throw new ApplicationError(404, 'Grupo no encontrado');
+
+    if (grupo.administradorId !== authUser.id) {
+      throw new ApplicationError(403, 'Solo el administrador puede aprobar solicitudes');
+    }
+
+    const solicitud = await this.solicitudGrupoRepository.buscarPorId(solicitudId);
+    if (!solicitud || solicitud.grupoId !== grupo.id) {
+      throw new ApplicationError(404, 'Solicitud no encontrada');
+    }
+
+    if (solicitud.estado !== 'PENDIENTE') {
+      throw new ApplicationError(400, 'Esta solicitud ya fue procesada');
+    }
+
+    // Aprobar solicitud
+    await this.solicitudGrupoRepository.aprobar(solicitud.id);
+
+    // Agregar al usuario como miembro del grupo
+    await this.groupRepository.join(grupo.id, solicitud.solicitanteId);
+
+    // Notificar al solicitante que fue aprobado
+    this.observers.forEach(obs => obs.onSolicitudResuelta({
+      solicitudId: solicitud.id,
+      grupoId: grupo.id,
+      grupoNombre: grupo.nombre,
+      solicitanteId: solicitud.solicitanteId,
+      estado: 'APROBADA',
+    }));
+
+    return {
+      message: 'Solicitud aprobada. El estudiante ha sido agregado al grupo.',
+    };
+  }
+
+  async rechazarSolicitud(
+    usuario: AuthenticatedUser | undefined,
+    grupoId: unknown,
+    solicitudId: unknown,
+  ) {
+    const authUser = this.ensureAuthenticated(usuario);
+
+    if (!grupoId || typeof grupoId !== 'string') {
+      throw new ApplicationError(400, 'ID de grupo inválido');
+    }
+
+    if (!solicitudId || typeof solicitudId !== 'string') {
+      throw new ApplicationError(400, 'ID de solicitud inválido');
+    }
+
+    const grupo = await this.groupRepository.findById(grupoId);
+    if (!grupo) throw new ApplicationError(404, 'Grupo no encontrado');
+
+    if (grupo.administradorId !== authUser.id) {
+      throw new ApplicationError(403, 'Solo el administrador puede rechazar solicitudes');
+    }
+
+    const solicitud = await this.solicitudGrupoRepository.buscarPorId(solicitudId);
+    if (!solicitud || solicitud.grupoId !== grupo.id) {
+      throw new ApplicationError(404, 'Solicitud no encontrada');
+    }
+
+    if (solicitud.estado !== 'PENDIENTE') {
+      throw new ApplicationError(400, 'Esta solicitud ya fue procesada');
+    }
+
+    await this.solicitudGrupoRepository.rechazar(solicitud.id);
+
+    // Notificar al solicitante que fue rechazado
+    this.observers.forEach(obs => obs.onSolicitudResuelta({
+      solicitudId: solicitud.id,
+      grupoId: grupo.id,
+      grupoNombre: grupo.nombre,
+      solicitanteId: solicitud.solicitanteId,
+      estado: 'RECHAZADA',
+    }));
+
+    return {
+      message: 'Solicitud rechazada.',
     };
   }
 
@@ -199,10 +351,27 @@ export class GroupUseCases {
         ? nombreMostrar.trim()
         : file.originalname;
 
+    if (!file.buffer) {
+      throw new ApplicationError(500, 'No se recibió el contenido del archivo');
+    }
+
+    const uploadResult = await new Promise<{ secure_url: string; public_id: string }>(
+      (resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: 'uniconnect/grupos', resource_type: 'raw', format: 'pdf', type: 'upload', access_mode: 'public' },
+          (error, result) => {
+            if (error || !result) return reject(error ?? new Error('Error al subir a Cloudinary'));
+            resolve(result as { secure_url: string; public_id: string });
+          },
+        );
+        stream.end(file.buffer);
+      },
+    );
+
     const archivo = await this.grupoArchivoRepository.crear({
       nombre,
-      nombreFisico: file.filename,
-      ruta: file.path,
+      nombreFisico: uploadResult.public_id,
+      ruta: uploadResult.secure_url,
       mimeType: file.mimetype,
       tamanoBytes: file.size,
       grupoId: grupo.id,
@@ -311,6 +480,18 @@ export class GroupUseCases {
 
     await this.groupRepository.updateAdministrador(grupo.id, nuevoAdminId);
 
+    // Notificar la transferencia de administración
+    const adminAnterior = await this.userRepository.findSafeById(authUser.id);
+    const nuevoAdmin = await this.userRepository.findSafeById(nuevoAdminId);
+    this.observers.forEach(obs => obs.onAdminTransferido({
+      grupoId: grupo.id,
+      grupoNombre: grupo.nombre,
+      anteriorAdminId: authUser.id,
+      anteriorAdminNombre: [adminAnterior?.nombre, adminAnterior?.apellido].filter(Boolean).join(' '),
+      nuevoAdminId: nuevoAdminId,
+      nuevoAdminNombre: [nuevoAdmin?.nombre, nuevoAdmin?.apellido].filter(Boolean).join(' '),
+    }));
+
     return { message: 'Administración cedida correctamente' };
   }
 
@@ -361,6 +542,78 @@ export class GroupUseCases {
     await this.groupRepository.join(grupo.id, nuevoMiembroId);
 
     return { message: 'Miembro agregado correctamente' };
+  }
+
+  async abandonarGrupo(usuario: AuthenticatedUser | undefined, grupoId: unknown) {
+    const authUser = this.ensureAuthenticated(usuario);
+
+    if (!grupoId || typeof grupoId !== 'string') {
+      throw new ApplicationError(400, 'ID de grupo inválido');
+    }
+
+    const grupo = await this.groupRepository.findById(grupoId);
+    if (!grupo) throw new ApplicationError(404, 'Grupo no encontrado');
+
+    const esMiembro = grupo.miembros.some((m) => m.usuarioId === authUser.id);
+    if (!esMiembro) throw new ApplicationError(403, 'No eres miembro de este grupo');
+
+    // Si es administrador, asignar administración a otro miembro aleatorio
+    if (grupo.administradorId === authUser.id) {
+      const otrosMiembros = grupo.miembros.filter(
+        (m) => m.usuarioId !== authUser.id && m.usuarioId,
+      );
+
+      if (otrosMiembros.length > 0) {
+        // Seleccionar un miembro aleatorio de los otros
+        const indiceAleatorio = Math.floor(Math.random() * otrosMiembros.length);
+        const nuevoAdmin = otrosMiembros[indiceAleatorio].usuarioId!;
+        await this.groupRepository.updateAdministrador(grupo.id, nuevoAdmin);
+      }
+    }
+
+    // Remover al usuario del grupo
+    await this.groupRepository.leave(grupo.id, authUser.id);
+
+    return {
+      message: 'Has abandonado el grupo correctamente',
+    };
+  }
+
+  async obtenerMiembrosGrupo(usuario: AuthenticatedUser | undefined, grupoId: unknown) {
+    const authUser = this.ensureAuthenticated(usuario);
+
+    if (!grupoId || typeof grupoId !== 'string') {
+      throw new ApplicationError(400, 'ID de grupo inválido');
+    }
+
+    const grupo = await this.groupRepository.findById(grupoId);
+    if (!grupo) throw new ApplicationError(404, 'Grupo no encontrado');
+
+    const esMiembro = grupo.miembros.some((m) => m.usuarioId === authUser.id);
+    if (!esMiembro) throw new ApplicationError(403, 'No eres miembro de este grupo');
+
+    const miembros = grupo.miembros
+      .filter((miembro) => miembro.usuario)
+      .map((miembro) => ({
+        id: miembro.usuario!.id,
+        nombre: miembro.usuario!.nombre,
+        apellido: miembro.usuario!.apellido,
+        esAdministrador: miembro.usuario!.id === grupo.administradorId,
+      }));
+
+    return {
+      data: {
+        grupoId: grupo.id,
+        grupoNombre: grupo.nombre,
+        cantidadMiembros: miembros.length,
+        miembros,
+      },
+    };
+  }
+
+  private normalizarMateria(materia: unknown) {
+    if (typeof materia !== 'string') return '';
+    return materia.trim().toLowerCase();
   }
 
   private ensureAuthenticated(usuario: AuthenticatedUser | undefined) {

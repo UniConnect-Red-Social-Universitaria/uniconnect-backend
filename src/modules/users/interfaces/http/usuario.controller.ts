@@ -4,6 +4,23 @@ import { usersUseCases } from '../../../../container';
 import { handleControllerError } from '../../../../shared/controller-error';
 
 export class UsuarioController {
+  static async buscarGlobal(req: Request, res: Response) {
+    try {
+      const resultado = await usersUseCases.buscarGlobal(req.usuario, req.query.q);
+
+      res.json({
+        success: true,
+        data: resultado.data,
+      });
+    } catch (error) {
+      return handleControllerError(
+        res,
+        error,
+        'Error al buscar usuarios y materias',
+      );
+    }
+  }
+
   // Buscar estudiantes por materia (excluye al usuario autenticado y relaciones existentes)
   static async buscarPorMateria(req: Request, res: Response) {
     try {
@@ -57,6 +74,7 @@ export class UsuarioController {
         data: resultado.data,
       });
     } catch (error) {
+      require('fs').appendFileSync('error_debug.txt', '\nERROR LISTAR COMPANEROS: ' + (error instanceof Error ? error.stack : String(error)));
       return handleControllerError(res, error, 'Error al listar compañeros');
     }
   }
@@ -94,6 +112,24 @@ export class UsuarioController {
       });
     } catch (error) {
       return handleControllerError(res, error, 'Error al aceptar solicitud');
+    }
+  }
+
+  // Rechazar solicitud de conexión
+  static async rechazarSolicitud(req: Request, res: Response) {
+    try {
+      const resultado = await usersUseCases.rechazarSolicitud(
+        req.usuario,
+        req.body?.solicitudId,
+      );
+
+      res.json({
+        success: true,
+        message: resultado.message,
+        data: resultado.data,
+      });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al rechazar solicitud');
     }
   }
 

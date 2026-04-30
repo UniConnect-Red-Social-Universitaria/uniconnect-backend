@@ -15,6 +15,10 @@ export class PrismaGrupoRepository implements GroupRepository {
     return GrupoModel.listarDisponibles(materiasCursando, usuarioId);
   }
 
+  async searchByText(texto: string) {
+    return GrupoModel.buscarPorTexto(texto);
+  }
+
   async findById(id: string) {
     return GrupoModel.buscarPorId(id);
   }
@@ -33,6 +37,10 @@ export class PrismaGrupoRepository implements GroupRepository {
 
   async updateAdministrador(grupoId: string, nuevoAdminId: string) {
     await GrupoModel.actualizarAdministrador(grupoId, nuevoAdminId);
+  }
+
+  async leave(grupoId: string, usuarioId: string) {
+    await GrupoModel.abandonarGrupo(grupoId, usuarioId);
   }
 }
 

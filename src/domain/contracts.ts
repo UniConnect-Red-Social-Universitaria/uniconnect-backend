@@ -51,10 +51,7 @@ export interface UpdateUserProfileData {
 }
 
 export interface ContactRelation {
-  id: string;
   estado: ContactStatus;
-  solicitanteId: string;
-  receptorId: string;
 }
 
 export interface ContactRequestRecord {
@@ -166,6 +163,10 @@ export interface CreateMessageData {
   receptorId: string;
 }
 
+export type CategoriaEvento = 'academico' | 'cultural' | 'deportivo' | 'otro';
+
+export const CATEGORIAS_EVENTO: CategoriaEvento[] = ['academico', 'cultural', 'deportivo', 'otro'];
+
 export interface EventCreator {
   id: string;
   nombre: string;
@@ -179,6 +180,7 @@ export interface EventRecord {
   descripcion: string;
   lugar?: string | null;
   fechaEvento: Date;
+  categoria: CategoriaEvento;
   creadorId: string;
   createdAt: Date;
   creador?: EventCreator;
@@ -189,6 +191,7 @@ export interface CreateEventData {
   descripcion: string;
   lugar: string;
   fechaEvento: Date;
+  categoria: CategoriaEvento;
   creadorId: string;
 }
 
@@ -219,6 +222,18 @@ export interface UserRepository {
     semestre: number;
     materiasCursando: string[];
   }>>;
+  searchByText(
+    texto: string,
+    usuarioActualId: string,
+  ): Promise<Array<{
+    id: string;
+    nombre: string;
+    apellido: string;
+    correo: string;
+    carrera: string;
+    semestre: number;
+    materiasCursando: string[];
+  }>>;
   updateProfile(id: string, data: UpdateUserProfileData): Promise<UserSummary>;
   delete(id: string): Promise<void>;
 }
@@ -229,10 +244,6 @@ export interface ContactRepository {
     usuarioBId: string,
   ): Promise<ContactRelation | null>;
   createRequest(
-    solicitanteId: string,
-    receptorId: string,
-  ): Promise<ContactRequestRecord>;
-  reactivateRejectedRequest(
     solicitanteId: string,
     receptorId: string,
   ): Promise<ContactRequestRecord>;
@@ -263,6 +274,7 @@ export interface MateriaRepository {
   findById(id: string): Promise<CatalogItem | null>;
   findByName(nombre: string): Promise<CatalogItem | null>;
   listAll(): Promise<CatalogItem[]>;
+  searchByText(texto: string): Promise<CatalogItem[]>;
   count(): Promise<number>;
   createCatalog(nombres: string[]): Promise<CountResult>;
 }
@@ -271,11 +283,13 @@ export interface GroupRepository {
   create(data: CreateGroupData): Promise<GroupRecord>;
   listByUser(usuarioId: string): Promise<GroupRecord[]>;
   listAvailable(materiasCursando: string[], usuarioId: string): Promise<GroupRecord[]>;
+  searchByText(texto: string): Promise<GroupRecord[]>;
   findById(id: string): Promise<GroupRecord | null>;
   findByName(nombre: string): Promise<{ id: string } | null>;
   countByMateria(materiaId: string): Promise<number>;
   join(grupoId: string, usuarioId: string): Promise<void>;
   updateAdministrador(grupoId: string, nuevoAdminId: string): Promise<void>;
+  leave(grupoId: string, usuarioId: string): Promise<void>;
 }
 
 export interface GrupoArchivoRepository {
@@ -298,6 +312,7 @@ export interface MessageRepository {
 export interface EventRepository {
   create(data: CreateEventData): Promise<EventRecord>;
   listUpcoming(): Promise<EventRecord[]>;
+  listByCategoria(categoria: CategoriaEvento): Promise<EventRecord[]>;
 }
 
 export interface PasswordService {
@@ -329,4 +344,70 @@ export interface TokenBlacklistService {
 export interface MessageGateway {
   emitNewMessage(payload: MessageRecord): void;
   emitNewGroupMessage(payload: GroupMessageRecord): void;
+}
+
+// ── Eventos de Grupo (Observer Pattern) ──
+
+export interface GroupEventObserver {
+  onSolicitudNueva(payload: {
+    solicitudId: string;
+    grupoId: string;
+    grupoNombre: string;
+    administradorId: string;
+    solicitanteId: string;
+    solicitanteNombre: string;
+    solicitanteApellido?: string;
+  }): void;
+
+  onSolicitudResuelta(payload: {
+    solicitudId: string;
+    grupoId: string;
+    grupoNombre: string;
+    solicitanteId: string;
+    estado: 'APROBADA' | 'RECHAZADA';
+  }): void;
+
+  onAdminTransferido(payload: {
+    grupoId: string;
+    grupoNombre: string;
+    anteriorAdminId: string;
+    anteriorAdminNombre: string;
+    nuevoAdminId: string;
+    nuevoAdminNombre: string;
+  }): void;
+}
+
+// ── Solicitudes de ingreso a grupo ──
+
+export type SolicitudGrupoStatus = 'PENDIENTE' | 'APROBADA' | 'RECHAZADA';
+
+export interface SolicitudGrupoRecord {
+  id: string;
+  solicitanteId: string;
+  grupoId: string;
+  estado: SolicitudGrupoStatus;
+  createdAt: Date;
+  updatedAt: Date;
+  solicitante?: {
+    id: string;
+    nombre: string;
+    apellido: string;
+    correo: string;
+  };
+  grupo?: {
+    id: string;
+    nombre: string;
+    materia: { id: string; nombre: string };
+  };
+}
+
+export interface SolicitudGrupoRepository {
+  crear(solicitanteId: string, grupoId: string): Promise<SolicitudGrupoRecord>;
+  buscarPendiente(solicitanteId: string, grupoId: string): Promise<SolicitudGrupoRecord | null>;
+  listarPorGrupo(grupoId: string): Promise<SolicitudGrupoRecord[]>;
+  listarPorUsuario(solicitanteId: string): Promise<SolicitudGrupoRecord[]>;
+  aprobar(solicitudId: string): Promise<SolicitudGrupoRecord>;
+  rechazar(solicitudId: string): Promise<SolicitudGrupoRecord>;
+  buscarPorId(solicitudId: string): Promise<SolicitudGrupoRecord | null>;
+  eliminarRechazada(solicitanteId: string, grupoId: string): Promise<void>;
 }

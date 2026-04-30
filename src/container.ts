@@ -4,8 +4,11 @@ import { EventUseCases } from './modules/events/application/event.use-cases';
 import { PrismaEventoRepository } from './modules/events/infrastructure/prisma-evento.repository';
 import { GroupUseCases } from './modules/groups/application/group.use-cases';
 import { PrismaGrupoRepository, PrismaGrupoArchivoRepository } from './modules/groups/infrastructure/prisma-grupo.repository';
+import { PrismaSolicitudGrupoRepository } from './modules/groups/infrastructure/prisma-solicitud-grupo.repository';
+import { SocketGroupObserver } from './modules/groups/infrastructure/socket-group.observer';
 import { MateriaUseCases } from './modules/materias/application/materia.use-cases';
 import { PrismaMateriaRepository } from './modules/materias/infrastructure/prisma-materia.repository';
+import { ChatSubject } from './modules/messages/domain/chat-subject';
 import { MessageUseCases } from './modules/messages/application/message.use-cases';
 import { PrismaMensajeRepository } from './modules/messages/infrastructure/prisma-mensaje.repository';
 import { SocketMessageGateway } from './modules/messages/infrastructure/socket-message.gateway';
@@ -23,6 +26,7 @@ const careerRepository = new PrismaCarreraRepository();
 const materiaRepository = new PrismaMateriaRepository();
 const grupoRepository = new PrismaGrupoRepository();
 const grupoArchivoRepository = new PrismaGrupoArchivoRepository();
+const solicitudGrupoRepository = new PrismaSolicitudGrupoRepository();
 const mensajeRepository = new PrismaMensajeRepository();
 const eventoRepository = new PrismaEventoRepository();
 
@@ -31,6 +35,10 @@ const tokenService = new JwtTokenService();
 const identityVerificationService = new Auth0IdentityVerificationService();
 const tokenBlacklistService = new InMemoryTokenBlacklistService();
 const messageGateway = new SocketMessageGateway();
+const groupEventObserver = new SocketGroupObserver();
+
+// ── ChatSubject para mensajes de grupo (Patrón Observer) ──
+const chatSubject = ChatSubject.getInstance();
 
 export const usersUseCases = new UsersUseCases({
   userRepository,
@@ -44,10 +52,12 @@ export const usersUseCases = new UsersUseCases({
 });
 
 export const groupUseCases = new GroupUseCases(
-  grupoRepository,
-  materiaRepository,
-  grupoArchivoRepository,
-  userRepository,
+  grupoRepository, 
+  materiaRepository, 
+  userRepository, 
+  grupoArchivoRepository, 
+  solicitudGrupoRepository,
+  [groupEventObserver]
 );
 export const materiaUseCases = new MateriaUseCases(materiaRepository);
 export const messageUseCases = new MessageUseCases(
@@ -56,6 +66,10 @@ export const messageUseCases = new MessageUseCases(
   contactRepository,
   grupoRepository,
   messageGateway,
+  chatSubject,
 );
 export const eventUseCases = new EventUseCases(eventoRepository);
 export const catalogUseCases = new CatalogUseCases(careerRepository, materiaRepository);
+
+// ── Exportar ChatSubject para uso en socket.ts ──
+export { chatSubject };
