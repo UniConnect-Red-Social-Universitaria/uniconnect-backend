@@ -22,6 +22,12 @@ export function handleControllerError(
 
   if (includeError) {
     payload.error = error instanceof Error ? error.message : 'Error desconocido';
+    if (!(error instanceof ApplicationError)) {
+        console.error("DEBUG 500 ERROR:", error);
+        try {
+            require('fs').appendFileSync('error_500.log', new Date().toISOString() + ' ' + (error instanceof Error ? error.stack : String(error)) + '\n');
+        } catch (e) {}
+    }
   }
 
   return res.status(500).json(payload);
