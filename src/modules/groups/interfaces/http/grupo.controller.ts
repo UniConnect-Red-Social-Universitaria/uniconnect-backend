@@ -162,7 +162,7 @@ export class GrupoController {
         req.params.id,
         req.params.archivoId,
       );
-      return res.download(resultado.data.ruta, resultado.data.nombre);
+      return res.redirect(resultado.data.ruta);
     } catch (error) {
       return handleControllerError(res, error, 'Error al descargar el archivo');
     }
