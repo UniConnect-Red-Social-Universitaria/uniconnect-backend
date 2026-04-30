@@ -7,6 +7,7 @@ const router = express.Router();
 
 router.get('/', verificarJWT, EventoController.listarGlobal);
 router.post('/', verificarJWT, EventoController.crear);
+router.get('/suscripciones', verificarJWT, EventoController.listarSuscripciones);
 router.post('/suscripciones', verificarJWT, EventoController.suscribir);
 router.delete('/suscripciones/:categoria', verificarJWT, EventoController.desuscribir);
 

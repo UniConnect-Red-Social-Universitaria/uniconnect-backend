@@ -12,4 +12,5 @@ export class SocketEventoObserver implements IEventoObserver {
   getUsuarioId(): string {
     return this.usuarioId;
   }
+
 }
