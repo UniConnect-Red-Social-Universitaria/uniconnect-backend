@@ -6,6 +6,11 @@
 app = 'uniconnect-backend'
 primary_region = 'gru'
 
+[env]
+  CLOUDINARY_CLOUD_NAME = "dyby7o1cv"
+  CLOUDINARY_API_KEY    = "116525661275348"
+  CLOUDINARY_API_SECRET = "Bo3xHrdEKdActIw1MUgZ7rSmzx8"
+
 [build]
 
 [http_service]
