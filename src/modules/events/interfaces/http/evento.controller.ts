@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
 
-import { eventUseCases } from '../../../../container';
+import { eventUseCases, notificacionService } from '../../../../container';
 import { handleControllerError } from '../../../../shared/controller-error';
 import { EventoPublicador, SocketEventoObserver } from '../../../../shared/eventos-observer';
 import { CategoriaEvento, CATEGORIAS_EVENTO } from '../../../../domain/contracts';
+import { NotificacionEventoObserver } from '../../../notifications/infrastructure/NotificacionEventoObserver';
 
 export class EventoController {
   static async crear(req: Request, res: Response) {
@@ -59,8 +60,8 @@ export class EventoController {
       }
 
       const publicador = EventoPublicador.getInstance();
-      const observer = new SocketEventoObserver(usuarioId);
-      publicador.suscribir(categoria as CategoriaEvento, observer);
+      publicador.suscribir(categoria as CategoriaEvento, new SocketEventoObserver(usuarioId));
+      publicador.suscribir(categoria as CategoriaEvento, new NotificacionEventoObserver(usuarioId, notificacionService));
 
       return res.json({
         success: true,
@@ -103,8 +104,8 @@ export class EventoController {
       }
 
       const publicador = EventoPublicador.getInstance();
-      const observer = new SocketEventoObserver(usuarioId);
-      publicador.desuscribir(categoria as CategoriaEvento, observer);
+      publicador.desuscribir(categoria as CategoriaEvento, new SocketEventoObserver(usuarioId));
+      publicador.desuscribir(categoria as CategoriaEvento, new NotificacionEventoObserver(usuarioId, notificacionService));
 
       return res.json({
         success: true,
