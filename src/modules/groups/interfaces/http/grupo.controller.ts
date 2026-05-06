@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 
 import { groupUseCases, materiaUseCases } from '../../../../container';
 import { handleControllerError } from '../../../../shared/controller-error';
+import { cloudinary } from '../../../../lib/cloudinary';
 
 export class GrupoController {
   static async buscar(req: Request, res: Response) {
@@ -162,7 +163,27 @@ export class GrupoController {
         req.params.id,
         req.params.archivoId,
       );
-      return res.json({ success: true, data: { url: resultado.data.ruta, nombre: resultado.data.nombre } });
+
+      const { nombre, publicId } = resultado.data;
+
+      const signedUrl = cloudinary.url(publicId, {
+        resource_type: 'raw',
+        sign_url: true,
+        secure: true,
+        type: 'upload',
+      });
+
+      const cloudinaryRes = await fetch(signedUrl);
+      if (!cloudinaryRes.ok) {
+        return res.status(502).json({ success: false, message: 'No se pudo obtener el archivo desde el almacenamiento' });
+      }
+
+      const nombreArchivo = nombre.endsWith('.pdf') ? nombre : `${nombre}.pdf`;
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(nombreArchivo)}"`);
+
+      const buffer = await cloudinaryRes.arrayBuffer();
+      return res.send(Buffer.from(buffer));
     } catch (error) {
       return handleControllerError(res, error, 'Error al descargar el archivo');
     }

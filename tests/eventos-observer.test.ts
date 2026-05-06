@@ -79,6 +79,27 @@ describe('EventoPublicador', () => {
     expect(obs.llamadas).toHaveLength(0);
   });
 
+  it('realiza el ciclo completo del patrón Observer: suscripción, notificación y desuscripción', () => {
+    const obs = crearObserverMock();
+    const evento1 = crearEventoMock('academico', 'Charla inicial');
+    const evento2 = crearEventoMock('academico', 'Charla posterior');
+
+    expect(publicador.contarSuscriptores('academico')).toBe(0);
+
+    publicador.suscribir('academico', obs);
+    expect(publicador.contarSuscriptores('academico')).toBe(1);
+
+    publicador.notificar('academico', evento1);
+    expect(obs.llamadas).toHaveLength(1);
+    expect(obs.llamadas[0]).toMatchObject({ titulo: 'Charla inicial' });
+
+    publicador.desuscribir('academico', obs);
+    expect(publicador.contarSuscriptores('academico')).toBe(0);
+
+    publicador.notificar('academico', evento2);
+    expect(obs.llamadas).toHaveLength(1); // no debe recibir el segundo evento después de desuscribir
+  });
+
   it('notificar sin suscriptores no lanza error', () => {
     expect(() => publicador.notificar('otro', crearEventoMock('otro'))).not.toThrow();
   });

@@ -359,7 +359,7 @@ export class GroupUseCases {
       (resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
           { folder: 'uniconnect/grupos', resource_type: 'raw', format: 'pdf', type: 'upload', access_mode: 'public' },
-          (error, result) => {
+          (error: unknown, result: { secure_url: string; public_id: string } | undefined) => {
             if (error || !result) return reject(error ?? new Error('Error al subir a Cloudinary'));
             resolve(result as { secure_url: string; public_id: string });
           },
@@ -446,7 +446,7 @@ export class GroupUseCases {
       throw new ApplicationError(404, 'Archivo no encontrado');
     }
 
-    return { data: { ruta: archivo.ruta, nombre: archivo.nombre } };
+    return { data: { url: archivo.ruta, nombre: archivo.nombre, publicId: archivo.nombreFisico } };
   }
 
   async cederAdministracion(
