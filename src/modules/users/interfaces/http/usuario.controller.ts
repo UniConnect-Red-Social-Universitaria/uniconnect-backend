@@ -227,6 +227,11 @@ export class UsuarioController {
   }
   static async obtenerPerfilPublico(req: Request, res: Response) {
     try {
+      if (req.query.vista === 'completa') {
+        const resultado = await usersUseCases.obtenerPerfilEnriquecido(req.params.id);
+        return res.json({ success: true, data: resultado.data });
+      }
+
       const resultado = await usersUseCases.obtenerPerfilPublico(req.params.id);
       return res.json({ success: true, data: resultado.data });
     } catch (error) {
