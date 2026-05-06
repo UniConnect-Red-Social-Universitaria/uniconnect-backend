@@ -19,6 +19,7 @@ import { PrismaContactRepository } from './modules/users/infrastructure/prisma-c
 import { JwtTokenService } from './modules/users/infrastructure/jwt-token.service';
 import { InMemoryTokenBlacklistService } from './modules/users/infrastructure/token-blacklist.service';
 import { PrismaUserRepository } from './modules/users/infrastructure/prisma-user.repository';
+import { PrismaEstadisticasRepository } from './modules/users/infrastructure/prisma-estadisticas.repository';
 
 const userRepository = new PrismaUserRepository();
 const contactRepository = new PrismaContactRepository();
@@ -29,6 +30,8 @@ const grupoArchivoRepository = new PrismaGrupoArchivoRepository();
 const solicitudGrupoRepository = new PrismaSolicitudGrupoRepository();
 const mensajeRepository = new PrismaMensajeRepository();
 const eventoRepository = new PrismaEventoRepository();
+
+const estadisticasRepository = new PrismaEstadisticasRepository();
 
 const passwordService = new BcryptPasswordService();
 const tokenService = new JwtTokenService();
@@ -49,6 +52,7 @@ export const usersUseCases = new UsersUseCases({
   tokenService,
   identityVerificationService,
   tokenBlacklistService,
+  estadisticasRepository,
 });
 
 export const groupUseCases = new GroupUseCases(
