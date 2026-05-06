@@ -12,6 +12,7 @@ router.get('/', verificarJWT, GrupoController.listarMisGrupos);
 router.get('/buscar', verificarJWT, GrupoController.buscar);
 router.get('/disponibles', verificarJWT, GrupoController.listarGruposDisponibles);
 router.get('/mis-solicitudes', verificarJWT, GrupoController.listarMisSolicitudes);
+router.get('/:id', verificarJWT, GrupoController.obtenerGrupo);
 router.get('/:id/miembros', verificarJWT, GrupoController.obtenerMiembrosGrupo);
 router.post('/:id/solicitar-ingreso', verificarJWT, GrupoController.solicitarIngreso);
 router.get('/:id/solicitudes', verificarJWT, GrupoController.listarSolicitudesGrupo);

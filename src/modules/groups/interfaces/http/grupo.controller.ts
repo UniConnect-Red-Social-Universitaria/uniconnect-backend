@@ -62,6 +62,19 @@ export class GrupoController {
     }
   }
 
+  static async obtenerGrupo(req: Request, res: Response) {
+    try {
+      const resultado = await groupUseCases.obtenerGrupo(req.usuario, req.params.id);
+
+      return res.json({
+        success: true,
+        data: resultado.data,
+      });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al obtener el grupo');
+    }
+  }
+
   static async listarGruposDisponibles(req: Request, res: Response) {
     try {
       const resultado = await groupUseCases.listarGruposDisponibles(req.usuario);

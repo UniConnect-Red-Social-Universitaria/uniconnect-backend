@@ -118,6 +118,22 @@ export class GroupUseCases {
     return { data: grupos.map(formatearGrupo) };
   }
 
+  async obtenerGrupo(usuario: AuthenticatedUser | undefined, grupoId: unknown) {
+    const authUser = this.ensureAuthenticated(usuario);
+
+    if (!grupoId || typeof grupoId !== 'string') {
+      throw new ApplicationError(400, 'ID de grupo inválido');
+    }
+
+    const grupo = await this.groupRepository.findById(grupoId);
+    if (!grupo) throw new ApplicationError(404, 'Grupo no encontrado');
+
+    const esMiembro = grupo.miembros.some((m) => m.usuarioId === authUser.id);
+    if (!esMiembro) throw new ApplicationError(403, 'No eres miembro de este grupo');
+
+    return { data: formatearGrupo(grupo) };
+  }
+
   async solicitarIngreso(usuario: AuthenticatedUser | undefined, grupoId: unknown) {
     const authUser = this.ensureAuthenticated(usuario);
 
