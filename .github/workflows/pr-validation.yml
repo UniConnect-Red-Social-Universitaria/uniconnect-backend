@@ -82,12 +82,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Add size label
-        uses: codetree/size-label-action@v2
+        uses: pascalgn/size-label-action@v0.5.5
         with:
-          max_xs: 10
-          max_s: 50
-          max_m: 250
-          max_l: 1000
+          sizes: |
+            0-10: size/XS
+            11-30: size/S
+            31-100: size/M
+            101-500: size/L
+            501+: size/XL
         continue-on-error: true
 
   conflict-check:
