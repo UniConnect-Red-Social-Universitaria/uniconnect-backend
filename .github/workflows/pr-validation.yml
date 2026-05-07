@@ -4,7 +4,7 @@ on:
   pull_request:
     branches:
       - main
-      - develop
+      - developer
     types:
       - opened
       - reopened
@@ -106,7 +106,7 @@ jobs:
             if (pr.mergeable === false) {
               console.log('❌ Merge conflicts detected!');
               console.log('Please resolve conflicts by:');
-              console.log('1. Fetching latest develop/main');
+              console.log('1. Fetching latest developer/main');
               console.log('2. Rebasing your branch');
               console.log('3. Pushing updated branch');
               

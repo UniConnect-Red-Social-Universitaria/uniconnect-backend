@@ -4,11 +4,11 @@ on:
   push:
     branches:
       - main
-      - develop
+      - developer
   pull_request:
     branches:
       - main
-      - develop
+      - developer
   schedule:
     - cron: '0 2 * * 0'  # Weekly security scan
 
