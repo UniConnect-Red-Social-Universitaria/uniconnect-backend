@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import path from "path";
 
 import usuarioRoutes from "./modules/users/interfaces/http/usuario.routes";
 import materiaRoutes from "./modules/materias/interfaces/http/materia.routes";
@@ -12,6 +13,8 @@ import { version } from "../package.json";
 
 export const app = express();
 
+const uploadsDir = path.resolve(process.cwd(), "uploads");
+
 const corsOptions = {
   origin: "*",
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
@@ -20,6 +23,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use("/uploads", express.static(uploadsDir));
 
 app.use("/api/usuarios", usuarioRoutes);
 app.use("/api/materias", materiaRoutes);
