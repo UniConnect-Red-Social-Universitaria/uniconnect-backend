@@ -18,10 +18,15 @@ function crearEventoMock(categoria: CategoriaEvento, titulo = 'Evento test'): Ev
   };
 }
 
+let mockIdCounter = 1;
+
 function crearObserverMock(): IEventoObserver & { llamadas: EventRecord[] } {
   const llamadas: EventRecord[] = [];
+  const miId = `mock-user-${mockIdCounter++}`;
+
   return {
     llamadas,
+    getUsuarioId: () => miId, 
     onNuevoEvento(evento: EventRecord) {
       llamadas.push(evento);
     },

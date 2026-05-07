@@ -9,17 +9,8 @@ import {
 import { ApplicationError } from '../../../shared/application-error';
 import { isValidMongoId } from '../../../shared/mongo-id';
 import { ChatSubject } from '../domain/chat-subject';
+import { crearCadenaValidacion } from './validacion/ValidadorMensajeChainFactory';
 
-/**
- * MessageUseCases - Casos de uso para mensajes (privados y de grupo)
- * 
- * Responsabilidades:
- * - Validar permisos y datos de entrada
- * - Persistir mensajes en base de datos (MessageRepository)
- * - Disparar notificaciones a través de:
- *   1. MessageGateway (para avisos/notificaciones)
- *   2. ChatSubject (para entrega en tiempo real a observadores)
- */
 export class MessageUseCases {
   constructor(
     private readonly messageRepository: MessageRepository,
@@ -28,7 +19,7 @@ export class MessageUseCases {
     private readonly groupRepository: GroupRepository,
     private readonly messageGateway: MessageGateway,
     private readonly chatSubject: ChatSubject,
-  ) { }
+  ) {}
 
   async enviarMensaje(
     usuario: AuthenticatedUser | undefined,
@@ -45,16 +36,11 @@ export class MessageUseCases {
       throw new ApplicationError(400, 'receptorId tiene formato inválido');
     }
 
-    if (typeof contenido !== 'string' || !contenido.trim()) {
+    if (typeof contenido !== 'string') {
       throw new ApplicationError(400, 'Debes enviar un contenido de mensaje válido');
     }
 
-    if (receptorId.trim() === authUser.id) {
-      throw new ApplicationError(400, 'No puedes enviarte mensajes a ti mismo');
-    }
-
     const receptor = await this.userRepository.findById(receptorId.trim());
-
     if (!receptor) {
       throw new ApplicationError(404, 'El receptor no existe');
     }
@@ -64,8 +50,19 @@ export class MessageUseCases {
       receptorId.trim(),
     );
 
-    if (!relacion || relacion.estado !== 'ACEPTADA') {
-      throw new ApplicationError(403, 'Solo puedes chatear con compañeros agregados');
+    const cadena = crearCadenaValidacion({
+      esMiembroDeGrupo: () => true,
+      tieneRelacionAceptada: () => !!(relacion && relacion.estado === 'ACEPTADA'),
+    });
+
+    const resultado = cadena.manejar({
+      emisorId: authUser.id,
+      contenido,
+      receptorId: receptorId.trim(),
+    });
+
+    if (!resultado.valido) {
+      throw new ApplicationError(400, resultado.error ?? 'Mensaje inválido');
     }
 
     const mensaje = await this.messageRepository.create({
@@ -102,7 +99,6 @@ export class MessageUseCases {
     }
 
     const companero = await this.userRepository.findById(companeroId.trim());
-
     if (!companero) {
       throw new ApplicationError(404, 'El compañero no existe');
     }
@@ -113,10 +109,7 @@ export class MessageUseCases {
     );
 
     if (!relacion || relacion.estado !== 'ACEPTADA') {
-      throw new ApplicationError(
-        403,
-        'Solo puedes consultar chats con compañeros agregados',
-      );
+      throw new ApplicationError(403, 'Solo puedes consultar chats con compañeros agregados');
     }
 
     const limitQuery = Number(limit ?? 50);
@@ -149,12 +142,11 @@ export class MessageUseCases {
       throw new ApplicationError(400, 'grupoId tiene formato inválido');
     }
 
-    if (typeof contenido !== 'string' || !contenido.trim()) {
+    if (typeof contenido !== 'string') {
       throw new ApplicationError(400, 'Debes enviar un contenido de mensaje válido');
     }
 
     const grupo = await this.groupRepository.findById(grupoId.trim());
-
     if (!grupo) {
       throw new ApplicationError(404, 'El grupo no existe');
     }
@@ -163,22 +155,28 @@ export class MessageUseCases {
       (miembro) => miembro.usuarioId === authUser.id || miembro.usuario?.id === authUser.id,
     );
 
-    if (!esMiembro) {
-      throw new ApplicationError(403, 'Solo los miembros pueden enviar mensajes al grupo');
+    const cadena = crearCadenaValidacion({
+      esMiembroDeGrupo: () => esMiembro,
+      tieneRelacionAceptada: () => true,
+    });
+
+    const resultado = cadena.manejar({
+      emisorId: authUser.id,
+      contenido,
+      grupoId: grupoId.trim(),
+    });
+
+    if (!resultado.valido) {
+      throw new ApplicationError(400, resultado.error ?? 'Mensaje inválido');
     }
 
-    // Persistir el mensaje en base de datos
     const mensaje = await this.messageRepository.createGroupMessage({
       contenido: contenido.trim(),
       grupoId: grupoId.trim(),
       emisorId: authUser.id,
     });
 
-    // Emitir notificación (avisos, badges, etc.)
     this.messageGateway.emitNewGroupMessage(mensaje);
-
-    // Emitir mensaje decorado a través del patrón Observer (ChatSubject)
-    // Este es el canal independiente para chat grupal en tiempo real
     this.chatSubject.emitirNuevoMensaje(grupoId.trim(), mensaje);
 
     return {
@@ -203,7 +201,6 @@ export class MessageUseCases {
     }
 
     const grupo = await this.groupRepository.findById(grupoId.trim());
-
     if (!grupo) {
       throw new ApplicationError(404, 'El grupo no existe');
     }
@@ -234,7 +231,6 @@ export class MessageUseCases {
     if (!usuario) {
       throw new ApplicationError(401, 'Usuario no autenticado');
     }
-
     return usuario;
   }
 }
