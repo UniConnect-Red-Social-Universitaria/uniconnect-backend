@@ -20,6 +20,12 @@ import { JwtTokenService } from './modules/users/infrastructure/jwt-token.servic
 import { InMemoryTokenBlacklistService } from './modules/users/infrastructure/token-blacklist.service';
 import { PrismaUserRepository } from './modules/users/infrastructure/prisma-user.repository';
 import { PrismaEstadisticasRepository } from './modules/users/infrastructure/prisma-estadisticas.repository';
+import { NotificacionService } from './modules/notifications/application/NotificacionService';
+import { InMemoryPreferenciaRepository } from './modules/notifications/infrastructure/InMemoryPreferenciaRepository';
+import { InAppWebSocketStrategy } from './modules/notifications/infrastructure/strategies/InAppWebSocketStrategy';
+import { EmailInstitucionalStrategy } from './modules/notifications/infrastructure/strategies/EmailInstitucionalStrategy';
+import { PushMovilStrategy } from './modules/notifications/infrastructure/strategies/PushMovilStrategy';
+import { ResumenDiarioStrategy } from './modules/notifications/infrastructure/strategies/ResumenDiarioStrategy';
 
 const userRepository = new PrismaUserRepository();
 const contactRepository = new PrismaContactRepository();
@@ -77,3 +83,16 @@ export const catalogUseCases = new CatalogUseCases(careerRepository, materiaRepo
 
 // ── Exportar ChatSubject para uso en socket.ts ──
 export { chatSubject };
+
+// ── Patrón Strategy: Notificaciones ──
+export const preferenciaRepository = new InMemoryPreferenciaRepository();
+
+export const notificacionService = new NotificacionService(
+  [
+    new InAppWebSocketStrategy(),
+    new EmailInstitucionalStrategy(),
+    new PushMovilStrategy(),
+    new ResumenDiarioStrategy(),
+  ],
+  preferenciaRepository,
+);
