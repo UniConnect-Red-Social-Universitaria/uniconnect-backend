@@ -33,6 +33,9 @@ model Usuario {
   mensajesGrupoEnviados GrupoMensaje[] @relation("MensajesGrupoEnviados")
   archivosGrupoSubidos GrupoArchivo[] @relation("ArchivosGrupoSubidos")
   eventosCreados Evento[] @relation("EventosCreados")
+  foroPreguntas  ForoPregunta[]
+  foroRespuestas ForoRespuesta[]
+  foroVotos      ForoVoto[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -59,11 +62,12 @@ model Contacto {
 }
 
 model Materia {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  nombre    String   @unique
+  id        String         @id @default(auto()) @map("_id") @db.ObjectId
+  nombre    String         @unique
   grupos    Grupo[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  preguntas ForoPregunta[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
 }
 
 model Grupo {
@@ -153,6 +157,44 @@ model Evento {
   creador     Usuario  @relation("EventosCreados", fields: [creadorId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model ForoPregunta {
+  id         String        @id @default(auto()) @map("_id") @db.ObjectId
+  titulo     String
+  contenido  String
+  autorId    String        @db.ObjectId
+  materiaId  String        @db.ObjectId
+  autor      Usuario       @relation(fields: [autorId], references: [id])
+  materia    Materia       @relation(fields: [materiaId], references: [id])
+  respuestas ForoRespuesta[]
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+}
+
+model ForoRespuesta {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  contenido   String
+  autorId     String     @db.ObjectId
+  preguntaId  String     @db.ObjectId
+  puntuacion  Int        @default(0)
+  autor       Usuario    @relation(fields: [autorId], references: [id])
+  pregunta    ForoPregunta @relation(fields: [preguntaId], references: [id])
+  votos       ForoVoto[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model ForoVoto {
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  usuarioId    String        @db.ObjectId
+  respuestaId  String        @db.ObjectId
+  valor        Int
+  usuario      Usuario       @relation(fields: [usuarioId], references: [id])
+  respuesta    ForoRespuesta @relation(fields: [respuestaId], references: [id])
+  createdAt    DateTime      @default(now())
+
+  @@unique([usuarioId, respuestaId])
 }
 
 enum EstadoContacto {

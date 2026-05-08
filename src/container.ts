@@ -1,3 +1,5 @@
+import { ForoUseCases } from './modules/foro/application/foro.use-cases';
+import { PrismaForoRepository } from './modules/foro/infrastructure/prisma-foro.repository';
 import { CatalogUseCases } from './modules/catalog/application/catalog.use-cases';
 import { PrismaCarreraRepository } from './modules/catalog/infrastructure/prisma-carrera.repository';
 import { EventUseCases } from './modules/events/application/event.use-cases';
@@ -96,3 +98,7 @@ export const notificacionService = new NotificacionService(
   ],
   preferenciaRepository,
 );
+
+// ── Módulo Foro ──
+const foroRepository = new PrismaForoRepository();
+export const foroUseCases = new ForoUseCases(foroRepository);

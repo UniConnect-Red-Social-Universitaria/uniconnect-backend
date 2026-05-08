@@ -9,6 +9,7 @@ import mensajeRoutes from "./modules/messages/interfaces/http/mensaje.routes";
 import eventoRoutes from "./modules/events/interfaces/http/evento.routes";
 import catalogoRoutes from "./modules/catalog/interfaces/http/catalogo.routes";
 import notificacionRoutes from "./modules/notifications/interfaces/http/notificacion.routes";
+import foroRoutes from "./modules/foro/interfaces/http/foro.routes";
 
 import { version } from "../package.json";
 
@@ -33,6 +34,7 @@ app.use("/api/mensajes", mensajeRoutes);
 app.use("/api/eventos", eventoRoutes);
 app.use("/api/catalogos", catalogoRoutes);
 app.use("/api/notificaciones", notificacionRoutes);
+app.use("/api/foro", foroRoutes);
 
 app.get("/health", (req, res) => {
   res.status(200).json({
