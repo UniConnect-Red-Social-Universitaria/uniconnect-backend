@@ -1,0 +1,886 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "UniConnect API",
+    "version": "1.0.0",
+    "description": "API REST de la red social universitaria UniConnect"
+  },
+  "servers": [
+    {
+      "url": "https://uniconnect-backend.fly.dev",
+      "description": "Producción"
+    },
+    {
+      "url": "http://localhost:3000",
+      "description": "Desarrollo local"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "Usuario": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "apellido": {
+            "type": "string"
+          },
+          "correo": {
+            "type": "string",
+            "format": "email"
+          },
+          "carrera": {
+            "type": "string"
+          },
+          "semestre": {
+            "type": "integer"
+          }
+        }
+      },
+      "ForoPregunta": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "contenido": {
+            "type": "string"
+          },
+          "autorId": {
+            "type": "string"
+          },
+          "autorNombre": {
+            "type": "string"
+          },
+          "materiaId": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ForoRespuesta": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "contenido": {
+            "type": "string"
+          },
+          "autorId": {
+            "type": "string"
+          },
+          "autorNombre": {
+            "type": "string"
+          },
+          "preguntaId": {
+            "type": "string"
+          },
+          "puntuacion": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SesionEstudio": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "descripcion": {
+            "type": "string"
+          },
+          "lugar": {
+            "type": "string"
+          },
+          "fecha": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "recordatorioMinutos": {
+            "type": "integer"
+          },
+          "cancelada": {
+            "type": "boolean"
+          },
+          "modificada": {
+            "type": "boolean"
+          },
+          "serieId": {
+            "type": "string"
+          },
+          "creadorId": {
+            "type": "string"
+          }
+        }
+      },
+      "SerieEstudio": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "descripcion": {
+            "type": "string"
+          },
+          "lugar": {
+            "type": "string"
+          },
+          "frecuencia": {
+            "type": "string",
+            "enum": [
+              "DIARIA",
+              "SEMANAL",
+              "QUINCENAL"
+            ]
+          },
+          "fechaInicio": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fechaFin": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "recordatorioMinutos": {
+            "type": "integer"
+          },
+          "sesiones": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SesionEstudio"
+            }
+          }
+        }
+      },
+      "Evento": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "descripcion": {
+            "type": "string"
+          },
+          "lugar": {
+            "type": "string"
+          },
+          "fechaEvento": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "categoria": {
+            "type": "string",
+            "enum": [
+              "academico",
+              "cultural",
+              "deportivo",
+              "otro"
+            ]
+          },
+          "creadorId": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/eventos": {
+      "get": {
+        "summary": "Listar eventos globales (opcionalmente filtrar por categoría)",
+        "tags": [
+          "Eventos"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "categoria",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "academico",
+                "cultural",
+                "deportivo",
+                "otro"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de eventos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Evento"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Crear un evento",
+        "tags": [
+          "Eventos"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "titulo",
+                  "descripcion",
+                  "fechaEvento"
+                ],
+                "properties": {
+                  "titulo": {
+                    "type": "string"
+                  },
+                  "descripcion": {
+                    "type": "string"
+                  },
+                  "lugar": {
+                    "type": "string"
+                  },
+                  "fechaEvento": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "categoria": {
+                    "type": "string",
+                    "enum": [
+                      "academico",
+                      "cultural",
+                      "deportivo",
+                      "otro"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Evento creado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Evento"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/eventos/suscripciones": {
+      "get": {
+        "summary": "Listar categorías suscritas por el usuario",
+        "tags": [
+          "Eventos"
+        ],
+        "responses": {
+          "200": {
+            "description": "Categorías suscritas"
+          }
+        }
+      },
+      "post": {
+        "summary": "Suscribirse a una categoría de eventos",
+        "tags": [
+          "Eventos"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "categoria"
+                ],
+                "properties": {
+                  "categoria": {
+                    "type": "string",
+                    "enum": [
+                      "academico",
+                      "cultural",
+                      "deportivo",
+                      "otro"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Suscripción registrada"
+          }
+        }
+      }
+    },
+    "/api/eventos/suscripciones/{categoria}": {
+      "delete": {
+        "summary": "Desuscribirse de una categoría de eventos",
+        "tags": [
+          "Eventos"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "categoria",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "academico",
+                "cultural",
+                "deportivo",
+                "otro"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Desuscripción exitosa"
+          }
+        }
+      }
+    },
+    "/api/foro/{materiaId}/preguntas": {
+      "get": {
+        "summary": "Obtener preguntas del foro de una materia",
+        "tags": [
+          "Foro"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "materiaId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de preguntas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ForoPregunta"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Publicar una pregunta en el foro",
+        "tags": [
+          "Foro"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "materiaId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "titulo",
+                  "contenido"
+                ],
+                "properties": {
+                  "titulo": {
+                    "type": "string"
+                  },
+                  "contenido": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Pregunta creada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ForoPregunta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin matrícula activa"
+          }
+        }
+      }
+    },
+    "/api/foro/preguntas/{preguntaId}/respuestas": {
+      "get": {
+        "summary": "Obtener respuestas de una pregunta ordenadas por puntuación",
+        "tags": [
+          "Foro"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "preguntaId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de respuestas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ForoRespuesta"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Publicar una respuesta a una pregunta",
+        "tags": [
+          "Foro"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "preguntaId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "contenido",
+                  "materiaId"
+                ],
+                "properties": {
+                  "contenido": {
+                    "type": "string"
+                  },
+                  "materiaId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Respuesta creada"
+          }
+        }
+      }
+    },
+    "/api/foro/respuestas/{respuestaId}/votos": {
+      "post": {
+        "summary": "Votar una respuesta (1 positivo, -1 negativo)",
+        "tags": [
+          "Foro"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "respuestaId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "valor"
+                ],
+                "properties": {
+                  "valor": {
+                    "type": "integer",
+                    "enum": [
+                      1,
+                      -1
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Respuesta con puntuación actualizada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ForoRespuesta"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sesiones/series": {
+      "post": {
+        "summary": "Crear una serie de sesiones de estudio recurrentes",
+        "tags": [
+          "Sesiones"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "titulo",
+                  "descripcion",
+                  "lugar",
+                  "frecuencia",
+                  "fechaInicio",
+                  "fechaFin"
+                ],
+                "properties": {
+                  "titulo": {
+                    "type": "string"
+                  },
+                  "descripcion": {
+                    "type": "string"
+                  },
+                  "lugar": {
+                    "type": "string"
+                  },
+                  "frecuencia": {
+                    "type": "string",
+                    "enum": [
+                      "DIARIA",
+                      "SEMANAL",
+                      "QUINCENAL"
+                    ]
+                  },
+                  "fechaInicio": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "fechaFin": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "recordatorioMinutos": {
+                    "type": "integer",
+                    "default": 30
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Serie creada con todas sus instancias",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/SerieEstudio"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sesiones": {
+      "get": {
+        "summary": "Obtener sesiones activas del usuario autenticado",
+        "tags": [
+          "Sesiones"
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de sesiones no canceladas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SesionEstudio"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sesiones/{sesionId}": {
+      "patch": {
+        "summary": "Modificar una sesión con alcance solo_esta o esta_y_siguientes",
+        "tags": [
+          "Sesiones"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sesionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "alcance"
+                ],
+                "properties": {
+                  "alcance": {
+                    "type": "string",
+                    "enum": [
+                      "solo_esta",
+                      "esta_y_siguientes"
+                    ]
+                  },
+                  "titulo": {
+                    "type": "string"
+                  },
+                  "descripcion": {
+                    "type": "string"
+                  },
+                  "lugar": {
+                    "type": "string"
+                  },
+                  "fecha": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "recordatorioMinutos": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sesión(es) actualizada(s)"
+          }
+        }
+      }
+    },
+    "/api/sesiones/{sesionId}/cancelar": {
+      "post": {
+        "summary": "Cancelar una sesión con alcance solo_esta o esta_y_siguientes",
+        "tags": [
+          "Sesiones"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sesionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "alcance"
+                ],
+                "properties": {
+                  "alcance": {
+                    "type": "string",
+                    "enum": [
+                      "solo_esta",
+                      "esta_y_siguientes"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sesión(es) cancelada(s)"
+          }
+        }
+      }
+    }
+  },
+  "tags": []
+}

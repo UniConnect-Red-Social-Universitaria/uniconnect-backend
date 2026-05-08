@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import path from "path";
+import swaggerUi from "swagger-ui-express";
+import { swaggerSpec } from "./docs/swagger";
 
 import usuarioRoutes from "./modules/users/interfaces/http/usuario.routes";
 import materiaRoutes from "./modules/materias/interfaces/http/materia.routes";
@@ -37,6 +39,9 @@ app.use("/api/catalogos", catalogoRoutes);
 app.use("/api/notificaciones", notificacionRoutes);
 app.use("/api/foro", foroRoutes);
 app.use("/api/sesiones", sesionRoutes);
+
+app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.get("/openapi.json", (_req, res) => res.json(swaggerSpec));
 
 app.get("/health", (req, res) => {
   res.status(200).json({

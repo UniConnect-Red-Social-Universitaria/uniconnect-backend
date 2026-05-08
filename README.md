@@ -66,11 +66,90 @@ Variables adicionales soportadas:
 ## Scripts disponibles
 
 - `npm run dev`: levanta el servidor en desarrollo con nodemon.
-- `npm run build`: compila TypeScript a `dist/`.
+- `npm run generate:openapi`: genera `openapi.json` desde los JSDoc de las rutas.
+- `npm run build`: genera `openapi.json` y compila TypeScript a `dist/`.
 - `npm start`: ejecuta el servidor compilado (`dist/server.js`).
 - `npm test`: ejecuta pruebas con Jest.
 - `npm run test:watch`: ejecuta pruebas en modo watch.
 - `npm run test:coverage`: genera cobertura de pruebas.
+
+## Documentación viva del API (OpenAPI 3)
+
+La especificación OpenAPI 3 se genera automáticamente desde los comentarios JSDoc de cada archivo `*.routes.ts`.
+
+### Acceder a Swagger UI
+
+Con el servidor corriendo, visita:
+
+```
+http://localhost:3000/docs
+```
+
+Verás todos los endpoints, DTOs, parámetros y códigos de respuesta documentados e interactivos.
+
+### Descargar el spec en JSON
+
+```
+GET http://localhost:3000/openapi.json
+```
+
+### Cómo agregar un endpoint nuevo (guía paso a paso)
+
+1. **Crea la ruta** en `src/modules/<modulo>/interfaces/http/<modulo>.routes.ts` con el comentario JSDoc:
+
+```ts
+/**
+ * @swagger
+ * /api/mi-modulo:
+ *   get:
+ *     summary: Descripción breve
+ *     tags: [MiModulo]
+ *     responses:
+ *       200:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data: { $ref: '#/components/schemas/MiDTO' }
+ */
+router.get('/', verificarJWT, MiController.listar);
+```
+
+2. **(Opcional) Agrega el schema** del DTO en `src/docs/swagger.ts` dentro de `components.schemas`.
+
+3. **Regenera el spec** (se ejecuta automáticamente en `npm run build`):
+
+```bash
+npm run generate:openapi
+```
+
+4. **Regenera los tipos TypeScript** en el monorepo frontend:
+
+```bash
+cd ../Frontend-UnConnect
+npm run generate:api-types
+```
+
+5. **Usa el tipo en web o móvil**:
+
+```ts
+import type { components } from '@uniconnect/api-types';
+
+type MiDTO = components['schemas']['MiDTO'];
+```
+
+6. **Valida la respuesta con Zod** (añade el schema en `packages/api-types/src/schemas.ts`):
+
+```ts
+import { MiDTOSchema } from '@uniconnect/api-types';
+
+const data = MiDTOSchema.parse(response.data);
+```
+
+Si el contrato del backend cambia y el cliente no actualiza, **la compilación TypeScript fallará**, impidiendo que el error llegue a runtime.
 
 ## Ejecución
 
