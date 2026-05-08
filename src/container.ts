@@ -111,4 +111,3 @@ const sesionRepository = new PrismaSesionEstudioRepository();
 export const sesionUseCases = new SesionEstudioUseCases(sesionRepository);
 
 export const recordatorioScheduler = new RecordatorioScheduler(sesionRepository, notificacionService);
-recordatorioScheduler.iniciar();
