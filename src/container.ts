@@ -1,5 +1,8 @@
 import { ForoUseCases } from './modules/foro/application/foro.use-cases';
 import { PrismaForoRepository } from './modules/foro/infrastructure/prisma-foro.repository';
+import { SesionEstudioUseCases } from './modules/sesiones/application/sesion.use-cases';
+import { PrismaSesionEstudioRepository } from './modules/sesiones/infrastructure/prisma-sesion.repository';
+import { RecordatorioScheduler } from './modules/sesiones/infrastructure/RecordatorioScheduler';
 import { CatalogUseCases } from './modules/catalog/application/catalog.use-cases';
 import { PrismaCarreraRepository } from './modules/catalog/infrastructure/prisma-carrera.repository';
 import { EventUseCases } from './modules/events/application/event.use-cases';
@@ -102,3 +105,10 @@ export const notificacionService = new NotificacionService(
 // ── Módulo Foro ──
 const foroRepository = new PrismaForoRepository();
 export const foroUseCases = new ForoUseCases(foroRepository);
+
+// ── Módulo Sesiones de Estudio ──
+const sesionRepository = new PrismaSesionEstudioRepository();
+export const sesionUseCases = new SesionEstudioUseCases(sesionRepository);
+
+export const recordatorioScheduler = new RecordatorioScheduler(sesionRepository, notificacionService);
+recordatorioScheduler.iniciar();

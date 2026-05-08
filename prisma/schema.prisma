@@ -36,6 +36,8 @@ model Usuario {
   foroPreguntas  ForoPregunta[]
   foroRespuestas ForoRespuesta[]
   foroVotos      ForoVoto[]
+  seriesEstudio   SesionEstudioSerie[]
+  sesionesEstudio SesionEstudio[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -195,6 +197,46 @@ model ForoVoto {
   createdAt    DateTime      @default(now())
 
   @@unique([usuarioId, respuestaId])
+}
+
+model SesionEstudioSerie {
+  id                  String                @id @default(auto()) @map("_id") @db.ObjectId
+  titulo              String
+  descripcion         String
+  lugar               String
+  frecuencia          FrecuenciaRecurrencia
+  fechaInicio         DateTime
+  fechaFin            DateTime
+  recordatorioMinutos Int                   @default(30)
+  creadorId           String                @db.ObjectId
+  creador             Usuario               @relation(fields: [creadorId], references: [id])
+  sesiones            SesionEstudio[]
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+}
+
+model SesionEstudio {
+  id                  String              @id @default(auto()) @map("_id") @db.ObjectId
+  titulo              String
+  descripcion         String
+  lugar               String
+  fecha               DateTime
+  recordatorioMinutos Int                 @default(30)
+  cancelada           Boolean             @default(false)
+  modificada          Boolean             @default(false)
+  recordatorioEnviado Boolean             @default(false)
+  serieId             String              @db.ObjectId
+  creadorId           String              @db.ObjectId
+  serie               SesionEstudioSerie  @relation(fields: [serieId], references: [id])
+  creador             Usuario             @relation(fields: [creadorId], references: [id])
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+}
+
+enum FrecuenciaRecurrencia {
+  DIARIA
+  SEMANAL
+  QUINCENAL
 }
 
 enum EstadoContacto {
