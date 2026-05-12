@@ -5,9 +5,128 @@ import { verificarJWT } from '../../../../middleware/autenticacion.middleware';
 
 const router = express.Router();
 
+/**
+ * @swagger
+ * /api/mensajes/grupos:
+ *   post:
+ *     summary: Enviar mensaje a un grupo
+ *     tags: [Mensajes]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [grupoId, contenido]
+ *             properties:
+ *               grupoId: { type: string }
+ *               contenido: { type: string }
+ *     responses:
+ *       201:
+ *         description: Mensaje enviado al grupo
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data: { $ref: '#/components/schemas/Mensaje' }
+ */
 router.post('/grupos', verificarJWT, MensajeController.enviarMensajeGrupo);
+
+/**
+ * @swagger
+ * /api/mensajes/grupos/{grupoId}:
+ *   get:
+ *     summary: Obtener historial de mensajes de un grupo
+ *     tags: [Mensajes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: grupoId
+ *         required: true
+ *         schema: { type: string }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 50 }
+ *     responses:
+ *       200:
+ *         description: Historial de mensajes del grupo
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: array
+ *                   items: { $ref: '#/components/schemas/Mensaje' }
+ */
 router.get('/grupos/:grupoId', verificarJWT, MensajeController.obtenerHistorialGrupo);
+
+/**
+ * @swagger
+ * /api/mensajes:
+ *   post:
+ *     summary: Enviar mensaje directo a un compañero
+ *     tags: [Mensajes]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [destinatarioId, contenido]
+ *             properties:
+ *               destinatarioId: { type: string }
+ *               contenido: { type: string }
+ *     responses:
+ *       201:
+ *         description: Mensaje enviado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data: { $ref: '#/components/schemas/Mensaje' }
+ */
 router.post('/', verificarJWT, MensajeController.enviarMensaje);
+
+/**
+ * @swagger
+ * /api/mensajes/{companeroId}:
+ *   get:
+ *     summary: Obtener historial de mensajes directos con un compañero
+ *     tags: [Mensajes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: companeroId
+ *         required: true
+ *         schema: { type: string }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 50 }
+ *     responses:
+ *       200:
+ *         description: Historial de mensajes directos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: array
+ *                   items: { $ref: '#/components/schemas/Mensaje' }
+ */
 router.get('/:companeroId', verificarJWT, MensajeController.obtenerHistorial);
 
 export default router;

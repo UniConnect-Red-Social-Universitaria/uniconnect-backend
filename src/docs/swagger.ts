@@ -104,6 +104,61 @@ const options: swaggerJsdoc.Options = {
             creadorId: { type: 'string' },
           },
         },
+        Grupo: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            nombre: { type: 'string' },
+            materiaId: { type: 'string' },
+            materia: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                nombre: { type: 'string' },
+              },
+            },
+            creadorId: { type: 'string' },
+            administradorId: { type: 'string' },
+            cantidadMiembros: { type: 'integer' },
+            miembros: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/Usuario' },
+            },
+            createdAt: { type: 'string', format: 'date-time' },
+          },
+        },
+        Mensaje: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            contenido: { type: 'string' },
+            remitenteId: { type: 'string' },
+            remitenteNombre: { type: 'string' },
+            destinatarioId: { type: 'string' },
+            grupoId: { type: 'string' },
+            createdAt: { type: 'string', format: 'date-time' },
+          },
+        },
+        Materia: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            nombre: { type: 'string' },
+            codigo: { type: 'string' },
+            descripcion: { type: 'string' },
+          },
+        },
+        PreferenciaNotificacion: {
+          type: 'object',
+          properties: {
+            tipoEvento: { type: 'string', enum: ['academico', 'social', 'grupo', 'sistema'] },
+            activo: { type: 'boolean' },
+            canales: {
+              type: 'array',
+              items: { type: 'string', enum: ['push', 'email', 'inApp'] },
+            },
+          },
+        },
       },
     },
     security: [{ bearerAuth: [] }],
