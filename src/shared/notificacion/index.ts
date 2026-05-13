@@ -5,3 +5,5 @@ export { NotificacionConPrioridad } from './NotificacionConPrioridad';
 export type { NivelPrioridad, NotificacionConPrioridadDTO } from './NotificacionConPrioridad';
 export { NotificacionConAccion } from './NotificacionConAccion';
 export type { Accion, NotificacionConAccionDTO } from './NotificacionConAccion';
+export { NotificacionConEncuesta } from './NotificacionConEncuesta';
+export type { EncuestaNotificacion, NotificacionConEncuestaDTO } from './NotificacionConEncuesta';

@@ -17,6 +17,12 @@ import { ChatSubject } from './modules/messages/domain/chat-subject';
 import { MessageUseCases } from './modules/messages/application/message.use-cases';
 import { PrismaMensajeRepository } from './modules/messages/infrastructure/prisma-mensaje.repository';
 import { SocketMessageGateway } from './modules/messages/infrastructure/socket-message.gateway';
+import { PollUseCases } from './modules/polls/application/poll.use-cases';
+import { PrismaPollRepository } from './modules/polls/infrastructure/prisma-poll.repository';
+import { ModerationPollGatewayDecorator } from './modules/polls/infrastructure/moderation-poll-gateway.decorator';
+import { LoggingPollGatewayDecorator } from './modules/polls/infrastructure/logging-poll-gateway.decorator';
+import { SocketPollGateway } from './modules/polls/infrastructure/socket-poll.gateway';
+import { PollAutoCloseScheduler } from './modules/polls/infrastructure/poll-auto-close.scheduler';
 import { UsersUseCases } from './modules/users/application/users.use-cases';
 import { Auth0IdentityVerificationService } from './modules/users/infrastructure/auth0-identity.service';
 import { BcryptPasswordService } from './modules/users/infrastructure/bcrypt-password.service';
@@ -41,6 +47,7 @@ const grupoArchivoRepository = new PrismaGrupoArchivoRepository();
 const solicitudGrupoRepository = new PrismaSolicitudGrupoRepository();
 const mensajeRepository = new PrismaMensajeRepository();
 const eventoRepository = new PrismaEventoRepository();
+const pollRepository = new PrismaPollRepository();
 
 const estadisticasRepository = new PrismaEstadisticasRepository();
 
@@ -49,6 +56,9 @@ const tokenService = new JwtTokenService();
 const identityVerificationService = new Auth0IdentityVerificationService();
 const tokenBlacklistService = new InMemoryTokenBlacklistService();
 const messageGateway = new SocketMessageGateway();
+const pollGateway = new ModerationPollGatewayDecorator(
+  new LoggingPollGatewayDecorator(new SocketPollGateway()),
+);
 const groupEventObserver = new SocketGroupObserver();
 
 // ── ChatSubject para mensajes de grupo (Patrón Observer) ──
@@ -67,10 +77,10 @@ export const usersUseCases = new UsersUseCases({
 });
 
 export const groupUseCases = new GroupUseCases(
-  grupoRepository, 
-  materiaRepository, 
-  userRepository, 
-  grupoArchivoRepository, 
+  grupoRepository,
+  materiaRepository,
+  userRepository,
+  grupoArchivoRepository,
   solicitudGrupoRepository,
   [groupEventObserver]
 );
@@ -85,6 +95,8 @@ export const messageUseCases = new MessageUseCases(
 );
 export const eventUseCases = new EventUseCases(eventoRepository);
 export const catalogUseCases = new CatalogUseCases(careerRepository, materiaRepository);
+export const pollUseCases = new PollUseCases(pollRepository, grupoRepository, pollGateway);
+export const pollAutoCloseScheduler = new PollAutoCloseScheduler(pollRepository, pollGateway);
 
 // ── Exportar ChatSubject para uso en socket.ts ──
 export { chatSubject };

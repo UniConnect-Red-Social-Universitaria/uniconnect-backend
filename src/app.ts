@@ -13,6 +13,7 @@ import catalogoRoutes from "./modules/catalog/interfaces/http/catalogo.routes";
 import notificacionRoutes from "./modules/notifications/interfaces/http/notificacion.routes";
 import foroRoutes from "./modules/foro/interfaces/http/foro.routes";
 import sesionRoutes from "./modules/sesiones/interfaces/http/sesion.routes";
+import encuestaRoutes from "./modules/polls/interfaces/http/encuesta.routes";
 
 import { version } from "../package.json";
 
@@ -39,6 +40,7 @@ app.use("/api/catalogos", catalogoRoutes);
 app.use("/api/notificaciones", notificacionRoutes);
 app.use("/api/foro", foroRoutes);
 app.use("/api/sesiones", sesionRoutes);
+app.use("/api/encuestas", encuestaRoutes);
 
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.get("/openapi.json", (_req, res) => res.json(swaggerSpec));
@@ -65,6 +67,7 @@ app.get("/", (req, res) => {
       enviarMensaje: "POST /api/mensajes",
       historialMensajes: "GET /api/mensajes/:companeroId?limit=50",
       crearEvento: "POST /api/eventos",
+      crearEncuestaGrupo: "POST /api/encuestas/grupos/:grupoId",
       listarEventos: "GET /api/eventos",
       poblarCatalogos: "POST /api/catalogos/poblar",
       listarCatalogos: "GET /api/catalogos",
