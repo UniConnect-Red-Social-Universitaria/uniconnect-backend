@@ -195,6 +195,86 @@ export interface CreateEventData {
   creadorId: string;
 }
 
+export const POLL_STATUS = ['OPEN', 'CLOSED'] as const;
+
+export type PollStatus = (typeof POLL_STATUS)[number];
+
+export const POLL_TARGET_TYPES = ['CHAT', 'CHANNEL'] as const;
+
+export type PollTargetType = (typeof POLL_TARGET_TYPES)[number];
+
+export interface PollTarget {
+  type: PollTargetType;
+  id: string;
+}
+
+export interface PollOptionRecord {
+  id: string;
+  pollId: string;
+  text: string;
+  position: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface PollVoteRecord {
+  id: string;
+  pollId: string;
+  optionId: string;
+  voterId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface PollRecord {
+  id: string;
+  question: string;
+  status: PollStatus;
+  target: PollTarget;
+  createdById: string;
+  autoCloseAt?: Date | null;
+  closedAt?: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreatePollOptionData {
+  text: string;
+  position?: number;
+}
+
+export interface CreatePollData {
+  question: string;
+  target: PollTarget;
+  createdById: string;
+  options: CreatePollOptionData[];
+  autoCloseAt?: Date | null;
+}
+
+export interface CreatePollVoteData {
+  pollId: string;
+  optionId: string;
+  voterId: string;
+}
+
+export interface UpdatePollStatusData {
+  status: PollStatus;
+  closedAt?: Date | null;
+}
+
+export interface PollOptionView extends PollOptionRecord {
+  votos?: number;
+  porcentaje?: number;
+}
+
+export interface PollWithOptionsRecord extends PollRecord {
+  opciones: PollOptionView[];
+}
+
+export interface PollBroadcastRecord extends PollWithOptionsRecord {
+  grupoId: string;
+}
+
 export interface CountResult {
   count: number;
 }
@@ -316,6 +396,18 @@ export interface EventRepository {
   listByCategoria(categoria: CategoriaEvento): Promise<EventRecord[]>;
 }
 
+export interface PollRepository {
+  create(data: CreatePollData): Promise<PollRecord>;
+  findById(id: string): Promise<PollRecord | null>;
+  findExpiredOpen(now: Date): Promise<PollRecord[]>;
+  listByTarget(target: PollTarget): Promise<PollRecord[]>;
+  listOptionsByPollId(pollId: string): Promise<PollOptionRecord[]>;
+  listVotesByPollId(pollId: string): Promise<PollVoteRecord[]>;
+  addOption(pollId: string, data: CreatePollOptionData): Promise<PollOptionRecord>;
+  vote(data: CreatePollVoteData): Promise<PollVoteRecord>;
+  updateStatus(pollId: string, data: UpdatePollStatusData): Promise<PollRecord>;
+}
+
 export interface PasswordService {
   hash(value: string): Promise<string>;
   compare(rawValue: string, hashedValue: string): Promise<boolean>;
@@ -345,6 +437,11 @@ export interface TokenBlacklistService {
 export interface MessageGateway {
   emitNewMessage(payload: MessageRecord): void;
   emitNewGroupMessage(payload: GroupMessageRecord): void;
+}
+
+export interface PollGateway {
+  emitNewPoll(payload: PollBroadcastRecord): void;
+  emitUpdatedPoll(payload: PollBroadcastRecord): void;
 }
 
 // ── Eventos de Grupo (Observer Pattern) ──

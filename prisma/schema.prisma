@@ -36,6 +36,8 @@ model Usuario {
   foroPreguntas  ForoPregunta[]
   foroRespuestas ForoRespuesta[]
   foroVotos      ForoVoto[]
+  encuestasCreadas Encuesta[]
+  votosEncuesta   EncuestaVoto[]
   seriesEstudio   SesionEstudioSerie[]
   sesionesEstudio SesionEstudio[]
   createdAt DateTime @default(now())
@@ -86,6 +88,7 @@ model Grupo {
   solicitudesIngreso SolicitudGrupo[]
   mensajes  GrupoMensaje[]
   archivos  GrupoArchivo[]
+  encuestas Encuesta[]
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 }
@@ -199,6 +202,59 @@ model ForoVoto {
   @@unique([usuarioId, respuestaId])
 }
 
+model Encuesta {
+  id           String          @id @default(auto()) @map("_id") @db.ObjectId
+  pregunta     String
+  estado       EstadoEncuesta  @default(OPEN)
+  chatId       String?         @db.ObjectId
+  grupoId      String?         @db.ObjectId
+  creadorId    String          @db.ObjectId
+  autoCloseAt  DateTime?
+  closedAt     DateTime?
+  creador      Usuario         @relation(fields: [creadorId], references: [id])
+  grupo        Grupo?          @relation(fields: [grupoId], references: [id])
+  opciones     EncuestaOpcion[]
+  votos        EncuestaVoto[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([estado, autoCloseAt])
+  @@index([grupoId])
+  @@index([chatId])
+  @@index([creadorId, createdAt])
+}
+
+model EncuestaOpcion {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  encuestaId  String    @db.ObjectId
+  texto       String
+  orden       Int
+  encuesta    Encuesta  @relation(fields: [encuestaId], references: [id])
+  votos       EncuestaVoto[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([encuestaId])
+  @@index([encuestaId, orden])
+}
+
+model EncuestaVoto {
+  id           String         @id @default(auto()) @map("_id") @db.ObjectId
+  encuestaId   String         @db.ObjectId
+  opcionId     String         @db.ObjectId
+  usuarioId    String         @db.ObjectId
+  encuesta     Encuesta       @relation(fields: [encuestaId], references: [id])
+  opcion       EncuestaOpcion @relation(fields: [opcionId], references: [id])
+  usuario      Usuario        @relation(fields: [usuarioId], references: [id])
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@unique([encuestaId, usuarioId])
+  @@index([encuestaId])
+  @@index([opcionId])
+  @@index([usuarioId])
+}
+
 model SesionEstudioSerie {
   id                  String                @id @default(auto()) @map("_id") @db.ObjectId
   titulo              String
@@ -254,4 +310,9 @@ enum EstadoSolicitudGrupo {
   PENDIENTE
   APROBADA
   RECHAZADA
+}
+
+enum EstadoEncuesta {
+  OPEN
+  CLOSED
 }

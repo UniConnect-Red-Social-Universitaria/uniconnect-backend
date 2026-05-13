@@ -6,6 +6,37 @@ import { GrupoModel } from '../models/grupo.model';
 import { chatSubject } from '../container';
 import { WebChatObserver } from '../modules/messages/infrastructure/web-chat-observer';
 import { MobileChatObserver } from '../modules/messages/infrastructure/mobile-chat-observer';
+import { PollBroadcastRecord } from '../domain/contracts';
+
+export type RoomType = 'usuario' | 'grupo';
+
+export function roomName(tipo: RoomType, id: string): string {
+    return `${tipo}:${id}`;
+}
+
+export interface SocketServerToClientEvents {
+    'mensaje:nuevo': (payload: unknown) => void;
+    'mensaje:enviado': (payload: unknown) => void;
+    'grupo:mensaje:nuevo': (payload: unknown) => void;
+    'evento:nuevo:categoria': (payload: unknown) => void;
+    'notificacion:nueva': (payload: unknown) => void;
+    'encuesta:nueva': (payload: PollBroadcastRecord) => void;
+    'encuesta:actualizada': (payload: PollBroadcastRecord) => void;
+    'contacto:solicitud:nueva': (payload: unknown) => void;
+    'contacto:solicitud:rechazada': (payload: unknown) => void;
+    'grupo:solicitud:nueva': (payload: unknown) => void;
+    'grupo:solicitud:resuelta': (payload: unknown) => void;
+    'grupo:admin:transferido': (payload: unknown) => void;
+}
+
+export interface SocketClientToServerEvents {
+    'grupo:suscribir': (grupoId: string) => void;
+    'grupo:desuscribir': (grupoId: string) => void;
+}
+
+export interface SocketData {
+    usuarioId?: string;
+}
 
 interface TokenPayload {
     id: string;
@@ -13,7 +44,7 @@ interface TokenPayload {
     nombre: string;
 }
 
-let ioInstance: Server | null = null;
+let ioInstance: Server<SocketClientToServerEvents, SocketServerToClientEvents, Record<string, never>, SocketData> | null = null;
 
 /**
  * Mapa que almacena los observers de chat por socketId
@@ -22,7 +53,7 @@ let ioInstance: Server | null = null;
 const chatObserversBySocket = new Map<string, { grupoId: string; observer: WebChatObserver | MobileChatObserver }[]>();
 
 export function inicializarSocket(server: HttpServer) {
-    const io = new Server(server, {
+    const io = new Server<SocketClientToServerEvents, SocketServerToClientEvents, Record<string, never>, SocketData>(server, {
         cors: {
             origin: '*'
         }
@@ -53,15 +84,15 @@ export function inicializarSocket(server: HttpServer) {
     });
 
     io.on('connection', (socket) => {
-        const usuarioId = socket.data.usuarioId as string;
+        const usuarioId = socket.data.usuarioId;
 
         if (usuarioId) {
-            socket.join(`usuario:${usuarioId}`);
+            socket.join(roomName('usuario', usuarioId));
             GrupoModel.listarPorUsuario(usuarioId)
                 .then((grupos) => {
                     grupos.forEach((grupo) => {
-                        socket.join(`grupo:${grupo.id}`);
-                        
+                        socket.join(roomName('grupo', grupo.id));
+
                         // Registrar el observer en ChatSubject
                         registrarObserverGrupo(socket, grupo.id);
                     });
@@ -87,7 +118,7 @@ export function inicializarSocket(server: HttpServer) {
          */
         socket.on('grupo:suscribir', (grupoId: string) => {
             if (typeof grupoId === 'string' && grupoId.trim()) {
-                socket.join(`grupo:${grupoId}`);
+                socket.join(roomName('grupo', grupoId.trim()));
                 registrarObserverGrupo(socket, grupoId.trim());
                 console.log(`✅ Cliente ${socket.id} suscrito al grupo ${grupoId}`);
             }
@@ -98,7 +129,7 @@ export function inicializarSocket(server: HttpServer) {
          */
         socket.on('grupo:desuscribir', (grupoId: string) => {
             if (typeof grupoId === 'string' && grupoId.trim()) {
-                socket.leave(`grupo:${grupoId}`);
+                socket.leave(roomName('grupo', grupoId.trim()));
                 desuscribirObserverGrupo(socket, grupoId.trim());
                 console.log(`✅ Cliente ${socket.id} desuscrito del grupo ${grupoId}`);
             }
@@ -121,7 +152,7 @@ function registrarObserverGrupo(socket: Socket, grupoId: string): void {
         // Detectar si es cliente Web o Mobile
         // Se puede pasar en handshake.auth.platform o asumir Web por defecto
         const platform = (socket.handshake.auth.platform as string) || 'web';
-        
+
         let observer: WebChatObserver | MobileChatObserver;
 
         if (platform.toLowerCase() === 'mobile') {
@@ -207,8 +238,8 @@ export function emitirMensajeTiempoReal(payload: {
         return;
     }
 
-    ioInstance.to(`usuario:${payload.receptorId}`).emit('mensaje:nuevo', payload);
-    ioInstance.to(`usuario:${payload.emisorId}`).emit('mensaje:enviado', payload);
+    ioInstance.to(roomName('usuario', payload.receptorId)).emit('mensaje:nuevo', payload);
+    ioInstance.to(roomName('usuario', payload.emisorId)).emit('mensaje:enviado', payload);
 }
 
 export function emitirMensajeGrupoTiempoReal(payload: {
@@ -228,7 +259,7 @@ export function emitirMensajeGrupoTiempoReal(payload: {
         return;
     }
 
-    ioInstance.to(`grupo:${payload.grupoId}`).emit('grupo:mensaje:nuevo', payload);
+    ioInstance.to(roomName('grupo', payload.grupoId)).emit('grupo:mensaje:nuevo', payload);
 }
 
 export function emitirEventoNuevoPorCategoria(usuarioId: string, evento: object) {
@@ -236,7 +267,7 @@ export function emitirEventoNuevoPorCategoria(usuarioId: string, evento: object)
         return;
     }
 
-    ioInstance.to(`usuario:${usuarioId}`).emit('evento:nuevo:categoria', evento);
+    ioInstance.to(roomName('usuario', usuarioId)).emit('evento:nuevo:categoria', evento);
 }
 
 export function emitirNotificacion(destinatario: string, datos: object) {
@@ -244,7 +275,7 @@ export function emitirNotificacion(destinatario: string, datos: object) {
         return;
     }
 
-    ioInstance.to(`usuario:${destinatario}`).emit('notificacion:nueva', datos);
+    ioInstance.to(roomName('usuario', destinatario)).emit('notificacion:nueva', datos);
 }
 
 export function emitirNotificacionGrupo(grupoId: string, datos: object) {
@@ -252,7 +283,23 @@ export function emitirNotificacionGrupo(grupoId: string, datos: object) {
         return;
     }
 
-    ioInstance.to(`grupo:${grupoId}`).emit('notificacion:nueva', datos);
+    ioInstance.to(roomName('grupo', grupoId)).emit('notificacion:nueva', datos);
+}
+
+export function emitirEncuestaGrupoTiempoReal(payload: PollBroadcastRecord) {
+    if (!ioInstance) {
+        return;
+    }
+
+    ioInstance.to(roomName('grupo', payload.grupoId)).emit('encuesta:nueva', payload);
+}
+
+export function emitirEncuestaActualizadaGrupoTiempoReal(payload: PollBroadcastRecord) {
+    if (!ioInstance) {
+        return;
+    }
+
+    ioInstance.to(roomName('grupo', payload.grupoId)).emit('encuesta:actualizada', payload);
 }
 
 export function emitirSolicitudContactoTiempoReal(payload: {
@@ -268,7 +315,7 @@ export function emitirSolicitudContactoTiempoReal(payload: {
     }
 
     ioInstance
-        .to(`usuario:${payload.receptorId}`)
+        .to(roomName('usuario', payload.receptorId))
         .emit('contacto:solicitud:nueva', payload);
 }
 
@@ -285,7 +332,7 @@ export function emitirSolicitudContactoRechazadaTiempoReal(payload: {
     }
 
     ioInstance
-        .to(`usuario:${payload.solicitanteId}`)
+        .to(roomName('usuario', payload.solicitanteId))
         .emit('contacto:solicitud:rechazada', payload);
 }
 
@@ -305,7 +352,7 @@ export function emitirSolicitudGrupoNueva(payload: {
     }
 
     ioInstance
-        .to(`usuario:${payload.administradorId}`)
+        .to(roomName('usuario', payload.administradorId))
         .emit('grupo:solicitud:nueva', payload);
 }
 
@@ -321,7 +368,7 @@ export function emitirSolicitudGrupoResuelta(payload: {
     }
 
     ioInstance
-        .to(`usuario:${payload.solicitanteId}`)
+        .to(roomName('usuario', payload.solicitanteId))
         .emit('grupo:solicitud:resuelta', payload);
 }
 
@@ -339,11 +386,11 @@ export function emitirTransferenciaAdmin(payload: {
 
     // Notificar al nuevo admin
     ioInstance
-        .to(`usuario:${payload.nuevoAdminId}`)
+        .to(roomName('usuario', payload.nuevoAdminId))
         .emit('grupo:admin:transferido', payload);
 
     // Notificar al anterior admin
     ioInstance
-        .to(`usuario:${payload.anteriorAdminId}`)
+        .to(roomName('usuario', payload.anteriorAdminId))
         .emit('grupo:admin:transferido', payload);
 }
