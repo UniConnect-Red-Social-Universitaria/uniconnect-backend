@@ -303,6 +303,7 @@ enum EstadoContacto {
 
 enum EstadoGrupo {
   ACTIVO
+  PENDIENTE_TRANSFERENCIA
   CERRADO
 }
 
