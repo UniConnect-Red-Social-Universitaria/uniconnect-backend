@@ -86,12 +86,15 @@ export interface GroupMemberView {
   };
 }
 
+export type GroupStatus = 'ACTIVO' | 'PENDIENTE_TRANSFERENCIA' | 'CERRADO';
+
 export interface GroupRecord {
   id: string;
   nombre: string;
   materiaId: string;
   creadorId: string;
   administradorId: string;
+  estado: GroupStatus;
   createdAt: Date;
   materia: CatalogItem;
   miembros: GroupMemberView[];
@@ -369,6 +372,8 @@ export interface GroupRepository {
   countByMateria(materiaId: string): Promise<number>;
   join(grupoId: string, usuarioId: string): Promise<void>;
   updateAdministrador(grupoId: string, nuevoAdminId: string): Promise<void>;
+  /** Persiste la transición de estado del patrón State */
+  updateEstado(grupoId: string, estado: GroupStatus): Promise<void>;
   leave(grupoId: string, usuarioId: string): Promise<void>;
   deleteGroup(grupoId: string): Promise<void>;
 }

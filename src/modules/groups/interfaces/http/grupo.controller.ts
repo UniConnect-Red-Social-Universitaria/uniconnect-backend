@@ -202,16 +202,28 @@ export class GrupoController {
     }
   }
 
-  static async cederAdministracion(req: Request, res: Response) {
+  static async iniciarTransferencia(req: Request, res: Response) {
     try {
-      const resultado = await groupUseCases.cederAdministracion(
+      const resultado = await groupUseCases.iniciarTransferenciaAdministracion(
+        req.usuario,
+        req.params.id,
+      );
+      return res.json({ success: true, message: resultado.message });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al iniciar la transferencia de administración');
+    }
+  }
+
+  static async confirmarTransferencia(req: Request, res: Response) {
+    try {
+      const resultado = await groupUseCases.confirmarTransferenciaAdministracion(
         req.usuario,
         req.params.id,
         req.body?.nuevoAdminId,
       );
       return res.json({ success: true, message: resultado.message });
     } catch (error) {
-      return handleControllerError(res, error, 'Error al ceder la administración');
+      return handleControllerError(res, error, 'Error al confirmar la transferencia de administración');
     }
   }
 

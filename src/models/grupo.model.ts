@@ -1,4 +1,5 @@
 import prisma from "../lib/prisma";
+import { GroupStatus } from "../domain/contracts";
 
 function grupoDelegate() {
   const prismaDinamico = prisma as unknown as {
@@ -9,6 +10,7 @@ function grupoDelegate() {
         materiaId: string;
         creadorId: string;
         administradorId: string;
+        estado: GroupStatus;
         createdAt: Date;
         materia: { id: string; nombre: string };
         miembros: Array<{ id: string }>;
@@ -20,6 +22,7 @@ function grupoDelegate() {
           materiaId: string;
           creadorId: string;
           administradorId: string;
+          estado: GroupStatus;
           createdAt: Date;
           materia: { id: string; nombre: string };
           miembros: Array<{
@@ -39,13 +42,16 @@ function grupoDelegate() {
         materiaId: string;
         creadorId: string;
         administradorId: string;
+        estado: GroupStatus;
         createdAt: Date;
         materia: { id: string; nombre: string };
         miembros: Array<{
           id: string;
           usuarioId: string;
+          usuario?: { id: string; nombre: string; apellido: string };
         }>;
       } | null>;
+      update: (args: unknown) => Promise<{ id: string }>;
     };
   };
 
@@ -202,6 +208,7 @@ export class GrupoModel {
         materiaId: true,
         creadorId: true,
         administradorId: true,
+        estado: true,
         createdAt: true,
       },
       orderBy: {
@@ -236,6 +243,7 @@ export class GrupoModel {
           materiaId: grupo.materiaId,
           creadorId: grupo.creadorId,
           administradorId: grupo.administradorId,
+          estado: grupo.estado as GroupStatus,
           createdAt: grupo.createdAt,
           materia,
           miembros: [],
@@ -250,6 +258,7 @@ export class GrupoModel {
           materiaId: string;
           creadorId: string;
           administradorId: string;
+          estado: GroupStatus;
           createdAt: Date;
           materia: { id: string; nombre: string };
           miembros: [];
@@ -289,9 +298,16 @@ export class GrupoModel {
   }
 
   static async actualizarAdministrador(grupoId: string, nuevoAdminId: string) {
-    return prisma.grupo.update({
+    return grupoDelegate().update({
       where: { id: grupoId },
       data: { administradorId: nuevoAdminId },
+    });
+  }
+
+  static async actualizarEstado(grupoId: string, estado: GroupStatus) {
+    return grupoDelegate().update({
+      where: { id: grupoId },
+      data: { estado },
     });
   }
 

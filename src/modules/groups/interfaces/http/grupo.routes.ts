@@ -342,9 +342,24 @@ router.get('/:id/archivos/:archivoId/descargar', verificarJWT, GrupoController.d
 
 /**
  * @swagger
- * /api/grupos/{id}/administrador:
+ * /api/grupos/{id}/administrador/iniciar:
+ *   post:
+ *     summary: Iniciar proceso de transferencia de administrador
+ *     tags: [Grupos]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Transferencia iniciada
+ * 
+ * /api/grupos/{id}/administrador/confirmar:
  *   patch:
- *     summary: Transferir rol de administrador a otro miembro
+ *     summary: Confirmar transferencia de administrador a otro miembro
  *     tags: [Grupos]
  *     security:
  *       - bearerAuth: []
@@ -366,7 +381,8 @@ router.get('/:id/archivos/:archivoId/descargar', verificarJWT, GrupoController.d
  *       200:
  *         description: Administración transferida
  */
-router.patch('/:id/administrador', verificarJWT, GrupoController.cederAdministracion);
+router.post('/:id/administrador/iniciar', verificarJWT, GrupoController.iniciarTransferencia);
+router.patch('/:id/administrador/confirmar', verificarJWT, GrupoController.confirmarTransferencia);
 
 /**
  * @swagger
