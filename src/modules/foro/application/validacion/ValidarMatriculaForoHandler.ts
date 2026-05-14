@@ -4,16 +4,21 @@ import { ForoHandlerBase } from './ForoHandlerBase';
 
 export class ValidarMatriculaForoHandler extends ForoHandlerBase {
   protected async validar(ctx: ForoContexto): Promise<ResultadoForo> {
-    // Verifica que el usuario pertenezca a un grupo de la materia
-    const membresia = await (prisma as any).usuarioGrupo.findFirst({
-      where: {
-        usuarioId: ctx.usuarioId,
-        grupo: { materiaId: ctx.materiaId },
-      },
-      select: { id: true },
+    const materia = await prisma.materia.findUnique({
+      where: { id: ctx.materiaId },
+      select: { nombre: true },
     });
 
-    if (!membresia) {
+    if (!materia) {
+      return { valido: false, error: 'La asignatura no existe' };
+    }
+
+    const usuario = await (prisma as any).usuario.findUnique({
+      where: { id: ctx.usuarioId },
+      select: { materiasCursando: true },
+    });
+
+    if (!usuario || !(usuario.materiasCursando as string[]).includes(materia.nombre)) {
       return {
         valido: false,
         error: 'No tienes matrícula activa en esta asignatura',
