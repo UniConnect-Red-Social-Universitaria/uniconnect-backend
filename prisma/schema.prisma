@@ -40,6 +40,10 @@ model Usuario {
   votosEncuesta   EncuestaVoto[]
   seriesEstudio   SesionEstudioSerie[]
   sesionesEstudio SesionEstudio[]
+  mencionesMensajes MencionMensaje[] @relation("MencionesMensajes")
+  mencionesMensajesGrupo MencionMensajeGrupo[] @relation("MencionesMensajesGrupo")
+  reaccionesMensajes ReaccionMensaje[] @relation("ReaccionesMensajes")
+  reaccionesMensajesGrupo ReaccionMensajeGrupo[] @relation("ReaccionesMensajesGrupo")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -124,6 +128,8 @@ model Mensaje {
   receptorId String   @db.ObjectId
   emisor     Usuario  @relation("MensajesEnviados", fields: [emisorId], references: [id])
   receptor   Usuario  @relation("MensajesRecibidos", fields: [receptorId], references: [id])
+  menciones  MencionMensaje[]
+  reacciones ReaccionMensaje[]
   createdAt  DateTime @default(now())
 }
 
@@ -134,6 +140,8 @@ model GrupoMensaje {
   emisorId   String   @db.ObjectId
   grupo      Grupo    @relation(fields: [grupoId], references: [id])
   emisor     Usuario  @relation("MensajesGrupoEnviados", fields: [emisorId], references: [id])
+  menciones  MencionMensajeGrupo[]
+  reacciones ReaccionMensajeGrupo[]
   createdAt  DateTime @default(now())
 }
 
@@ -316,4 +324,62 @@ enum EstadoSolicitudGrupo {
 enum EstadoEncuesta {
   OPEN
   CLOSED
+}
+
+// Menciones en mensajes individuales
+model MencionMensaje {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  mensajeId String   @db.ObjectId
+  usuarioMencionadoId String @db.ObjectId
+  mensaje   Mensaje  @relation(fields: [mensajeId], references: [id], onDelete: Cascade)
+  usuarioMencionado Usuario @relation("MencionesMensajes", fields: [usuarioMencionadoId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([mensajeId, usuarioMencionadoId])
+  @@index([mensajeId])
+  @@index([usuarioMencionadoId])
+}
+
+// Menciones en mensajes de grupo
+model MencionMensajeGrupo {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  mensajeId String   @db.ObjectId
+  usuarioMencionadoId String @db.ObjectId
+  mensaje   GrupoMensaje @relation(fields: [mensajeId], references: [id], onDelete: Cascade)
+  usuarioMencionado Usuario @relation("MencionesMensajesGrupo", fields: [usuarioMencionadoId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([mensajeId, usuarioMencionadoId])
+  @@index([mensajeId])
+  @@index([usuarioMencionadoId])
+}
+
+// Reacciones a mensajes individuales
+model ReaccionMensaje {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  mensajeId String   @db.ObjectId
+  usuarioId String   @db.ObjectId
+  emoji     String   // emoji (ej: "👍", "❤️", "😂", etc.)
+  mensaje   Mensaje  @relation(fields: [mensajeId], references: [id], onDelete: Cascade)
+  usuario   Usuario  @relation("ReaccionesMensajes", fields: [usuarioId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([mensajeId, usuarioId, emoji])
+  @@index([mensajeId])
+  @@index([usuarioId])
+}
+
+// Reacciones a mensajes de grupo
+model ReaccionMensajeGrupo {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  mensajeId String   @db.ObjectId
+  usuarioId String   @db.ObjectId
+  emoji     String   // emoji (ej: "👍", "❤️", "😂", etc.)
+  mensaje   GrupoMensaje @relation(fields: [mensajeId], references: [id], onDelete: Cascade)
+  usuario   Usuario  @relation("ReaccionesMensajesGrupo", fields: [usuarioId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([mensajeId, usuarioId, emoji])
+  @@index([mensajeId])
+  @@index([usuarioId])
 }

@@ -27,6 +27,9 @@ export interface SocketServerToClientEvents {
     'grupo:solicitud:nueva': (payload: unknown) => void;
     'grupo:solicitud:resuelta': (payload: unknown) => void;
     'grupo:admin:transferido': (payload: unknown) => void;
+    'mensaje:reaccion:agregada': (payload: unknown) => void;
+    'mensaje:reaccion:removida': (payload: unknown) => void;
+    'mensaje:mencion': (payload: unknown) => void;
 }
 
 export interface SocketClientToServerEvents {
@@ -260,6 +263,21 @@ export function emitirMensajeGrupoTiempoReal(payload: {
     }
 
     ioInstance.to(roomName('grupo', payload.grupoId)).emit('grupo:mensaje:nuevo', payload);
+}
+
+export function emitirReaccionTiempoReal(receptorId: string, payload: any) {
+    if (!ioInstance) return;
+    ioInstance.to(roomName('usuario', receptorId)).emit('mensaje:reaccion:agregada', payload);
+}
+
+export function emitirReaccionRemovidaTiempoReal(receptorId: string, payload: any) {
+    if (!ioInstance) return;
+    ioInstance.to(roomName('usuario', receptorId)).emit('mensaje:reaccion:removida', payload);
+}
+
+export function emitirMencionTiempoReal(receptorId: string, payload: any) {
+    if (!ioInstance) return;
+    ioInstance.to(roomName('usuario', receptorId)).emit('mensaje:mencion', payload);
 }
 
 export function emitirEventoNuevoPorCategoria(usuarioId: string, evento: object) {

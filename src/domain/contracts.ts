@@ -166,6 +166,96 @@ export interface CreateMessageData {
   receptorId: string;
 }
 
+/**
+ * Mención en un mensaje individual
+ */
+export interface MencionMensajeRecord {
+  id: string;
+  mensajeId: string;
+  usuarioMencionadoId: string;
+  usuarioMencionado?: {
+    id: string;
+    nombre: string;
+    apellido: string;
+    correo: string;
+  };
+  createdAt: Date;
+}
+
+/**
+ * Mención en un mensaje de grupo
+ */
+export interface MencionMensajeGrupoRecord {
+  id: string;
+  mensajeId: string;
+  usuarioMencionadoId: string;
+  usuarioMencionado?: {
+    id: string;
+    nombre: string;
+    apellido: string;
+    correo: string;
+  };
+  createdAt: Date;
+}
+
+/**
+ * Reacción a un mensaje individual
+ */
+export interface ReaccionMensajeRecord {
+  id: string;
+  mensajeId: string;
+  usuarioId: string;
+  emoji: string;
+  usuario?: {
+    id: string;
+    nombre: string;
+    apellido: string;
+  };
+  createdAt: Date;
+}
+
+/**
+ * Reacción a un mensaje de grupo
+ */
+export interface ReaccionMensajeGrupoRecord {
+  id: string;
+  mensajeId: string;
+  usuarioId: string;
+  emoji: string;
+  usuario?: {
+    id: string;
+    nombre: string;
+    apellido: string;
+  };
+  createdAt: Date;
+}
+
+/**
+ * Vista agrupada de reacciones a un mensaje
+ */
+export interface ReaccionAgrupadaView {
+  emoji: string;
+  count: number;
+  usuarios: Array<{ id: string; nombre: string; apellido: string }>;
+}
+
+/**
+ * Datos para crear una mención
+ */
+export interface CreateMencionData {
+  mensajeId: string;
+  usuarioMencionadoId: string;
+}
+
+/**
+ * Datos para crear una reacción
+ */
+export interface CreateReaccionData {
+  mensajeId: string;
+  usuarioId: string;
+  emoji: string;
+}
+
 export type CategoriaEvento = 'academico' | 'cultural' | 'deportivo' | 'otro';
 
 export const CATEGORIAS_EVENTO: CategoriaEvento[] = ['academico', 'cultural', 'deportivo', 'otro'];
@@ -393,6 +483,14 @@ export interface MessageRepository {
     emisorId: string;
   }): Promise<GroupMessageRecord>;
   getGroupHistory(grupoId: string, limit: number): Promise<GroupMessageRecord[]>;
+  // Menciones
+  addMencion(data: CreateMencionData, esGrupo: boolean): Promise<MencionMensajeRecord | MencionMensajeGrupoRecord>;
+  getMencionesByMensaje(mensajeId: string, esGrupo: boolean): Promise<(MencionMensajeRecord | MencionMensajeGrupoRecord)[]>;
+  getMencionesPendientes(usuarioId: string): Promise<(MencionMensajeRecord | MencionMensajeGrupoRecord)[]>;
+  // Reacciones
+  addReaccion(data: CreateReaccionData, esGrupo: boolean): Promise<ReaccionMensajeRecord | ReaccionMensajeGrupoRecord>;
+  removeReaccion(mensajeId: string, usuarioId: string, emoji: string, esGrupo: boolean): Promise<any>;
+  getReaccionesByMensaje(mensajeId: string, esGrupo: boolean): Promise<ReaccionAgrupadaView[]>;
 }
 
 export interface EventRepository {
@@ -442,6 +540,9 @@ export interface TokenBlacklistService {
 export interface MessageGateway {
   emitNewMessage(payload: MessageRecord): void;
   emitNewGroupMessage(payload: GroupMessageRecord): void;
+  emitMencion(payload: MencionMensajeRecord | MencionMensajeGrupoRecord): void;
+  emitReaccion(payload: ReaccionMensajeRecord | ReaccionMensajeGrupoRecord): void;
+  emitRemoveReaccion(mensajeId: string, usuarioId: string, emoji: string, esGrupo: boolean, reaccionInfo?: any): void;
 }
 
 export interface PollGateway {

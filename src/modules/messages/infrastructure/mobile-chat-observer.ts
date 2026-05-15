@@ -1,11 +1,11 @@
 import { Socket } from 'socket.io';
-import { GroupMessageRecord } from '../../../domain/contracts';
+import { GroupMessageRecord, ReaccionMensajeGrupoRecord, MencionMensajeGrupoRecord } from '../../../domain/contracts';
 import { IChatObserver } from '../domain/contracts';
 
 /**
  * MobileChatObserver - Observer concreto para clientes Mobile
  * 
- * Responsabilidad: Emitir mensajes de grupo a través de WebSocket (transporte Mobile)
+ * Responsabilidad: Emitir mensajes de grupo, reacciones y menciones a través de WebSocket (transporte Mobile)
  * 
  * Detalles:
  * - Sabe cómo comunicarse con clientes Mobile (Socket.IO/HTTP)
@@ -55,6 +55,68 @@ export class MobileChatObserver implements IChatObserver {
       console.error(
         `❌ Error al emitir mensaje de grupo al cliente Mobile: ${error}`,
       );
+    }
+  }
+
+  /**
+   * Se invoca cuando se agrega una reacción a un mensaje
+   * 
+   * @param payload Reacción con información
+   */
+  onReaccionAgregada(payload: ReaccionMensajeGrupoRecord): void {
+    try {
+      this.socket.emit('grupo:reaccion:agregada', {
+        mensajeId: payload.mensajeId,
+        emoji: payload.emoji,
+        usuarioId: payload.usuarioId,
+        usuario: payload.usuario,
+        createdAt: payload.createdAt,
+      });
+      
+      console.log(
+        `😊 Reacción del grupo ${this.grupoId} emitida al cliente Mobile ${this.socket.id}`,
+      );
+    } catch (error) {
+      console.error(`❌ Error al emitir reacción agregada en Mobile: ${error}`);
+    }
+  }
+
+  /**
+   * Se invoca cuando se remueve una reacción de un mensaje
+   * 
+   * @param data Datos de la reacción removida
+   */
+  onReaccionRemovida(data: { mensajeId: string; usuarioId: string; emoji: string }): void {
+    try {
+      this.socket.emit('grupo:reaccion:removida', data);
+      
+      console.log(
+        `❌ Reacción removida del grupo ${this.grupoId} emitida al cliente Mobile ${this.socket.id}`,
+      );
+    } catch (error) {
+      console.error(`❌ Error al emitir reacción removida en Mobile: ${error}`);
+    }
+  }
+
+  /**
+   * Se invoca cuando se menciona a un usuario
+   * 
+   * @param payload Mención con información
+   */
+  onMencionar(payload: MencionMensajeGrupoRecord): void {
+    try {
+      this.socket.emit('grupo:mention', {
+        mensajeId: payload.mensajeId,
+        usuarioMencionadoId: payload.usuarioMencionadoId,
+        usuarioMencionado: payload.usuarioMencionado,
+        createdAt: payload.createdAt,
+      });
+      
+      console.log(
+        `@mention del grupo ${this.grupoId} emitida al cliente Mobile ${this.socket.id}`,
+      );
+    } catch (error) {
+      console.error(`❌ Error al emitir mención en Mobile: ${error}`);
     }
   }
 
