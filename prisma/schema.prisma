@@ -40,6 +40,7 @@ model Usuario {
   votosEncuesta   EncuestaVoto[]
   seriesEstudio   SesionEstudioSerie[]
   sesionesEstudio SesionEstudio[]
+  recursosCreados Recurso[] @relation("RecursosCreados")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -89,6 +90,7 @@ model Grupo {
   mensajes  GrupoMensaje[]
   archivos  GrupoArchivo[]
   encuestas Encuesta[]
+  recursos  Recurso[]
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 }
@@ -316,4 +318,17 @@ enum EstadoSolicitudGrupo {
 enum EstadoEncuesta {
   OPEN
   CLOSED
+}
+model Recurso {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  titulo      String
+  contenido   String
+  tipo        String   @default("TEXTO")
+  metadata    Json?    
+  grupoId     String   @db.ObjectId
+  creadorId   String   @db.ObjectId
+  grupo       Grupo    @relation(fields: [grupoId], references: [id])
+  creador     Usuario  @relation("RecursosCreados", fields: [creadorId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
