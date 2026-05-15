@@ -83,4 +83,94 @@ export class MensajeController {
             return handleControllerError(res, error, 'Error al obtener historial del grupo');
         }
     }
+
+    // ==================== REACCIONES ====================
+
+    static async agregarReaccion(req: Request, res: Response) {
+        try {
+            const mensajeId = req.params.mensajeId;
+            const { emoji } = req.body;
+            const esGrupo = req.body?.esGrupo ?? true; // Por defecto true para compatibilidad
+
+            const resultado = await messageUseCases.agregarReaccion(
+                req.usuario,
+                mensajeId,
+                emoji,
+                esGrupo
+            );
+
+            console.log(
+                `😊 Reacción agregada | Usuario: ${req.usuario?.id} | Mensaje: ${mensajeId} | Emoji: ${emoji}`
+            );
+
+            return res.status(201).json({
+                success: true,
+                message: resultado.message,
+                data: resultado.data
+            });
+        } catch (error) {
+            return handleControllerError(res, error, 'Error al agregar reacción');
+        }
+    }
+
+    static async removerReaccion(req: Request, res: Response) {
+        try {
+            const mensajeId = req.params.mensajeId;
+            const { emoji } = req.body;
+            const esGrupo = req.body?.esGrupo ?? true; // Por defecto true para compatibilidad
+
+            const resultado = await messageUseCases.removerReaccion(
+                req.usuario,
+                mensajeId,
+                emoji,
+                esGrupo
+            );
+
+            console.log(
+                `❌ Reacción removida | Usuario: ${req.usuario?.id} | Mensaje: ${mensajeId} | Emoji: ${emoji}`
+            );
+
+            return res.json({
+                success: true,
+                message: resultado.message
+            });
+        } catch (error) {
+            return handleControllerError(res, error, 'Error al remover reacción');
+        }
+    }
+
+    static async obtenerReacciones(req: Request, res: Response) {
+        try {
+            const mensajeId = req.params.mensajeId;
+            const esGrupo = req.query.esGrupo === 'true'; // Parámetro de query
+
+            const resultado = await messageUseCases.obtenerReacciones(
+                req.usuario,
+                mensajeId,
+                esGrupo
+            );
+
+            return res.json({
+                success: true,
+                data: resultado.data
+            });
+        } catch (error) {
+            return handleControllerError(res, error, 'Error al obtener reacciones');
+        }
+    }
+
+    // ==================== MENCIONES ====================
+
+    static async obtenerMencionesPendientes(req: Request, res: Response) {
+        try {
+            const resultado = await messageUseCases.obtenerMencionesPendientes(req.usuario);
+
+            return res.json({
+                success: true,
+                data: resultado.data
+            });
+        } catch (error) {
+            return handleControllerError(res, error, 'Error al obtener menciones pendientes');
+        }
+    }
 }
