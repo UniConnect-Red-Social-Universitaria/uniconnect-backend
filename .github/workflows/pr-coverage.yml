@@ -1,0 +1,154 @@
+name: PR - Coverage Report
+
+on:
+  pull_request:
+    branches:
+      - main
+      - developer
+  workflow_run:
+    workflows: ["CI - Tests & Build"]
+    types:
+      - completed
+    branches:
+      - main
+      - developer
+
+jobs:
+  coverage-comment:
+    name: Coverage Report Comment
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'workflow_run'
+    timeout-minutes: 15
+
+    steps:
+      - name: 🛒 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🏗️ Generate Prisma Client
+        run: npx prisma generate
+
+      - name: 🧪 Run tests with coverage
+        run: npm test -- --coverage --verbose
+        env:
+          NODE_ENV: test
+        continue-on-error: true
+
+      - name: 📊 Download coverage from artifact
+        if: github.event_name == 'workflow_run'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.payload.workflow_run.id,
+            });
+            
+            const artifact = artifacts.data.artifacts.find(a => a.name === 'coverage');
+            if (artifact) {
+              const download = await github.rest.actions.downloadArtifact({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                artifact_id: artifact.id,
+                archive_format: 'zip',
+              });
+            }
+
+      - name: 📈 Parse coverage & create comment
+        id: coverage
+        run: |
+          # Extract coverage metrics
+          if [ -f ./coverage/coverage-summary.json ]; then
+            STATEMENTS=$(jq -r '.total.statements.pct' ./coverage/coverage-summary.json)
+            BRANCHES=$(jq -r '.total.branches.pct' ./coverage/coverage-summary.json)
+            FUNCTIONS=$(jq -r '.total.functions.pct' ./coverage/coverage-summary.json)
+            LINES=$(jq -r '.total.lines.pct' ./coverage/coverage-summary.json)
+            
+            echo "statements=$STATEMENTS" >> $GITHUB_OUTPUT
+            echo "branches=$BRANCHES" >> $GITHUB_OUTPUT
+            echo "functions=$FUNCTIONS" >> $GITHUB_OUTPUT
+            echo "lines=$LINES" >> $GITHUB_OUTPUT
+            
+            # Check if below threshold (80%)
+            if (( $(echo "$STATEMENTS < 80" | bc -l) )); then
+              echo "coverage_below_threshold=true" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "⚠️  No coverage file found"
+          fi
+
+      - name: 💬 Post coverage comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const statements = ${{ steps.coverage.outputs.statements || 0 }};
+            const branches = ${{ steps.coverage.outputs.branches || 0 }};
+            const functions = ${{ steps.coverage.outputs.functions || 0 }};
+            const lines = ${{ steps.coverage.outputs.lines || 0 }};
+            
+            const threshold = 80;
+            const isBelowThreshold = statements < threshold;
+            
+            const icon = isBelowThreshold ? '❌' : '✅';
+            
+            const comment = `## 📊 Code Coverage Report
+            
+            ${icon} **Coverage Status**: ${isBelowThreshold ? '⚠️ Below threshold' : '✅ Above threshold'}
+            
+            | Metric | Coverage | Status |
+            |--------|----------|--------|
+            | Statements | ${statements.toFixed(2)}% | ${statements >= threshold ? '✅' : '❌'} |
+            | Branches | ${branches.toFixed(2)}% | ${branches >= threshold ? '✅' : '❌'} |
+            | Functions | ${functions.toFixed(2)}% | ${functions >= threshold ? '✅' : '❌'} |
+            | Lines | ${lines.toFixed(2)}% | ${lines >= threshold ? '✅' : '❌'} |
+            
+            **Threshold**: ${threshold}%
+            
+            ---
+            
+            💡 *To improve coverage, add unit tests for uncovered lines and branches.*`;
+            
+            // Find or create comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const existingComment = comments.find(c => c.body.includes('📊 Code Coverage Report'));
+            
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: comment,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment,
+              });
+            }
+
+      - name: 🚫 Block merge if coverage below threshold
+        if: steps.coverage.outputs.coverage_below_threshold == 'true'
+        run: |
+          echo "❌ Coverage is below 80% threshold!"
+          echo "Statements: ${{ steps.coverage.outputs.statements }}%"
+          exit 1
