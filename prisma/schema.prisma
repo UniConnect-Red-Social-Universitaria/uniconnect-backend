@@ -44,6 +44,7 @@ model Usuario {
   mencionesMensajesGrupo MencionMensajeGrupo[] @relation("MencionesMensajesGrupo")
   reaccionesMensajes ReaccionMensaje[] @relation("ReaccionesMensajes")
   reaccionesMensajesGrupo ReaccionMensajeGrupo[] @relation("ReaccionesMensajesGrupo")
+  recursosCreados Recurso[] @relation("RecursosCreados")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -93,6 +94,7 @@ model Grupo {
   mensajes  GrupoMensaje[]
   archivos  GrupoArchivo[]
   encuestas Encuesta[]
+  recursos  Recurso[]
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 }
@@ -352,6 +354,22 @@ model MencionMensajeGrupo {
   @@unique([mensajeId, usuarioMencionadoId])
   @@index([mensajeId])
   @@index([usuarioMencionadoId])
+}
+
+model Recurso {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  titulo    String
+  contenido String
+  tipo      String   @default("ARCHIVO")
+  metadata  Json?
+  grupoId   String   @db.ObjectId
+  creadorId String   @db.ObjectId
+  grupo     Grupo    @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+  creador   Usuario  @relation("RecursosCreados", fields: [creadorId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([grupoId])
 }
 
 // Reacciones a mensajes individuales
