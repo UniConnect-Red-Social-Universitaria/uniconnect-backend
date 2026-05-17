@@ -86,7 +86,7 @@ export interface GroupMemberView {
   };
 }
 
-export type GroupStatus = 'ACTIVO' | 'PENDIENTE_TRANSFERENCIA' | 'CERRADO';
+export type GroupStatus = 'ACTIVO' | 'PENDIENTE_TRANSFERENCIA' | 'TRANSFERENCIA_ACEPTADA' | 'TRANSFERENCIA_RECHAZADA' | 'CANCELADO' | 'CERRADO';
 
 export interface GroupRecord {
   id: string;
@@ -94,6 +94,7 @@ export interface GroupRecord {
   materiaId: string;
   creadorId: string;
   administradorId: string;
+  candidatoAdminId: string | null;
   estado: GroupStatus;
   createdAt: Date;
   materia: CatalogItem;
@@ -464,6 +465,8 @@ export interface GroupRepository {
   updateAdministrador(grupoId: string, nuevoAdminId: string): Promise<void>;
   /** Persiste la transición de estado del patrón State */
   updateEstado(grupoId: string, estado: GroupStatus): Promise<void>;
+  /** Guarda el candidato a admin durante el flujo de transferencia */
+  updateCandidatoAdmin(grupoId: string, candidatoId: string | null): Promise<void>;
   leave(grupoId: string, usuarioId: string): Promise<void>;
   deleteGroup(grupoId: string): Promise<void>;
 }
@@ -578,6 +581,41 @@ export interface GroupEventObserver {
     anteriorAdminNombre: string;
     nuevoAdminId: string;
     nuevoAdminNombre: string;
+  }): void;
+
+  onTransferenciaPendiente(payload: {
+    grupoId: string;
+    grupoNombre: string;
+    adminId: string;
+    candidatoId: string;
+    candidatoNombre: string;
+    nuevoEstado: GroupStatus;
+  }): void;
+
+  onTransferenciaAceptada(payload: {
+    grupoId: string;
+    grupoNombre: string;
+    anteriorAdminId: string;
+    nuevoAdminId: string;
+    nuevoAdminNombre: string;
+    nuevoEstado: GroupStatus;
+  }): void;
+
+  onTransferenciaRechazada(payload: {
+    grupoId: string;
+    grupoNombre: string;
+    adminId: string;
+    candidatoId: string;
+    candidatoNombre: string;
+    nuevoEstado: GroupStatus;
+  }): void;
+
+  onTransferenciaCancelada(payload: {
+    grupoId: string;
+    grupoNombre: string;
+    adminId: string;
+    candidatoId: string;
+    nuevoEstado: GroupStatus;
   }): void;
 }
 

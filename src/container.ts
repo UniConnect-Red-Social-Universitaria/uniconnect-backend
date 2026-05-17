@@ -11,6 +11,7 @@ import { GroupUseCases } from './modules/groups/application/group.use-cases';
 import { PrismaGrupoRepository, PrismaGrupoArchivoRepository } from './modules/groups/infrastructure/prisma-grupo.repository';
 import { PrismaSolicitudGrupoRepository } from './modules/groups/infrastructure/prisma-solicitud-grupo.repository';
 import { SocketGroupObserver } from './modules/groups/infrastructure/socket-group.observer';
+import { PersistenciaGroupObserver } from './modules/groups/infrastructure/persistencia-group.observer';
 import { MateriaUseCases } from './modules/materias/application/materia.use-cases';
 import { PrismaMateriaRepository } from './modules/materias/infrastructure/prisma-materia.repository';
 import { ChatSubject } from './modules/messages/domain/chat-subject';
@@ -60,6 +61,7 @@ const pollGateway = new ModerationPollGatewayDecorator(
   new LoggingPollGatewayDecorator(new SocketPollGateway()),
 );
 const groupEventObserver = new SocketGroupObserver();
+const groupPersistenciaObserver = new PersistenciaGroupObserver();
 
 // ── ChatSubject para mensajes de grupo (Patrón Observer) ──
 const chatSubject = ChatSubject.getInstance();
@@ -82,7 +84,7 @@ export const groupUseCases = new GroupUseCases(
   userRepository,
   grupoArchivoRepository,
   solicitudGrupoRepository,
-  [groupEventObserver]
+  [groupEventObserver, groupPersistenciaObserver]
 );
 export const materiaUseCases = new MateriaUseCases(materiaRepository);
 export const messageUseCases = new MessageUseCases(

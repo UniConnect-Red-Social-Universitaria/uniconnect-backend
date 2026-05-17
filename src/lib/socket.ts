@@ -27,6 +27,10 @@ export interface SocketServerToClientEvents {
     'grupo:solicitud:nueva': (payload: unknown) => void;
     'grupo:solicitud:resuelta': (payload: unknown) => void;
     'grupo:admin:transferido': (payload: unknown) => void;
+    'grupo:admin:transferencia_pendiente': (payload: unknown) => void;
+    'grupo:admin:transferencia_aceptada': (payload: unknown) => void;
+    'grupo:admin:transferencia_rechazada': (payload: unknown) => void;
+    'grupo:admin:transferencia_cancelada': (payload: unknown) => void;
     'mensaje:reaccion:agregada': (payload: unknown) => void;
     'mensaje:reaccion:removida': (payload: unknown) => void;
     'mensaje:mencion': (payload: unknown) => void;
@@ -402,13 +406,77 @@ export function emitirTransferenciaAdmin(payload: {
         return;
     }
 
-    // Notificar al nuevo admin
     ioInstance
         .to(roomName('usuario', payload.nuevoAdminId))
         .emit('grupo:admin:transferido', payload);
 
-    // Notificar al anterior admin
     ioInstance
         .to(roomName('usuario', payload.anteriorAdminId))
         .emit('grupo:admin:transferido', payload);
+}
+
+export function emitirTransferenciaPendiente(payload: {
+    grupoId: string;
+    grupoNombre: string;
+    adminId: string;
+    candidatoId: string;
+    candidatoNombre: string;
+    nuevoEstado: string;
+}) {
+    if (!ioInstance) {
+        return;
+    }
+    ioInstance
+        .to(roomName('usuario', payload.candidatoId))
+        .emit('grupo:admin:transferencia_pendiente', payload);
+}
+
+export function emitirTransferenciaAceptada(payload: {
+    grupoId: string;
+    grupoNombre: string;
+    anteriorAdminId: string;
+    nuevoAdminId: string;
+    nuevoAdminNombre: string;
+    nuevoEstado: string;
+}) {
+    if (!ioInstance) {
+        return;
+    }
+    ioInstance
+        .to(roomName('usuario', payload.anteriorAdminId))
+        .emit('grupo:admin:transferencia_aceptada', payload);
+    ioInstance
+        .to(roomName('usuario', payload.nuevoAdminId))
+        .emit('grupo:admin:transferencia_aceptada', payload);
+}
+
+export function emitirTransferenciaRechazada(payload: {
+    grupoId: string;
+    grupoNombre: string;
+    adminId: string;
+    candidatoId: string;
+    candidatoNombre: string;
+    nuevoEstado: string;
+}) {
+    if (!ioInstance) {
+        return;
+    }
+    ioInstance
+        .to(roomName('usuario', payload.adminId))
+        .emit('grupo:admin:transferencia_rechazada', payload);
+}
+
+export function emitirTransferenciaCancelada(payload: {
+    grupoId: string;
+    grupoNombre: string;
+    adminId: string;
+    candidatoId: string;
+    nuevoEstado: string;
+}) {
+    if (!ioInstance) {
+        return;
+    }
+    ioInstance
+        .to(roomName('usuario', payload.candidatoId))
+        .emit('grupo:admin:transferencia_cancelada', payload);
 }

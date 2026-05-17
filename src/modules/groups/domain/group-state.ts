@@ -25,11 +25,17 @@ export interface IGroupState {
   /** Agregar directamente un miembro */
   agregarMiembro(ctx: GroupContext, nuevoMiembroId: string, adminId: string): void;
 
-  /** El admin quiere salir teniendo otros miembros → debe transferir primero */
-  iniciarTransferenciaAdmin(ctx: GroupContext, adminId: string): void;
+  /** El admin inicia transferencia nombrando a un candidato */
+  iniciarTransferenciaAdmin(ctx: GroupContext, adminId: string, candidatoId: string): void;
 
-  /** Transferir la administración a otro miembro */
-  transferirAdministracion(ctx: GroupContext, adminId: string, nuevoAdminId: string): void;
+  /** El candidato acepta la administración */
+  aceptarTransferencia(ctx: GroupContext, candidatoId: string): void;
+
+  /** El candidato rechaza la administración */
+  rechazarTransferencia(ctx: GroupContext, candidatoId: string): void;
+
+  /** El admin cancela la transferencia en curso */
+  cancelarTransferencia(ctx: GroupContext, adminId: string): void;
 
   /** Un miembro no-admin abandona el grupo */
   abandonarGrupo(ctx: GroupContext, miembroId: string): void;
@@ -77,7 +83,6 @@ export class GroupContext {
   /** Transiciona al nuevo estado y marca el estado para persistir */
   transitionTo(state: IGroupState): void {
     this._state = state;
-    // Mapeamos el nombre del estado al valor del enum de BD
     this._pendingEstado = GroupStateFactory.toGroupStatus(state.name);
   }
 
@@ -104,12 +109,20 @@ export class GroupContext {
     this._state.agregarMiembro(this, nuevoMiembroId, adminId);
   }
 
-  iniciarTransferenciaAdmin(adminId: string): void {
-    this._state.iniciarTransferenciaAdmin(this, adminId);
+  iniciarTransferenciaAdmin(adminId: string, candidatoId: string): void {
+    this._state.iniciarTransferenciaAdmin(this, adminId, candidatoId);
   }
 
-  transferirAdministracion(adminId: string, nuevoAdminId: string): void {
-    this._state.transferirAdministracion(this, adminId, nuevoAdminId);
+  aceptarTransferencia(candidatoId: string): void {
+    this._state.aceptarTransferencia(this, candidatoId);
+  }
+
+  rechazarTransferencia(candidatoId: string): void {
+    this._state.rechazarTransferencia(this, candidatoId);
+  }
+
+  cancelarTransferencia(adminId: string): void {
+    this._state.cancelarTransferencia(this, adminId);
   }
 
   abandonarGrupo(miembroId: string): void {
@@ -163,25 +176,22 @@ function invalidTransition(stateName: string, operation: string): never {
  *   - aprobarSolicitud   → ActiveState (al tener ≥2 miembros)
  *   - rechazarSolicitud  → sigue en FormingState
  *   - agregarMiembro     → ActiveState
- *   - disolverGrupo      → DissolvedState (admin único sale)
+ *   - disolverGrupo      → ClosingState (admin único sale)
  */
 export class FormingState implements IGroupState {
   readonly name = 'FORMING';
 
   solicitarIngreso(ctx: GroupContext, solicitanteId: string): void {
     assertNotMember(ctx.group, solicitanteId, 'Ya eres miembro de este grupo');
-    // La operación real (BD) ocurre en el use-case; aquí validamos el contexto.
   }
 
   aprobarSolicitud(ctx: GroupContext, _solicitudId: string, adminId: string): void {
     assertIsAdmin(ctx.group, adminId);
-    // Tras aprobar, el grupo pasará a tener ≥2 miembros → ActiveState
     ctx.transitionTo(new ActiveState());
   }
 
   rechazarSolicitud(ctx: GroupContext, _solicitudId: string, adminId: string): void {
     assertIsAdmin(ctx.group, adminId);
-    // Sin cambio de estado
   }
 
   agregarMiembro(ctx: GroupContext, nuevoMiembroId: string, adminId: string): void {
@@ -190,21 +200,27 @@ export class FormingState implements IGroupState {
     ctx.transitionTo(new ActiveState());
   }
 
-  iniciarTransferenciaAdmin(_ctx: GroupContext, _adminId: string): void {
-    // No hay otros miembros → no se puede transferir
+  iniciarTransferenciaAdmin(_ctx: GroupContext, _adminId: string, _candidatoId: string): void {
     throw new ApplicationError(
       400,
       'No hay otros miembros a quienes transferir la administración. Puedes disolver el grupo directamente.',
     );
   }
 
-  transferirAdministracion(_ctx: GroupContext, _adminId: string, _nuevoAdminId: string): void {
-    invalidTransition(this.name, 'transferirAdministracion');
+  aceptarTransferencia(_ctx: GroupContext, _candidatoId: string): void {
+    invalidTransition(this.name, 'aceptarTransferencia');
+  }
+
+  rechazarTransferencia(_ctx: GroupContext, _candidatoId: string): void {
+    invalidTransition(this.name, 'rechazarTransferencia');
+  }
+
+  cancelarTransferencia(_ctx: GroupContext, _adminId: string): void {
+    invalidTransition(this.name, 'cancelarTransferencia');
   }
 
   abandonarGrupo(ctx: GroupContext, miembroId: string): void {
     assertIsMember(ctx.group, miembroId);
-    // Si el único miembro es el admin y quiere salir, disuelve directamente
     if (ctx.group.administradorId === miembroId) {
       ctx.transitionTo(new ClosingState());
     }
@@ -251,16 +267,35 @@ export class ActiveState implements IGroupState {
     assertNotMember(ctx.group, nuevoMiembroId);
   }
 
-  iniciarTransferenciaAdmin(ctx: GroupContext, adminId: string): void {
+  iniciarTransferenciaAdmin(ctx: GroupContext, adminId: string, candidatoId: string): void {
     assertIsAdmin(ctx.group, adminId);
+
+    if (candidatoId === adminId) {
+      throw new ApplicationError(400, 'No puedes nombrarte a ti mismo como candidato');
+    }
+
+    const esMiembro = ctx.group.miembros.some((m) => m.usuarioId === candidatoId);
+    if (!esMiembro) {
+      throw new ApplicationError(404, 'El candidato no es miembro del grupo');
+    }
+
     if (ctx.group.miembros.length < 2) {
       throw new ApplicationError(400, 'No hay otros miembros a quienes transferir la administración');
     }
+
     ctx.transitionTo(new PendingTransferState());
   }
 
-  transferirAdministracion(_ctx: GroupContext, _adminId: string, _nuevoAdminId: string): void {
-    invalidTransition(this.name, 'transferirAdministracion');
+  aceptarTransferencia(_ctx: GroupContext, _candidatoId: string): void {
+    invalidTransition(this.name, 'aceptarTransferencia');
+  }
+
+  rechazarTransferencia(_ctx: GroupContext, _candidatoId: string): void {
+    invalidTransition(this.name, 'rechazarTransferencia');
+  }
+
+  cancelarTransferencia(_ctx: GroupContext, _adminId: string): void {
+    invalidTransition(this.name, 'cancelarTransferencia');
   }
 
   abandonarGrupo(ctx: GroupContext, miembroId: string): void {
@@ -273,17 +308,14 @@ export class ActiveState implements IGroupState {
           'Debes transferir la administración a otro miembro antes de salir del grupo',
         );
       }
-      // Último miembro (admin): puede disolver
       ctx.transitionTo(new ClosingState());
       return;
     }
 
-    // Si tras salir queda solo el admin, vuelve a FormingState
     const miembrosRestantes = ctx.group.miembros.filter((m) => m.usuarioId !== miembroId);
     if (miembrosRestantes.length === 1) {
       ctx.transitionTo(new FormingState());
     }
-    // Si quedan ≥2, sigue en ActiveState
   }
 
   disolverGrupo(_ctx: GroupContext, _adminId: string): void {
@@ -299,13 +331,14 @@ export class ActiveState implements IGroupState {
 // ─────────────────────────────────────────────
 
 /**
- * PendingTransferState — El admin ha iniciado el proceso de salida.
- * Debe transferir la administración antes de poder abandonar.
+ * PendingTransferState — El admin ha nominado un candidato a administrador.
+ * El candidato debe aceptar o rechazar; el admin puede cancelar.
  * Transiciones válidas:
- *   - transferirAdministracion  → ActiveState (con nuevo admin)
- *   - rechazarSolicitud         → sigue en PendingTransferState (operaciones normales)
- *   - aprobarSolicitud          → sigue en PendingTransferState
- *   - abandonarGrupo            → NO permitido hasta transferir
+ *   - aceptarTransferencia  → TransferAcceptedState
+ *   - rechazarTransferencia → TransferRejectedState
+ *   - cancelarTransferencia → CancelledTransferState
+ *   - aprobarSolicitud / rechazarSolicitud → sigue en PendingTransferState
+ *   - abandonarGrupo → NO permitido hasta resolver la transferencia
  */
 export class PendingTransferState implements IGroupState {
   readonly name = 'PENDING_TRANSFER';
@@ -316,7 +349,6 @@ export class PendingTransferState implements IGroupState {
 
   aprobarSolicitud(ctx: GroupContext, _solicitudId: string, adminId: string): void {
     assertIsAdmin(ctx.group, adminId);
-    // Permitido mientras se espera la transferencia
   }
 
   rechazarSolicitud(ctx: GroupContext, _solicitudId: string, adminId: string): void {
@@ -328,82 +360,214 @@ export class PendingTransferState implements IGroupState {
     assertNotMember(ctx.group, nuevoMiembroId);
   }
 
-  iniciarTransferenciaAdmin(_ctx: GroupContext, _adminId: string): void {
-    // Ya está en proceso de transferencia — no es un error, es idempotente
+  iniciarTransferenciaAdmin(_ctx: GroupContext, _adminId: string, _candidatoId: string): void {
+    throw new ApplicationError(409, 'Ya hay una transferencia de administración en curso');
   }
 
-  transferirAdministracion(ctx: GroupContext, adminId: string, nuevoAdminId: string): void {
+  aceptarTransferencia(ctx: GroupContext, candidatoId: string): void {
+    if (ctx.group.candidatoAdminId !== candidatoId) {
+      throw new ApplicationError(403, 'No eres el candidato designado para administrar este grupo');
+    }
+    ctx.transitionTo(new TransferAcceptedState());
+  }
+
+  rechazarTransferencia(ctx: GroupContext, candidatoId: string): void {
+    if (ctx.group.candidatoAdminId !== candidatoId) {
+      throw new ApplicationError(403, 'No eres el candidato designado para administrar este grupo');
+    }
+    ctx.transitionTo(new TransferRejectedState());
+  }
+
+  cancelarTransferencia(ctx: GroupContext, adminId: string): void {
     assertIsAdmin(ctx.group, adminId);
-
-    if (nuevoAdminId === adminId) {
-      throw new ApplicationError(400, 'Ya eres el administrador del grupo');
-    }
-
-    const esMiembro = ctx.group.miembros.some((m) => m.usuarioId === nuevoAdminId);
-    if (!esMiembro) {
-      throw new ApplicationError(404, 'El usuario no es miembro del grupo');
-    }
-
-    // Vuelve a estado activo con el nuevo admin
-    ctx.transitionTo(new ActiveState());
+    ctx.transitionTo(new CancelledTransferState());
   }
 
   abandonarGrupo(_ctx: GroupContext, _miembroId: string): void {
     throw new ApplicationError(
       400,
-      'Debes transferir la administración a otro miembro antes de salir del grupo',
+      'Hay una transferencia de administración pendiente. Cancélala antes de salir del grupo.',
     );
   }
 
   disolverGrupo(_ctx: GroupContext, _adminId: string): void {
     throw new ApplicationError(
       400,
-      'No puedes disolver el grupo mientras haya otros miembros. Transfiere la administración primero.',
+      'No puedes disolver el grupo mientras haya una transferencia pendiente. Cancélala primero.',
     );
   }
 }
 
 // ─────────────────────────────────────────────
-// Estado 4: ClosingState
+// Estado 4: TransferAcceptedState
 // ─────────────────────────────────────────────
 
 /**
- * ClosingState — El último miembro (admin) está saliendo.
- * El grupo será eliminado de la BD en la siguiente operación.
- * Este estado es transitorio — se usa solo para señalizar
- * al use-case que debe ejecutar deleteGroup.
- * Ninguna operación adicional es permitida.
+ * TransferAcceptedState — El candidato aceptó la administración.
+ * Estado transitorio: el use-case actualiza el admin y vuelve a ACTIVO.
+ * Se persiste en BD como TRANSFERENCIA_ACEPTADA (historial).
  */
-export class ClosingState implements IGroupState {
-  readonly name = 'CLOSING';
+export class TransferAcceptedState implements IGroupState {
+  readonly name = 'TRANSFER_ACCEPTED';
 
   solicitarIngreso(_ctx: GroupContext, _solicitanteId: string): void {
     invalidTransition(this.name, 'solicitarIngreso');
   }
-
-  aprobarSolicitud(_ctx: GroupContext, _solicitudId: string, _adminId: string): void {
+  aprobarSolicitud(_ctx: GroupContext, _s: string, _a: string): void {
     invalidTransition(this.name, 'aprobarSolicitud');
   }
-
-  rechazarSolicitud(_ctx: GroupContext, _solicitudId: string, _adminId: string): void {
+  rechazarSolicitud(_ctx: GroupContext, _s: string, _a: string): void {
     invalidTransition(this.name, 'rechazarSolicitud');
   }
-
-  agregarMiembro(_ctx: GroupContext, _nuevoMiembroId: string, _adminId: string): void {
+  agregarMiembro(_ctx: GroupContext, _n: string, _a: string): void {
     invalidTransition(this.name, 'agregarMiembro');
   }
-
-  iniciarTransferenciaAdmin(_ctx: GroupContext, _adminId: string): void {
+  iniciarTransferenciaAdmin(_ctx: GroupContext, _a: string, _c: string): void {
     invalidTransition(this.name, 'iniciarTransferenciaAdmin');
   }
+  aceptarTransferencia(_ctx: GroupContext, _c: string): void {
+    invalidTransition(this.name, 'aceptarTransferencia');
+  }
+  rechazarTransferencia(_ctx: GroupContext, _c: string): void {
+    invalidTransition(this.name, 'rechazarTransferencia');
+  }
+  cancelarTransferencia(_ctx: GroupContext, _a: string): void {
+    invalidTransition(this.name, 'cancelarTransferencia');
+  }
+  abandonarGrupo(_ctx: GroupContext, _m: string): void {
+    invalidTransition(this.name, 'abandonarGrupo');
+  }
+  disolverGrupo(_ctx: GroupContext, _a: string): void {
+    invalidTransition(this.name, 'disolverGrupo');
+  }
+}
 
-  transferirAdministracion(_ctx: GroupContext, _adminId: string, _nuevoAdminId: string): void {
-    invalidTransition(this.name, 'transferirAdministracion');
+// ─────────────────────────────────────────────
+// Estado 5: TransferRejectedState
+// ─────────────────────────────────────────────
+
+/**
+ * TransferRejectedState — El candidato rechazó la administración.
+ * Estado transitorio: el use-case limpia el candidato y vuelve a ACTIVO.
+ * Se persiste en BD como TRANSFERENCIA_RECHAZADA (historial).
+ */
+export class TransferRejectedState implements IGroupState {
+  readonly name = 'TRANSFER_REJECTED';
+
+  solicitarIngreso(_ctx: GroupContext, _s: string): void {
+    invalidTransition(this.name, 'solicitarIngreso');
+  }
+  aprobarSolicitud(_ctx: GroupContext, _s: string, _a: string): void {
+    invalidTransition(this.name, 'aprobarSolicitud');
+  }
+  rechazarSolicitud(_ctx: GroupContext, _s: string, _a: string): void {
+    invalidTransition(this.name, 'rechazarSolicitud');
+  }
+  agregarMiembro(_ctx: GroupContext, _n: string, _a: string): void {
+    invalidTransition(this.name, 'agregarMiembro');
+  }
+  iniciarTransferenciaAdmin(_ctx: GroupContext, _a: string, _c: string): void {
+    invalidTransition(this.name, 'iniciarTransferenciaAdmin');
+  }
+  aceptarTransferencia(_ctx: GroupContext, _c: string): void {
+    invalidTransition(this.name, 'aceptarTransferencia');
+  }
+  rechazarTransferencia(_ctx: GroupContext, _c: string): void {
+    invalidTransition(this.name, 'rechazarTransferencia');
+  }
+  cancelarTransferencia(_ctx: GroupContext, _a: string): void {
+    invalidTransition(this.name, 'cancelarTransferencia');
+  }
+  abandonarGrupo(_ctx: GroupContext, _m: string): void {
+    invalidTransition(this.name, 'abandonarGrupo');
+  }
+  disolverGrupo(_ctx: GroupContext, _a: string): void {
+    invalidTransition(this.name, 'disolverGrupo');
+  }
+}
+
+// ─────────────────────────────────────────────
+// Estado 6: CancelledTransferState
+// ─────────────────────────────────────────────
+
+/**
+ * CancelledTransferState — El admin canceló la transferencia en curso.
+ * Estado transitorio: el use-case limpia el candidato y vuelve a ACTIVO.
+ * Se persiste en BD como CANCELADO (historial).
+ */
+export class CancelledTransferState implements IGroupState {
+  readonly name = 'TRANSFER_CANCELLED';
+
+  solicitarIngreso(_ctx: GroupContext, _s: string): void {
+    invalidTransition(this.name, 'solicitarIngreso');
+  }
+  aprobarSolicitud(_ctx: GroupContext, _s: string, _a: string): void {
+    invalidTransition(this.name, 'aprobarSolicitud');
+  }
+  rechazarSolicitud(_ctx: GroupContext, _s: string, _a: string): void {
+    invalidTransition(this.name, 'rechazarSolicitud');
+  }
+  agregarMiembro(_ctx: GroupContext, _n: string, _a: string): void {
+    invalidTransition(this.name, 'agregarMiembro');
+  }
+  iniciarTransferenciaAdmin(_ctx: GroupContext, _a: string, _c: string): void {
+    invalidTransition(this.name, 'iniciarTransferenciaAdmin');
+  }
+  aceptarTransferencia(_ctx: GroupContext, _c: string): void {
+    invalidTransition(this.name, 'aceptarTransferencia');
+  }
+  rechazarTransferencia(_ctx: GroupContext, _c: string): void {
+    invalidTransition(this.name, 'rechazarTransferencia');
+  }
+  cancelarTransferencia(_ctx: GroupContext, _a: string): void {
+    invalidTransition(this.name, 'cancelarTransferencia');
+  }
+  abandonarGrupo(_ctx: GroupContext, _m: string): void {
+    invalidTransition(this.name, 'abandonarGrupo');
+  }
+  disolverGrupo(_ctx: GroupContext, _a: string): void {
+    invalidTransition(this.name, 'disolverGrupo');
+  }
+}
+
+// ─────────────────────────────────────────────
+// Estado 7: ClosingState
+// ─────────────────────────────────────────────
+
+/**
+ * ClosingState — El último miembro (admin) está saliendo.
+ * Estado transitorio para señalizar al use-case que debe ejecutar deleteGroup.
+ */
+export class ClosingState implements IGroupState {
+  readonly name = 'CLOSING';
+
+  solicitarIngreso(_ctx: GroupContext, _s: string): void {
+    invalidTransition(this.name, 'solicitarIngreso');
+  }
+  aprobarSolicitud(_ctx: GroupContext, _s: string, _a: string): void {
+    invalidTransition(this.name, 'aprobarSolicitud');
+  }
+  rechazarSolicitud(_ctx: GroupContext, _s: string, _a: string): void {
+    invalidTransition(this.name, 'rechazarSolicitud');
+  }
+  agregarMiembro(_ctx: GroupContext, _n: string, _a: string): void {
+    invalidTransition(this.name, 'agregarMiembro');
+  }
+  iniciarTransferenciaAdmin(_ctx: GroupContext, _a: string, _c: string): void {
+    invalidTransition(this.name, 'iniciarTransferenciaAdmin');
+  }
+  aceptarTransferencia(_ctx: GroupContext, _c: string): void {
+    invalidTransition(this.name, 'aceptarTransferencia');
+  }
+  rechazarTransferencia(_ctx: GroupContext, _c: string): void {
+    invalidTransition(this.name, 'rechazarTransferencia');
+  }
+  cancelarTransferencia(_ctx: GroupContext, _a: string): void {
+    invalidTransition(this.name, 'cancelarTransferencia');
   }
 
   abandonarGrupo(ctx: GroupContext, adminId: string): void {
     assertIsAdmin(ctx.group, adminId);
-    // Confirmamos: el use-case procederá a deleteGroup
     ctx.transitionTo(new DissolvedState());
   }
 
@@ -414,45 +578,43 @@ export class ClosingState implements IGroupState {
 }
 
 // ─────────────────────────────────────────────
-// Estado 5: DissolvedState
+// Estado 8: DissolvedState
 // ─────────────────────────────────────────────
 
 /**
  * DissolvedState — Estado terminal. El grupo ha sido eliminado.
- * Ninguna operación es permitida.
  */
 export class DissolvedState implements IGroupState {
   readonly name = 'DISSOLVED';
 
-  solicitarIngreso(_ctx: GroupContext, _solicitanteId: string): void {
+  solicitarIngreso(_ctx: GroupContext, _s: string): void {
     invalidTransition(this.name, 'solicitarIngreso');
   }
-
-  aprobarSolicitud(_ctx: GroupContext, _solicitudId: string, _adminId: string): void {
+  aprobarSolicitud(_ctx: GroupContext, _s: string, _a: string): void {
     invalidTransition(this.name, 'aprobarSolicitud');
   }
-
-  rechazarSolicitud(_ctx: GroupContext, _solicitudId: string, _adminId: string): void {
+  rechazarSolicitud(_ctx: GroupContext, _s: string, _a: string): void {
     invalidTransition(this.name, 'rechazarSolicitud');
   }
-
-  agregarMiembro(_ctx: GroupContext, _nuevoMiembroId: string, _adminId: string): void {
+  agregarMiembro(_ctx: GroupContext, _n: string, _a: string): void {
     invalidTransition(this.name, 'agregarMiembro');
   }
-
-  iniciarTransferenciaAdmin(_ctx: GroupContext, _adminId: string): void {
+  iniciarTransferenciaAdmin(_ctx: GroupContext, _a: string, _c: string): void {
     invalidTransition(this.name, 'iniciarTransferenciaAdmin');
   }
-
-  transferirAdministracion(_ctx: GroupContext, _adminId: string, _nuevoAdminId: string): void {
-    invalidTransition(this.name, 'transferirAdministracion');
+  aceptarTransferencia(_ctx: GroupContext, _c: string): void {
+    invalidTransition(this.name, 'aceptarTransferencia');
   }
-
-  abandonarGrupo(_ctx: GroupContext, _miembroId: string): void {
+  rechazarTransferencia(_ctx: GroupContext, _c: string): void {
+    invalidTransition(this.name, 'rechazarTransferencia');
+  }
+  cancelarTransferencia(_ctx: GroupContext, _a: string): void {
+    invalidTransition(this.name, 'cancelarTransferencia');
+  }
+  abandonarGrupo(_ctx: GroupContext, _m: string): void {
     invalidTransition(this.name, 'abandonarGrupo');
   }
-
-  disolverGrupo(_ctx: GroupContext, _adminId: string): void {
+  disolverGrupo(_ctx: GroupContext, _a: string): void {
     invalidTransition(this.name, 'disolverGrupo');
   }
 }
@@ -464,8 +626,8 @@ export class DissolvedState implements IGroupState {
 export class GroupStateFactory {
   /**
    * Re-hidrata el estado del patrón State desde el campo `estado` persistido en BD.
-   * Si el estado guardado es PENDIENTE_TRANSFERENCIA, el grupo se restaura directamente
-   * en PendingTransferState sin depender del número de miembros.
+   * Los estados TRANSFERENCIA_ACEPTADA, TRANSFERENCIA_RECHAZADA y CANCELADO
+   * se tratan como ACTIVO al recargar (son estados de historial).
    */
   static fromGroup(group: GroupRecord): IGroupState {
     switch (group.estado) {
@@ -473,16 +635,18 @@ export class GroupStateFactory {
         return new PendingTransferState();
       case 'CERRADO':
         return new DissolvedState();
+      case 'TRANSFERENCIA_ACEPTADA':
+      case 'TRANSFERENCIA_RECHAZADA':
+      case 'CANCELADO':
       case 'ACTIVO':
       default:
-        // Estado ACTIVO: diferenciamos entre grupo con 1 miembro (FORMING) y más (ACTIVE)
         return group.miembros.length <= 1 ? new FormingState() : new ActiveState();
     }
   }
 
   /**
    * Convierte el nombre del estado del patrón State al valor del enum de BD.
-   * Retorna null para estados transitorios que no deben persistirse.
+   * Retorna null para estados que no deben persistirse.
    */
   static toGroupStatus(stateName: string): GroupStatus | null {
     switch (stateName) {
@@ -491,6 +655,12 @@ export class GroupStateFactory {
         return 'ACTIVO';
       case 'PENDING_TRANSFER':
         return 'PENDIENTE_TRANSFERENCIA';
+      case 'TRANSFER_ACCEPTED':
+        return 'TRANSFERENCIA_ACEPTADA';
+      case 'TRANSFER_REJECTED':
+        return 'TRANSFERENCIA_RECHAZADA';
+      case 'TRANSFER_CANCELLED':
+        return 'CANCELADO';
       case 'CLOSING':
       case 'DISSOLVED':
         return 'CERRADO';

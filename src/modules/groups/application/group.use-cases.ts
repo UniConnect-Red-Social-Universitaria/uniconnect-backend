@@ -10,11 +10,7 @@ import {
 } from '../../../domain/contracts';
 import { ApplicationError } from '../../../shared/application-error';
 import { cloudinary } from '../../../lib/cloudinary';
-import {
-  GroupContext,
-  ClosingState,
-  PendingTransferState,
-} from '../domain/group-state';
+import { GroupContext } from '../domain/group-state';
 
 type CreateGroupInput = {
   nombre: unknown;
@@ -469,74 +465,148 @@ export class GroupUseCases {
   async iniciarTransferenciaAdministracion(
     usuario: AuthenticatedUser | undefined,
     grupoId: unknown,
+    candidatoId: unknown,
   ) {
     const authUser = this.ensureAuthenticated(usuario);
 
     if (!grupoId || typeof grupoId !== 'string') {
       throw new ApplicationError(400, 'ID de grupo inválido');
     }
+    if (!candidatoId || typeof candidatoId !== 'string') {
+      throw new ApplicationError(400, 'Debes indicar el ID del candidato a administrador');
+    }
 
     const grupo = await this.groupRepository.findById(grupoId);
     if (!grupo) throw new ApplicationError(404, 'Grupo no encontrado');
 
-    // Iniciar transferencia: el estado valida permisos y transiciona a PendingTransferState
     const ctx = new GroupContext(grupo);
-    ctx.iniciarTransferenciaAdmin(authUser.id);
+    ctx.iniciarTransferenciaAdmin(authUser.id, candidatoId);
 
+    await this.groupRepository.updateCandidatoAdmin(grupo.id, candidatoId);
     if (ctx.pendingEstado) {
       await this.groupRepository.updateEstado(grupo.id, ctx.pendingEstado);
     }
 
-    return { message: 'Transferencia de administración iniciada. Por favor, selecciona al nuevo administrador.' };
+    const candidato = await this.userRepository.findSafeById(candidatoId);
+    this.observers.forEach(obs => obs.onTransferenciaPendiente({
+      grupoId: grupo.id,
+      grupoNombre: grupo.nombre,
+      adminId: authUser.id,
+      candidatoId,
+      candidatoNombre: [candidato?.nombre, candidato?.apellido].filter(Boolean).join(' '),
+      nuevoEstado: 'PENDIENTE_TRANSFERENCIA',
+    }));
+
+    return { message: 'Transferencia de administración iniciada. El candidato debe aceptar o rechazar.' };
   }
 
-  async confirmarTransferenciaAdministracion(
+  async aceptarTransferenciaAdministracion(
     usuario: AuthenticatedUser | undefined,
     grupoId: unknown,
-    nuevoAdminId: unknown,
   ) {
     const authUser = this.ensureAuthenticated(usuario);
 
     if (!grupoId || typeof grupoId !== 'string') {
       throw new ApplicationError(400, 'ID de grupo inválido');
     }
-    if (!nuevoAdminId || typeof nuevoAdminId !== 'string') {
-      throw new ApplicationError(400, 'ID del nuevo administrador inválido');
+
+    const grupo = await this.groupRepository.findById(grupoId);
+    if (!grupo) throw new ApplicationError(404, 'Grupo no encontrado');
+
+    const ctx = new GroupContext(grupo);
+    ctx.aceptarTransferencia(authUser.id);
+
+    const anteriorAdminId = grupo.administradorId;
+
+    try {
+      await this.groupRepository.updateAdministrador(grupo.id, authUser.id);
+      await this.groupRepository.updateCandidatoAdmin(grupo.id, null);
+      if (ctx.pendingEstado) {
+        await this.groupRepository.updateEstado(grupo.id, ctx.pendingEstado);
+      }
+    } catch (error) {
+      console.error('Error en aceptarTransferenciaAdministracion, ejecutando rollback:', error);
+      await this.groupRepository.updateAdministrador(grupo.id, anteriorAdminId).catch(() => {});
+      throw new ApplicationError(500, 'Error al aceptar la transferencia. Se revirtieron los cambios.');
+    }
+
+    const nuevoAdmin = await this.userRepository.findSafeById(authUser.id);
+    this.observers.forEach(obs => obs.onTransferenciaAceptada({
+      grupoId: grupo.id,
+      grupoNombre: grupo.nombre,
+      anteriorAdminId,
+      nuevoAdminId: authUser.id,
+      nuevoAdminNombre: [nuevoAdmin?.nombre, nuevoAdmin?.apellido].filter(Boolean).join(' '),
+      nuevoEstado: 'TRANSFERENCIA_ACEPTADA',
+    }));
+
+    return { message: 'Has aceptado la administración del grupo correctamente' };
+  }
+
+  async rechazarTransferenciaAdministracion(
+    usuario: AuthenticatedUser | undefined,
+    grupoId: unknown,
+  ) {
+    const authUser = this.ensureAuthenticated(usuario);
+
+    if (!grupoId || typeof grupoId !== 'string') {
+      throw new ApplicationError(400, 'ID de grupo inválido');
     }
 
     const grupo = await this.groupRepository.findById(grupoId);
     if (!grupo) throw new ApplicationError(404, 'Grupo no encontrado');
 
     const ctx = new GroupContext(grupo);
+    ctx.rechazarTransferencia(authUser.id);
 
-    // Completar la transferencia: PendingTransferState valida al nuevo admin
-    ctx.transferirAdministracion(authUser.id, nuevoAdminId);
+    await this.groupRepository.updateCandidatoAdmin(grupo.id, null);
+    // Restore ACTIVO after brief TRANSFERENCIA_RECHAZADA state
+    await this.groupRepository.updateEstado(grupo.id, 'ACTIVO');
 
-    try {
-      await this.groupRepository.updateAdministrador(grupo.id, nuevoAdminId);
-
-      if (ctx.pendingEstado) {
-        await this.groupRepository.updateEstado(grupo.id, ctx.pendingEstado);
-      }
-    } catch (error) {
-      // Rollback lógico: restaurar administrador original
-      console.error('Error en confirmarTransferenciaAdministracion, ejecutando rollback:', error);
-      await this.groupRepository.updateAdministrador(grupo.id, authUser.id).catch(() => {});
-      throw new ApplicationError(500, 'Error de integridad al confirmar la transferencia. Se ha revertido la operación.');
-    }
-
-    const adminAnterior = await this.userRepository.findSafeById(authUser.id);
-    const nuevoAdmin = await this.userRepository.findSafeById(nuevoAdminId);
-    this.observers.forEach(obs => obs.onAdminTransferido({
+    const candidato = await this.userRepository.findSafeById(authUser.id);
+    this.observers.forEach(obs => obs.onTransferenciaRechazada({
       grupoId: grupo.id,
       grupoNombre: grupo.nombre,
-      anteriorAdminId: authUser.id,
-      anteriorAdminNombre: [adminAnterior?.nombre, adminAnterior?.apellido].filter(Boolean).join(' '),
-      nuevoAdminId: nuevoAdminId,
-      nuevoAdminNombre: [nuevoAdmin?.nombre, nuevoAdmin?.apellido].filter(Boolean).join(' '),
+      adminId: grupo.administradorId,
+      candidatoId: authUser.id,
+      candidatoNombre: [candidato?.nombre, candidato?.apellido].filter(Boolean).join(' '),
+      nuevoEstado: 'ACTIVO',
     }));
 
-    return { message: 'Administración cedida correctamente' };
+    return { message: 'Has rechazado la administración del grupo' };
+  }
+
+  async cancelarTransferenciaAdministracion(
+    usuario: AuthenticatedUser | undefined,
+    grupoId: unknown,
+  ) {
+    const authUser = this.ensureAuthenticated(usuario);
+
+    if (!grupoId || typeof grupoId !== 'string') {
+      throw new ApplicationError(400, 'ID de grupo inválido');
+    }
+
+    const grupo = await this.groupRepository.findById(grupoId);
+    if (!grupo) throw new ApplicationError(404, 'Grupo no encontrado');
+
+    const candidatoId = grupo.candidatoAdminId;
+
+    const ctx = new GroupContext(grupo);
+    ctx.cancelarTransferencia(authUser.id);
+
+    await this.groupRepository.updateCandidatoAdmin(grupo.id, null);
+    // Restore ACTIVO after brief CANCELADO state
+    await this.groupRepository.updateEstado(grupo.id, 'ACTIVO');
+
+    this.observers.forEach(obs => obs.onTransferenciaCancelada({
+      grupoId: grupo.id,
+      grupoNombre: grupo.nombre,
+      adminId: authUser.id,
+      candidatoId: candidatoId ?? '',
+      nuevoEstado: 'ACTIVO',
+    }));
+
+    return { message: 'Transferencia de administración cancelada' };
   }
 
   async agregarMiembro(

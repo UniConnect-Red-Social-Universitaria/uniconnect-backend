@@ -85,6 +85,7 @@ model Grupo {
   materiaId String        @db.ObjectId
   creadorId String        @db.ObjectId
   administradorId String  @db.ObjectId
+  candidatoAdminId String? @db.ObjectId
   estado    EstadoGrupo   @default(ACTIVO)
   materia   Materia       @relation(fields: [materiaId], references: [id])
   creador   Usuario       @relation("GruposCreados", fields: [creadorId], references: [id])
@@ -314,6 +315,9 @@ enum EstadoContacto {
 enum EstadoGrupo {
   ACTIVO
   PENDIENTE_TRANSFERENCIA
+  TRANSFERENCIA_ACEPTADA
+  TRANSFERENCIA_RECHAZADA
+  CANCELADO
   CERRADO
 }
 

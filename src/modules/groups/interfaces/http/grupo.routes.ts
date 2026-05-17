@@ -344,22 +344,7 @@ router.get('/:id/archivos/:archivoId/descargar', verificarJWT, GrupoController.d
  * @swagger
  * /api/grupos/{id}/administrador/iniciar:
  *   post:
- *     summary: Iniciar proceso de transferencia de administrador
- *     tags: [Grupos]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema: { type: string }
- *     responses:
- *       200:
- *         description: Transferencia iniciada
- * 
- * /api/grupos/{id}/administrador/confirmar:
- *   patch:
- *     summary: Confirmar transferencia de administrador a otro miembro
+ *     summary: El admin nomina un candidato para la transferencia de administración
  *     tags: [Grupos]
  *     security:
  *       - bearerAuth: []
@@ -374,15 +359,62 @@ router.get('/:id/archivos/:archivoId/descargar', verificarJWT, GrupoController.d
  *         application/json:
  *           schema:
  *             type: object
- *             required: [nuevoAdminId]
+ *             required: [candidatoId]
  *             properties:
- *               nuevoAdminId: { type: string }
+ *               candidatoId: { type: string }
  *     responses:
  *       200:
- *         description: Administración transferida
+ *         description: Transferencia iniciada, candidato notificado
+ *
+ * /api/grupos/{id}/administrador/aceptar:
+ *   post:
+ *     summary: El candidato acepta la administración del grupo
+ *     tags: [Grupos]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Transferencia aceptada, admin actualizado
+ *
+ * /api/grupos/{id}/administrador/rechazar:
+ *   post:
+ *     summary: El candidato rechaza la administración del grupo
+ *     tags: [Grupos]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Transferencia rechazada, grupo vuelve a ACTIVO
+ *
+ * /api/grupos/{id}/administrador/cancelar:
+ *   delete:
+ *     summary: El admin cancela la transferencia en curso
+ *     tags: [Grupos]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Transferencia cancelada, grupo vuelve a ACTIVO
  */
 router.post('/:id/administrador/iniciar', verificarJWT, GrupoController.iniciarTransferencia);
-router.patch('/:id/administrador/confirmar', verificarJWT, GrupoController.confirmarTransferencia);
+router.post('/:id/administrador/aceptar', verificarJWT, GrupoController.aceptarTransferencia);
+router.post('/:id/administrador/rechazar', verificarJWT, GrupoController.rechazarTransferencia);
+router.delete('/:id/administrador/cancelar', verificarJWT, GrupoController.cancelarTransferencia);
 
 /**
  * @swagger
