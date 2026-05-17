@@ -753,6 +753,8 @@ function formatearGrupo(grupo: GroupRecord) {
     },
     creadorId: grupo.creadorId,
     administradorId: grupo.administradorId,
+    estado: grupo.estado,
+    candidatoAdminId: grupo.candidatoAdminId ?? null,
     cantidadMiembros: grupo.miembros.length,
     miembros: grupo.miembros
       .filter((miembro) => miembro.usuario)
