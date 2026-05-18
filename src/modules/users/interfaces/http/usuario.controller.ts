@@ -225,6 +225,29 @@ export class UsuarioController {
       return handleControllerError(res, error, 'Error al actualizar perfil');
     }
   }
+  static async obtenerPerfilPublico(req: Request, res: Response) {
+    try {
+      if (req.query.vista === 'completa') {
+        const resultado = await usersUseCases.obtenerPerfilEnriquecido(req.params.id);
+        return res.json({ success: true, data: resultado.data });
+      }
+
+      const resultado = await usersUseCases.obtenerPerfilPublico(req.params.id);
+      return res.json({ success: true, data: resultado.data });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al obtener perfil');
+    }
+  }
+
+  static async obtenerPerfilEnriquecido(req: Request, res: Response) {
+    try {
+      const resultado = await usersUseCases.obtenerPerfilEnriquecido(req.params.id);
+      return res.json({ success: true, data: resultado.data });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al obtener perfil enriquecido');
+    }
+  }
+
   //eliminar usuario sin importar si esta autenticado o no, se puede eliminar por id
   static async eliminarUsuario(req: Request, res: Response) {
     try {

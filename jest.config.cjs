@@ -2,6 +2,7 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
+  setupFilesAfterEnv: ['<rootDir>/tests/setup/jest.setup.ts'],
   roots: ['<rootDir>/src', '<rootDir>/tests'],
   testMatch: ['**/*.test.ts'],
   clearMocks: true,
@@ -9,5 +10,9 @@ module.exports = {
   transform: {
     '^.+\\.ts$': ['ts-jest', { tsconfig: 'tsconfig.jest.json' }]
   },
-  collectCoverageFrom: ['src/**/*.ts', '!src/generated/**', '!src/server.ts']
+
+  collectCoverage: true, 
+  collectCoverageFrom: ['src/**/*.ts', '!src/generated/**', '!src/server.ts'],
+  coverageDirectory: 'coverage',
+  coverageReporters: ['text', 'json-summary', 'lcov']
 };

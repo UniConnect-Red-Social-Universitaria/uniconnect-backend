@@ -159,4 +159,79 @@ export class ChatSubject {
   limpiar(): void {
     this.suscriptores.clear();
   }
+
+  /**
+   * Emite una reacción agregada a todos los observadores de un grupo
+   * 
+   * @param grupoId ID del grupo
+   * @param reaccion Datos de la reacción
+   */
+  emitirReaccionAgregada(grupoId: string, reaccion: GroupMessageRecord): void {
+    const suscriptoresDelGrupo = this.suscriptores.get(grupoId);
+    
+    if (!suscriptoresDelGrupo) {
+      console.warn(`⚠️  No hay observadores suscritos al grupo ${grupoId}`);
+      return;
+    }
+
+    suscriptoresDelGrupo.forEach((observer) => {
+      try {
+        observer.onReaccionAgregada(reaccion as any);
+      } catch (error) {
+        console.error('❌ Error al notificar reacción agregada:', error);
+      }
+    });
+
+    console.log(`😊 Reacción emitida a ${suscriptoresDelGrupo.size} observador(es) del grupo ${grupoId}`);
+  }
+
+  /**
+   * Emite una reacción removida a todos los observadores de un grupo
+   * 
+   * @param grupoId ID del grupo
+   * @param data Datos de la reacción removida
+   */
+  emitirReaccionRemovida(grupoId: string, data: { mensajeId: string; usuarioId: string; emoji: string }): void {
+    const suscriptoresDelGrupo = this.suscriptores.get(grupoId);
+    
+    if (!suscriptoresDelGrupo) {
+      console.warn(`⚠️  No hay observadores suscritos al grupo ${grupoId}`);
+      return;
+    }
+
+    suscriptoresDelGrupo.forEach((observer) => {
+      try {
+        observer.onReaccionRemovida(data);
+      } catch (error) {
+        console.error('❌ Error al notificar reacción removida:', error);
+      }
+    });
+
+    console.log(`❌ Reacción removida emitida a ${suscriptoresDelGrupo.size} observador(es) del grupo ${grupoId}`);
+  }
+
+  /**
+   * Emite una mención a todos los observadores de un grupo
+   * 
+   * @param grupoId ID del grupo
+   * @param mencion Datos de la mención
+   */
+  emitirMencionar(grupoId: string, mencion: GroupMessageRecord): void {
+    const suscriptoresDelGrupo = this.suscriptores.get(grupoId);
+    
+    if (!suscriptoresDelGrupo) {
+      console.warn(`⚠️  No hay observadores suscritos al grupo ${grupoId}`);
+      return;
+    }
+
+    suscriptoresDelGrupo.forEach((observer) => {
+      try {
+        observer.onMencionar(mencion as any);
+      } catch (error) {
+        console.error('❌ Error al notificar mención:', error);
+      }
+    });
+
+    console.log(`@mention emitida a ${suscriptoresDelGrupo.size} observador(es) del grupo ${grupoId}`);
+  }
 }

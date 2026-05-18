@@ -1,0 +1,39 @@
+import { NotificacionDTO } from '../../../shared/notificacion/INotificacion';
+import { CategoriaEvento } from '../../../domain/contracts';
+import { INotificacionStrategy, ResultadoEnvio } from '../domain/INotificacionStrategy';
+import { CanalNotificacion, PreferenciaCanalRepository } from '../domain/contracts';
+
+export class NotificacionService {
+  constructor(
+    private readonly estrategias: INotificacionStrategy[],
+    private readonly preferenciaRepository: PreferenciaCanalRepository,
+  ) {}
+
+  async notificar(
+    notificacion: NotificacionDTO,
+    usuarioId: string,
+    tipoEvento: CategoriaEvento,
+  ): Promise<ResultadoEnvio[]> {
+    const preferencias = await this.preferenciaRepository.obtenerPreferencias(usuarioId, tipoEvento);
+    const resultados: ResultadoEnvio[] = [];
+
+    for (const estrategia of this.estrategias) {
+      if (!preferencias.canalesActivos.includes(estrategia.canal as CanalNotificacion)) {
+        continue;
+      }
+
+      try {
+        const resultado = await estrategia.enviar(notificacion);
+        resultados.push(resultado);
+      } catch (error) {
+        resultados.push({
+          canal: estrategia.canal,
+          exito: false,
+          error: error instanceof Error ? error.message : 'Error desconocido',
+        });
+      }
+    }
+
+    return resultados;
+  }
+}

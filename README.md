@@ -66,11 +66,90 @@ Variables adicionales soportadas:
 ## Scripts disponibles
 
 - `npm run dev`: levanta el servidor en desarrollo con nodemon.
-- `npm run build`: compila TypeScript a `dist/`.
+- `npm run generate:openapi`: genera `openapi.json` desde los JSDoc de las rutas.
+- `npm run build`: genera `openapi.json` y compila TypeScript a `dist/`.
 - `npm start`: ejecuta el servidor compilado (`dist/server.js`).
 - `npm test`: ejecuta pruebas con Jest.
 - `npm run test:watch`: ejecuta pruebas en modo watch.
 - `npm run test:coverage`: genera cobertura de pruebas.
+
+## Documentación viva del API (OpenAPI 3)
+
+La especificación OpenAPI 3 se genera automáticamente desde los comentarios JSDoc de cada archivo `*.routes.ts`.
+
+### Acceder a Swagger UI
+
+Con el servidor corriendo, visita:
+
+```
+http://localhost:3000/docs
+```
+
+Verás todos los endpoints, DTOs, parámetros y códigos de respuesta documentados e interactivos.
+
+### Descargar el spec en JSON
+
+```
+GET http://localhost:3000/openapi.json
+```
+
+### Cómo agregar un endpoint nuevo (guía paso a paso)
+
+1. **Crea la ruta** en `src/modules/<modulo>/interfaces/http/<modulo>.routes.ts` con el comentario JSDoc:
+
+```ts
+/**
+ * @swagger
+ * /api/mi-modulo:
+ *   get:
+ *     summary: Descripción breve
+ *     tags: [MiModulo]
+ *     responses:
+ *       200:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data: { $ref: '#/components/schemas/MiDTO' }
+ */
+router.get('/', verificarJWT, MiController.listar);
+```
+
+2. **(Opcional) Agrega el schema** del DTO en `src/docs/swagger.ts` dentro de `components.schemas`.
+
+3. **Regenera el spec** (se ejecuta automáticamente en `npm run build`):
+
+```bash
+npm run generate:openapi
+```
+
+4. **Regenera los tipos TypeScript** en el monorepo frontend:
+
+```bash
+cd ../Frontend-UnConnect
+npm run generate:api-types
+```
+
+5. **Usa el tipo en web o móvil**:
+
+```ts
+import type { components } from '@uniconnect/api-types';
+
+type MiDTO = components['schemas']['MiDTO'];
+```
+
+6. **Valida la respuesta con Zod** (añade el schema en `packages/api-types/src/schemas.ts`):
+
+```ts
+import { MiDTOSchema } from '@uniconnect/api-types';
+
+const data = MiDTOSchema.parse(response.data);
+```
+
+Si el contrato del backend cambia y el cliente no actualiza, **la compilación TypeScript fallará**, impidiendo que el error llegue a runtime.
 
 ## Ejecución
 
@@ -200,6 +279,45 @@ ngrok http 3001
 
 ```
 
-## Despliegue
-- **URL Base:** https://tu-app.fly.dev
-- **Health Check:** https://tu-app.fly.dev/health
+## 🚀 CI/CD y Despliegue Continuo (Pipeline)
+
+El backend de UniConnect utiliza un flujo automatizado de integración y despliegue continuo mediante **GitHub Actions**, garantizando la robustez del código, la cobertura de pruebas, la notificación instantánea al equipo y la recuperación ante fallas.
+
+### 📊 Diagrama de Flujo Completo
+
+El pipeline se compone de tres workflows principales que interactúan de la siguiente manera:
+
+![alt text](<Untitled diagram-2026-05-18-001337.png>)
+
+---
+
+### 🌐 Entornos Disponibles
+
+El proyecto cuenta con dos entornos principales de ejecución:
+
+| Entorno | Propósito | URL Base / Acceso | Health Check / Metadata |
+| :--- | :--- | :--- | :--- |
+| **Desarrollo (Local)** | Pruebas locales y desarrollo activo | `http://localhost:3000` *(o `3001` con ngrok)* | `http://localhost:3000/health` *(commit: `"development"`)* |
+| **Producción (Fly.io)** | Servidor real para el frontend de UniConnect | `https://uniconnect-backend.fly.dev` | `https://uniconnect-backend.fly.dev/health` *(commit: `git_hash`)* |
+
+---
+
+### 🔐 Secretos Requeridos en GitHub Actions
+
+Para asegurar el correcto funcionamiento del pipeline y sus integraciones, se deben configurar los siguientes secretos en el repositorio (`Settings > Secrets and variables > Actions > New repository secret`):
+
+1. **`FLY_API_TOKEN`**:
+   - **Descripción**: Token de acceso de Fly.io para compilar de forma remota, publicar imágenes y realizar reversiones (rollbacks) automáticas en caso de fallo.
+   - **Obtención**: Se genera en la consola de Fly.io con el comando `flyctl auth token` o desde el dashboard web.
+2. **`SLACK_WEBHOOK_URL`**:
+   - **Descripción**: URL del Webhook de Slack utilizada para enviar notificaciones automáticas y alertas en tiempo real al canal del equipo (despliegues exitosos, fallas del pipeline o rollbacks).
+   - **Obtención**: Configurando una App en el espacio de trabajo de Slack con la característica "Incoming Webhooks".
+3. **`GITHUB_TOKEN`** *(Implícito)*:
+   - **Descripción**: Token proporcionado de manera automática y segura por GitHub Actions, utilizado por el pipeline para comentar y actualizar los reportes de cobertura en los Pull Requests abiertos. No requiere configuración manual.
+
+---
+
+> [!IMPORTANT]
+> **Políticas de Resiliencia en Producción:**
+> - El merge a la rama principal está bloqueado si la cobertura de pruebas de un Pull Request cae por debajo del **80%**.
+> - En caso de que una nueva versión se despliegue en Fly.io pero no pase el Health Check post-despliegue, el pipeline se autodeclara fallido y se ejecuta un **Rollback automático por hardware** para mantener el servicio activo en la versión anterior estable sin causar downtime.

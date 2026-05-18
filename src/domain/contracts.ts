@@ -86,12 +86,16 @@ export interface GroupMemberView {
   };
 }
 
+export type GroupStatus = 'ACTIVO' | 'PENDIENTE_TRANSFERENCIA' | 'TRANSFERENCIA_ACEPTADA' | 'TRANSFERENCIA_RECHAZADA' | 'CANCELADO' | 'CERRADO';
+
 export interface GroupRecord {
   id: string;
   nombre: string;
   materiaId: string;
   creadorId: string;
   administradorId: string;
+  candidatoAdminId: string | null;
+  estado: GroupStatus;
   createdAt: Date;
   materia: CatalogItem;
   miembros: GroupMemberView[];
@@ -163,6 +167,96 @@ export interface CreateMessageData {
   receptorId: string;
 }
 
+/**
+ * Mención en un mensaje individual
+ */
+export interface MencionMensajeRecord {
+  id: string;
+  mensajeId: string;
+  usuarioMencionadoId: string;
+  usuarioMencionado?: {
+    id: string;
+    nombre: string;
+    apellido: string;
+    correo: string;
+  };
+  createdAt: Date;
+}
+
+/**
+ * Mención en un mensaje de grupo
+ */
+export interface MencionMensajeGrupoRecord {
+  id: string;
+  mensajeId: string;
+  usuarioMencionadoId: string;
+  usuarioMencionado?: {
+    id: string;
+    nombre: string;
+    apellido: string;
+    correo: string;
+  };
+  createdAt: Date;
+}
+
+/**
+ * Reacción a un mensaje individual
+ */
+export interface ReaccionMensajeRecord {
+  id: string;
+  mensajeId: string;
+  usuarioId: string;
+  emoji: string;
+  usuario?: {
+    id: string;
+    nombre: string;
+    apellido: string;
+  };
+  createdAt: Date;
+}
+
+/**
+ * Reacción a un mensaje de grupo
+ */
+export interface ReaccionMensajeGrupoRecord {
+  id: string;
+  mensajeId: string;
+  usuarioId: string;
+  emoji: string;
+  usuario?: {
+    id: string;
+    nombre: string;
+    apellido: string;
+  };
+  createdAt: Date;
+}
+
+/**
+ * Vista agrupada de reacciones a un mensaje
+ */
+export interface ReaccionAgrupadaView {
+  emoji: string;
+  count: number;
+  usuarios: Array<{ id: string; nombre: string; apellido: string }>;
+}
+
+/**
+ * Datos para crear una mención
+ */
+export interface CreateMencionData {
+  mensajeId: string;
+  usuarioMencionadoId: string;
+}
+
+/**
+ * Datos para crear una reacción
+ */
+export interface CreateReaccionData {
+  mensajeId: string;
+  usuarioId: string;
+  emoji: string;
+}
+
 export type CategoriaEvento = 'academico' | 'cultural' | 'deportivo' | 'otro';
 
 export const CATEGORIAS_EVENTO: CategoriaEvento[] = ['academico', 'cultural', 'deportivo', 'otro'];
@@ -193,6 +287,86 @@ export interface CreateEventData {
   fechaEvento: Date;
   categoria: CategoriaEvento;
   creadorId: string;
+}
+
+export const POLL_STATUS = ['OPEN', 'CLOSED'] as const;
+
+export type PollStatus = (typeof POLL_STATUS)[number];
+
+export const POLL_TARGET_TYPES = ['CHAT', 'CHANNEL'] as const;
+
+export type PollTargetType = (typeof POLL_TARGET_TYPES)[number];
+
+export interface PollTarget {
+  type: PollTargetType;
+  id: string;
+}
+
+export interface PollOptionRecord {
+  id: string;
+  pollId: string;
+  text: string;
+  position: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface PollVoteRecord {
+  id: string;
+  pollId: string;
+  optionId: string;
+  voterId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface PollRecord {
+  id: string;
+  question: string;
+  status: PollStatus;
+  target: PollTarget;
+  createdById: string;
+  autoCloseAt?: Date | null;
+  closedAt?: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreatePollOptionData {
+  text: string;
+  position?: number;
+}
+
+export interface CreatePollData {
+  question: string;
+  target: PollTarget;
+  createdById: string;
+  options: CreatePollOptionData[];
+  autoCloseAt?: Date | null;
+}
+
+export interface CreatePollVoteData {
+  pollId: string;
+  optionId: string;
+  voterId: string;
+}
+
+export interface UpdatePollStatusData {
+  status: PollStatus;
+  closedAt?: Date | null;
+}
+
+export interface PollOptionView extends PollOptionRecord {
+  votos?: number;
+  porcentaje?: number;
+}
+
+export interface PollWithOptionsRecord extends PollRecord {
+  opciones: PollOptionView[];
+}
+
+export interface PollBroadcastRecord extends PollWithOptionsRecord {
+  grupoId: string;
 }
 
 export interface CountResult {
@@ -289,6 +463,10 @@ export interface GroupRepository {
   countByMateria(materiaId: string): Promise<number>;
   join(grupoId: string, usuarioId: string): Promise<void>;
   updateAdministrador(grupoId: string, nuevoAdminId: string): Promise<void>;
+  /** Persiste la transición de estado del patrón State */
+  updateEstado(grupoId: string, estado: GroupStatus): Promise<void>;
+  /** Guarda el candidato a admin durante el flujo de transferencia */
+  updateCandidatoAdmin(grupoId: string, candidatoId: string | null): Promise<void>;
   leave(grupoId: string, usuarioId: string): Promise<void>;
   deleteGroup(grupoId: string): Promise<void>;
 }
@@ -308,12 +486,32 @@ export interface MessageRepository {
     emisorId: string;
   }): Promise<GroupMessageRecord>;
   getGroupHistory(grupoId: string, limit: number): Promise<GroupMessageRecord[]>;
+  // Menciones
+  addMencion(data: CreateMencionData, esGrupo: boolean): Promise<MencionMensajeRecord | MencionMensajeGrupoRecord>;
+  getMencionesByMensaje(mensajeId: string, esGrupo: boolean): Promise<(MencionMensajeRecord | MencionMensajeGrupoRecord)[]>;
+  getMencionesPendientes(usuarioId: string): Promise<(MencionMensajeRecord | MencionMensajeGrupoRecord)[]>;
+  // Reacciones
+  addReaccion(data: CreateReaccionData, esGrupo: boolean): Promise<ReaccionMensajeRecord | ReaccionMensajeGrupoRecord>;
+  removeReaccion(mensajeId: string, usuarioId: string, emoji: string, esGrupo: boolean): Promise<any>;
+  getReaccionesByMensaje(mensajeId: string, esGrupo: boolean): Promise<ReaccionAgrupadaView[]>;
 }
 
 export interface EventRepository {
   create(data: CreateEventData): Promise<EventRecord>;
   listUpcoming(): Promise<EventRecord[]>;
   listByCategoria(categoria: CategoriaEvento): Promise<EventRecord[]>;
+}
+
+export interface PollRepository {
+  create(data: CreatePollData): Promise<PollRecord>;
+  findById(id: string): Promise<PollRecord | null>;
+  findExpiredOpen(now: Date): Promise<PollRecord[]>;
+  listByTarget(target: PollTarget): Promise<PollRecord[]>;
+  listOptionsByPollId(pollId: string): Promise<PollOptionRecord[]>;
+  listVotesByPollId(pollId: string): Promise<PollVoteRecord[]>;
+  addOption(pollId: string, data: CreatePollOptionData): Promise<PollOptionRecord>;
+  vote(data: CreatePollVoteData): Promise<PollVoteRecord>;
+  updateStatus(pollId: string, data: UpdatePollStatusData): Promise<PollRecord>;
 }
 
 export interface PasswordService {
@@ -345,6 +543,14 @@ export interface TokenBlacklistService {
 export interface MessageGateway {
   emitNewMessage(payload: MessageRecord): void;
   emitNewGroupMessage(payload: GroupMessageRecord): void;
+  emitMencion(payload: MencionMensajeRecord | MencionMensajeGrupoRecord): void;
+  emitReaccion(payload: ReaccionMensajeRecord | ReaccionMensajeGrupoRecord): void;
+  emitRemoveReaccion(mensajeId: string, usuarioId: string, emoji: string, esGrupo: boolean, reaccionInfo?: any): void;
+}
+
+export interface PollGateway {
+  emitNewPoll(payload: PollBroadcastRecord): void;
+  emitUpdatedPoll(payload: PollBroadcastRecord): void;
 }
 
 // ── Eventos de Grupo (Observer Pattern) ──
@@ -375,6 +581,41 @@ export interface GroupEventObserver {
     anteriorAdminNombre: string;
     nuevoAdminId: string;
     nuevoAdminNombre: string;
+  }): void;
+
+  onTransferenciaPendiente(payload: {
+    grupoId: string;
+    grupoNombre: string;
+    adminId: string;
+    candidatoId: string;
+    candidatoNombre: string;
+    nuevoEstado: GroupStatus;
+  }): void;
+
+  onTransferenciaAceptada(payload: {
+    grupoId: string;
+    grupoNombre: string;
+    anteriorAdminId: string;
+    nuevoAdminId: string;
+    nuevoAdminNombre: string;
+    nuevoEstado: GroupStatus;
+  }): void;
+
+  onTransferenciaRechazada(payload: {
+    grupoId: string;
+    grupoNombre: string;
+    adminId: string;
+    candidatoId: string;
+    candidatoNombre: string;
+    nuevoEstado: GroupStatus;
+  }): void;
+
+  onTransferenciaCancelada(payload: {
+    grupoId: string;
+    grupoNombre: string;
+    adminId: string;
+    candidatoId: string;
+    nuevoEstado: GroupStatus;
   }): void;
 }
 

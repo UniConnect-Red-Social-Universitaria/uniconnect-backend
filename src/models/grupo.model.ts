@@ -1,4 +1,5 @@
 import prisma from "../lib/prisma";
+import { GroupStatus, GroupMemberView } from "../domain/contracts";
 
 function grupoDelegate() {
   const prismaDinamico = prisma as unknown as {
@@ -9,6 +10,8 @@ function grupoDelegate() {
         materiaId: string;
         creadorId: string;
         administradorId: string;
+        candidatoAdminId: string | null;
+        estado: GroupStatus;
         createdAt: Date;
         materia: { id: string; nombre: string };
         miembros: Array<{ id: string }>;
@@ -20,6 +23,8 @@ function grupoDelegate() {
           materiaId: string;
           creadorId: string;
           administradorId: string;
+          candidatoAdminId: string | null;
+          estado: GroupStatus;
           createdAt: Date;
           materia: { id: string; nombre: string };
           miembros: Array<{
@@ -39,13 +44,17 @@ function grupoDelegate() {
         materiaId: string;
         creadorId: string;
         administradorId: string;
+        candidatoAdminId: string | null;
+        estado: GroupStatus;
         createdAt: Date;
         materia: { id: string; nombre: string };
         miembros: Array<{
           id: string;
           usuarioId: string;
+          usuario?: { id: string; nombre: string; apellido: string };
         }>;
       } | null>;
+      update: (args: unknown) => Promise<{ id: string }>;
     };
   };
 
@@ -202,6 +211,8 @@ export class GrupoModel {
         materiaId: true,
         creadorId: true,
         administradorId: true,
+        candidatoAdminId: true,
+        estado: true,
         createdAt: true,
       },
       orderBy: {
@@ -222,39 +233,37 @@ export class GrupoModel {
 
     const materiasPorId = new Map(materias.map((materia) => [materia.id, materia]));
 
+    type GrupoNormalizado = {
+      id: string;
+      nombre: string;
+      materiaId: string;
+      creadorId: string;
+      administradorId: string;
+      candidatoAdminId: string | null;
+      estado: GroupStatus;
+      createdAt: Date;
+      materia: { id: string; nombre: string };
+      miembros: GroupMemberView[];
+    };
+
     const gruposNormalizados = grupos
-      .map((grupo) => {
+      .map((grupo): GrupoNormalizado | null => {
         const materia = materiasPorId.get(grupo.materiaId);
-
-        if (!materia) {
-          return null;
-        }
-
+        if (!materia) return null;
         return {
           id: grupo.id,
           nombre: grupo.nombre,
           materiaId: grupo.materiaId,
           creadorId: grupo.creadorId,
           administradorId: grupo.administradorId,
+          candidatoAdminId: (grupo.candidatoAdminId as string | null | undefined) ?? null,
+          estado: grupo.estado as GroupStatus,
           createdAt: grupo.createdAt,
           materia,
-          miembros: [],
+          miembros: [] as GroupMemberView[],
         };
       })
-      .filter(
-        (
-          grupo,
-        ): grupo is {
-          id: string;
-          nombre: string;
-          materiaId: string;
-          creadorId: string;
-          administradorId: string;
-          createdAt: Date;
-          materia: { id: string; nombre: string };
-          miembros: [];
-        } => !!grupo,
-      );
+      .filter((grupo): grupo is GrupoNormalizado => grupo !== null);
 
     return gruposNormalizados.filter((grupo) => {
 
@@ -289,9 +298,23 @@ export class GrupoModel {
   }
 
   static async actualizarAdministrador(grupoId: string, nuevoAdminId: string) {
-    return prisma.grupo.update({
+    return grupoDelegate().update({
       where: { id: grupoId },
       data: { administradorId: nuevoAdminId },
+    });
+  }
+
+  static async actualizarEstado(grupoId: string, estado: GroupStatus) {
+    return grupoDelegate().update({
+      where: { id: grupoId },
+      data: { estado },
+    });
+  }
+
+  static async actualizarCandidatoAdmin(grupoId: string, candidatoId: string | null) {
+    return grupoDelegate().update({
+      where: { id: grupoId },
+      data: { candidatoAdminId: candidatoId },
     });
   }
 

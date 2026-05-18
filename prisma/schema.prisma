@@ -33,6 +33,18 @@ model Usuario {
   mensajesGrupoEnviados GrupoMensaje[] @relation("MensajesGrupoEnviados")
   archivosGrupoSubidos GrupoArchivo[] @relation("ArchivosGrupoSubidos")
   eventosCreados Evento[] @relation("EventosCreados")
+  foroPreguntas  ForoPregunta[]
+  foroRespuestas ForoRespuesta[]
+  foroVotos      ForoVoto[]
+  encuestasCreadas Encuesta[]
+  votosEncuesta   EncuestaVoto[]
+  seriesEstudio   SesionEstudioSerie[]
+  sesionesEstudio SesionEstudio[]
+  mencionesMensajes MencionMensaje[] @relation("MencionesMensajes")
+  mencionesMensajesGrupo MencionMensajeGrupo[] @relation("MencionesMensajesGrupo")
+  reaccionesMensajes ReaccionMensaje[] @relation("ReaccionesMensajes")
+  reaccionesMensajesGrupo ReaccionMensajeGrupo[] @relation("ReaccionesMensajesGrupo")
+  recursosCreados Recurso[] @relation("RecursosCreados")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -59,11 +71,12 @@ model Contacto {
 }
 
 model Materia {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  nombre    String   @unique
+  id        String         @id @default(auto()) @map("_id") @db.ObjectId
+  nombre    String         @unique
   grupos    Grupo[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  preguntas ForoPregunta[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
 }
 
 model Grupo {
@@ -72,6 +85,7 @@ model Grupo {
   materiaId String        @db.ObjectId
   creadorId String        @db.ObjectId
   administradorId String  @db.ObjectId
+  candidatoAdminId String? @db.ObjectId
   estado    EstadoGrupo   @default(ACTIVO)
   materia   Materia       @relation(fields: [materiaId], references: [id])
   creador   Usuario       @relation("GruposCreados", fields: [creadorId], references: [id])
@@ -80,6 +94,8 @@ model Grupo {
   solicitudesIngreso SolicitudGrupo[]
   mensajes  GrupoMensaje[]
   archivos  GrupoArchivo[]
+  encuestas Encuesta[]
+  recursos  Recurso[]
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 }
@@ -115,6 +131,8 @@ model Mensaje {
   receptorId String   @db.ObjectId
   emisor     Usuario  @relation("MensajesEnviados", fields: [emisorId], references: [id])
   receptor   Usuario  @relation("MensajesRecibidos", fields: [receptorId], references: [id])
+  menciones  MencionMensaje[]
+  reacciones ReaccionMensaje[]
   createdAt  DateTime @default(now())
 }
 
@@ -125,6 +143,8 @@ model GrupoMensaje {
   emisorId   String   @db.ObjectId
   grupo      Grupo    @relation(fields: [grupoId], references: [id])
   emisor     Usuario  @relation("MensajesGrupoEnviados", fields: [emisorId], references: [id])
+  menciones  MencionMensajeGrupo[]
+  reacciones ReaccionMensajeGrupo[]
   createdAt  DateTime @default(now())
 }
 
@@ -155,6 +175,137 @@ model Evento {
   updatedAt   DateTime @updatedAt
 }
 
+model ForoPregunta {
+  id         String        @id @default(auto()) @map("_id") @db.ObjectId
+  titulo     String
+  contenido  String
+  autorId    String        @db.ObjectId
+  materiaId  String        @db.ObjectId
+  autor      Usuario       @relation(fields: [autorId], references: [id])
+  materia    Materia       @relation(fields: [materiaId], references: [id])
+  respuestas ForoRespuesta[]
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+}
+
+model ForoRespuesta {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  contenido   String
+  autorId     String     @db.ObjectId
+  preguntaId  String     @db.ObjectId
+  puntuacion  Int        @default(0)
+  autor       Usuario    @relation(fields: [autorId], references: [id])
+  pregunta    ForoPregunta @relation(fields: [preguntaId], references: [id])
+  votos       ForoVoto[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model ForoVoto {
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  usuarioId    String        @db.ObjectId
+  respuestaId  String        @db.ObjectId
+  valor        Int
+  usuario      Usuario       @relation(fields: [usuarioId], references: [id])
+  respuesta    ForoRespuesta @relation(fields: [respuestaId], references: [id])
+  createdAt    DateTime      @default(now())
+
+  @@unique([usuarioId, respuestaId])
+}
+
+model Encuesta {
+  id           String          @id @default(auto()) @map("_id") @db.ObjectId
+  pregunta     String
+  estado       EstadoEncuesta  @default(OPEN)
+  chatId       String?         @db.ObjectId
+  grupoId      String?         @db.ObjectId
+  creadorId    String          @db.ObjectId
+  autoCloseAt  DateTime?
+  closedAt     DateTime?
+  creador      Usuario         @relation(fields: [creadorId], references: [id])
+  grupo        Grupo?          @relation(fields: [grupoId], references: [id])
+  opciones     EncuestaOpcion[]
+  votos        EncuestaVoto[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([estado, autoCloseAt])
+  @@index([grupoId])
+  @@index([chatId])
+  @@index([creadorId, createdAt])
+}
+
+model EncuestaOpcion {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  encuestaId  String    @db.ObjectId
+  texto       String
+  orden       Int
+  encuesta    Encuesta  @relation(fields: [encuestaId], references: [id])
+  votos       EncuestaVoto[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([encuestaId])
+  @@index([encuestaId, orden])
+}
+
+model EncuestaVoto {
+  id           String         @id @default(auto()) @map("_id") @db.ObjectId
+  encuestaId   String         @db.ObjectId
+  opcionId     String         @db.ObjectId
+  usuarioId    String         @db.ObjectId
+  encuesta     Encuesta       @relation(fields: [encuestaId], references: [id])
+  opcion       EncuestaOpcion @relation(fields: [opcionId], references: [id])
+  usuario      Usuario        @relation(fields: [usuarioId], references: [id])
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@unique([encuestaId, usuarioId])
+  @@index([encuestaId])
+  @@index([opcionId])
+  @@index([usuarioId])
+}
+
+model SesionEstudioSerie {
+  id                  String                @id @default(auto()) @map("_id") @db.ObjectId
+  titulo              String
+  descripcion         String
+  lugar               String
+  frecuencia          FrecuenciaRecurrencia
+  fechaInicio         DateTime
+  fechaFin            DateTime
+  recordatorioMinutos Int                   @default(30)
+  creadorId           String                @db.ObjectId
+  creador             Usuario               @relation(fields: [creadorId], references: [id])
+  sesiones            SesionEstudio[]
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+}
+
+model SesionEstudio {
+  id                  String              @id @default(auto()) @map("_id") @db.ObjectId
+  titulo              String
+  descripcion         String
+  lugar               String
+  fecha               DateTime
+  recordatorioMinutos Int                 @default(30)
+  cancelada           Boolean             @default(false)
+  modificada          Boolean             @default(false)
+  recordatorioEnviado Boolean             @default(false)
+  serieId             String              @db.ObjectId
+  creadorId           String              @db.ObjectId
+  serie               SesionEstudioSerie  @relation(fields: [serieId], references: [id])
+  creador             Usuario             @relation(fields: [creadorId], references: [id])
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+}
+
+enum FrecuenciaRecurrencia {
+  DIARIA
+  SEMANAL
+  QUINCENAL
+}
+
 enum EstadoContacto {
   PENDIENTE
   ACEPTADA
@@ -163,6 +314,10 @@ enum EstadoContacto {
 
 enum EstadoGrupo {
   ACTIVO
+  PENDIENTE_TRANSFERENCIA
+  TRANSFERENCIA_ACEPTADA
+  TRANSFERENCIA_RECHAZADA
+  CANCELADO
   CERRADO
 }
 
@@ -170,4 +325,83 @@ enum EstadoSolicitudGrupo {
   PENDIENTE
   APROBADA
   RECHAZADA
+}
+
+enum EstadoEncuesta {
+  OPEN
+  CLOSED
+}
+
+// Menciones en mensajes individuales
+model MencionMensaje {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  mensajeId String   @db.ObjectId
+  usuarioMencionadoId String @db.ObjectId
+  mensaje   Mensaje  @relation(fields: [mensajeId], references: [id], onDelete: Cascade)
+  usuarioMencionado Usuario @relation("MencionesMensajes", fields: [usuarioMencionadoId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([mensajeId, usuarioMencionadoId])
+  @@index([mensajeId])
+  @@index([usuarioMencionadoId])
+}
+
+// Menciones en mensajes de grupo
+model MencionMensajeGrupo {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  mensajeId String   @db.ObjectId
+  usuarioMencionadoId String @db.ObjectId
+  mensaje   GrupoMensaje @relation(fields: [mensajeId], references: [id], onDelete: Cascade)
+  usuarioMencionado Usuario @relation("MencionesMensajesGrupo", fields: [usuarioMencionadoId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([mensajeId, usuarioMencionadoId])
+  @@index([mensajeId])
+  @@index([usuarioMencionadoId])
+}
+
+model Recurso {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  titulo    String
+  contenido String
+  tipo      String   @default("ARCHIVO")
+  metadata  Json?
+  grupoId   String   @db.ObjectId
+  creadorId String   @db.ObjectId
+  grupo     Grupo    @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+  creador   Usuario  @relation("RecursosCreados", fields: [creadorId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([grupoId])
+}
+
+// Reacciones a mensajes individuales
+model ReaccionMensaje {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  mensajeId String   @db.ObjectId
+  usuarioId String   @db.ObjectId
+  emoji     String   // emoji (ej: "👍", "❤️", "😂", etc.)
+  mensaje   Mensaje  @relation(fields: [mensajeId], references: [id], onDelete: Cascade)
+  usuario   Usuario  @relation("ReaccionesMensajes", fields: [usuarioId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([mensajeId, usuarioId, emoji])
+  @@index([mensajeId])
+  @@index([usuarioId])
+}
+
+// Reacciones a mensajes de grupo
+model ReaccionMensajeGrupo {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  mensajeId String   @db.ObjectId
+  usuarioId String   @db.ObjectId
+  emoji     String   // emoji (ej: "👍", "❤️", "😂", etc.)
+  mensaje   GrupoMensaje @relation(fields: [mensajeId], references: [id], onDelete: Cascade)
+  usuario   Usuario  @relation("ReaccionesMensajesGrupo", fields: [usuarioId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([mensajeId, usuarioId, emoji])
+  @@index([mensajeId])
+  @@index([usuarioId])
 }

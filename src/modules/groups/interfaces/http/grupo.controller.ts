@@ -62,6 +62,19 @@ export class GrupoController {
     }
   }
 
+  static async obtenerGrupo(req: Request, res: Response) {
+    try {
+      const resultado = await groupUseCases.obtenerGrupo(req.usuario, req.params.id);
+
+      return res.json({
+        success: true,
+        data: resultado.data,
+      });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al obtener el grupo');
+    }
+  }
+
   static async listarGruposDisponibles(req: Request, res: Response) {
     try {
       const resultado = await groupUseCases.listarGruposDisponibles(req.usuario);
@@ -189,16 +202,52 @@ export class GrupoController {
     }
   }
 
-  static async cederAdministracion(req: Request, res: Response) {
+  static async iniciarTransferencia(req: Request, res: Response) {
     try {
-      const resultado = await groupUseCases.cederAdministracion(
+      const resultado = await groupUseCases.iniciarTransferenciaAdministracion(
         req.usuario,
         req.params.id,
-        req.body?.nuevoAdminId,
+        req.body?.candidatoId,
       );
       return res.json({ success: true, message: resultado.message });
     } catch (error) {
-      return handleControllerError(res, error, 'Error al ceder la administración');
+      return handleControllerError(res, error, 'Error al iniciar la transferencia de administración');
+    }
+  }
+
+  static async aceptarTransferencia(req: Request, res: Response) {
+    try {
+      const resultado = await groupUseCases.aceptarTransferenciaAdministracion(
+        req.usuario,
+        req.params.id,
+      );
+      return res.json({ success: true, message: resultado.message });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al aceptar la transferencia de administración');
+    }
+  }
+
+  static async rechazarTransferencia(req: Request, res: Response) {
+    try {
+      const resultado = await groupUseCases.rechazarTransferenciaAdministracion(
+        req.usuario,
+        req.params.id,
+      );
+      return res.json({ success: true, message: resultado.message });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al rechazar la transferencia de administración');
+    }
+  }
+
+  static async cancelarTransferencia(req: Request, res: Response) {
+    try {
+      const resultado = await groupUseCases.cancelarTransferenciaAdministracion(
+        req.usuario,
+        req.params.id,
+      );
+      return res.json({ success: true, message: resultado.message });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al cancelar la transferencia de administración');
     }
   }
 

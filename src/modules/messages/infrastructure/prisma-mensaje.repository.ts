@@ -1,4 +1,13 @@
-import { MessageRepository } from '../../../domain/contracts';
+import {
+  MessageRepository,
+  MencionMensajeRecord,
+  MencionMensajeGrupoRecord,
+  ReaccionMensajeRecord,
+  ReaccionMensajeGrupoRecord,
+  ReaccionAgrupadaView,
+  CreateMencionData,
+  CreateReaccionData,
+} from '../../../domain/contracts';
 import { MensajeModel } from '../../../models/mensaje.model';
 
 export class PrismaMensajeRepository implements MessageRepository {
@@ -20,5 +29,31 @@ export class PrismaMensajeRepository implements MessageRepository {
 
   async getGroupHistory(grupoId: string, limit: number) {
     return MensajeModel.obtenerHistorialGrupo(grupoId, limit);
+  }
+
+  // Métodos para menciones
+  async addMencion(data: CreateMencionData, esGrupo: boolean): Promise<MencionMensajeRecord | MencionMensajeGrupoRecord> {
+    return MensajeModel.agregarMencion(data, esGrupo);
+  }
+
+  async getMencionesByMensaje(mensajeId: string, esGrupo: boolean): Promise<(MencionMensajeRecord | MencionMensajeGrupoRecord)[]> {
+    return MensajeModel.obtenerMencionesMensaje(mensajeId, esGrupo);
+  }
+
+  async getMencionesPendientes(usuarioId: string): Promise<(MencionMensajeRecord | MencionMensajeGrupoRecord)[]> {
+    return MensajeModel.obtenerMencionesPendientes(usuarioId);
+  }
+
+  // Métodos para reacciones
+  async addReaccion(data: CreateReaccionData, esGrupo: boolean): Promise<ReaccionMensajeRecord | ReaccionMensajeGrupoRecord> {
+    return MensajeModel.agregarReaccion(data, esGrupo);
+  }
+
+  async removeReaccion(mensajeId: string, usuarioId: string, emoji: string, esGrupo: boolean): Promise<any> {
+    return MensajeModel.removerReaccion(mensajeId, usuarioId, emoji, esGrupo);
+  }
+
+  async getReaccionesByMensaje(mensajeId: string, esGrupo: boolean): Promise<ReaccionAgrupadaView[]> {
+    return MensajeModel.obtenerReaccionesMensaje(mensajeId, esGrupo);
   }
 }

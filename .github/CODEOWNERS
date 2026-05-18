@@ -1,0 +1,54 @@
+# CODEOWNERS for uniconnect-backend
+# Documentación: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for all files in the repo
+*       @cristian-co @jackeline-rivera
+
+# Infrastructure & Database
+prisma/                             @cristian-co
+src/infrastructure/                 @cristian-co
+src/lib/prisma.ts                   @cristian-co
+
+# Authentication & Security  
+src/lib/auth.ts                     @cristian-co
+src/lib/token-blacklist.ts          @cristian-co
+src/middleware/autenticacion.middleware.ts      @cristian-co
+src/middleware/correo-institucional.middleware.ts   @cristian-co
+
+# Real-time & Notifications
+src/lib/socket.ts                   @jackeline-rivera
+src/shared/eventos-observer/        @jackeline-rivera
+src/shared/mensajes-observer/       @jackeline-rivera
+src/shared/mensajes-decorator/      @jackeline-rivera
+src/shared/notificacion/            @jackeline-rivera
+
+# Groups Module
+src/modules/groups/                 @jackeline-rivera
+
+# Messages/Chat Module
+src/modules/messages/               @jackeline-rivera
+
+# User Module  
+src/modules/users/                  @cristian-co
+
+# Events Module
+src/modules/events/                 @cristian-co
+
+# Testing
+tests/                              @cristian-co @jackeline-rivera
+jest.config.cjs                     @cristian-co
+tsconfig.jest.json                  @cristian-co
+
+# CI/CD Pipelines
+.github/workflows/                  @cristian-co
+Dockerfile*                         @cristian-co
+docker-entrypoint.sh                @cristian-co
+fly.toml                            @cristian-co
+
+# Configuration
+tsconfig*.json                      @cristian-co
+package*.json                       @cristian-co
+.env.example                        @cristian-co
+
+# Documentation
+*.md                                @cristian-co @jackeline-rivera

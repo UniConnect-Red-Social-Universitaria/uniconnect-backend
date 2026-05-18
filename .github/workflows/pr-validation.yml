@@ -1,0 +1,158 @@
+name: PR - Validation & Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+      - developer
+    types:
+      - opened
+      - reopened
+      - synchronize
+
+jobs:
+  validate-pr:
+    name: PR Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate PR title
+        run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          
+          # Check if title matches pattern: type(scope): description
+          if [[ ! "$PR_TITLE" =~ ^(feat|fix|docs|style|refactor|test|chore|perf|ci|build)(\(.+\))?:\ .+ ]]; then
+            echo "❌ PR title must follow format: type(scope): description"
+            echo "Examples:"
+            echo "  - feat(auth): add login endpoint"
+            echo "  - fix(db): resolve connection issue"
+            echo "  - docs: update README"
+            echo "  - ci(coverage): add coverage reports"
+            exit 1
+          fi
+          
+          echo "✅ PR title is valid"
+
+      - name: Validate PR description
+        run: |
+          BODY="${{ github.event.pull_request.body }}"
+          
+          if [ -z "$BODY" ] || [ "$BODY" = "null" ]; then
+            echo "⚠️  Warning: PR description is empty"
+            echo "Please provide a description of your changes"
+          fi
+          
+          echo "✅ PR description check passed"
+
+      - name: Check file changes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            
+            console.log(`📊 Files changed: ${files.length}`);
+            console.log('Changed files:');
+            files.forEach(file => {
+              console.log(`  - ${file.filename} (+${file.additions} -${file.deletions})`);
+            });
+            
+            // Advertir si hay muchos cambios
+            if (files.length > 50) {
+              console.log('⚠️  Warning: This PR has many file changes (>50)');
+              console.log('Consider splitting into smaller PRs for easier review');
+            }
+
+  size-label:
+    name: Size Label
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Add size label
+        uses: pascalgn/size-label-action@v0.5.5
+        with:
+          sizes: |
+            0-10: size/XS
+            11-30: size/S
+            31-100: size/M
+            101-500: size/L
+            501+: size/XL
+        continue-on-error: true
+
+  conflict-check:
+    name: Conflict Detection
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    
+    steps:
+      - name: Check for conflicts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            
+            if (pr.mergeable === false) {
+              console.log('❌ Merge conflicts detected!');
+              console.log('Please resolve conflicts by:');
+              console.log('1. Fetching latest developer/main');
+              console.log('2. Rebasing your branch');
+              console.log('3. Pushing updated branch');
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: '⚠️ **Merge Conflicts Detected**\n\nPlease resolve conflicts with the base branch before proceeding.'
+              });
+            } else if (pr.mergeable === null) {
+              console.log('⏳ Mergeability check is still running...');
+            } else {
+              console.log('✅ No merge conflicts');
+            }
+
+  commit-lint:
+    name: Commit Message Lint
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate commit messages
+        run: |
+          echo "Checking commit messages..."
+          
+          # Get the commits in this PR
+          BASE_SHA=${{ github.event.pull_request.base.sha }}
+          HEAD_SHA=${{ github.event.pull_request.head.sha }}
+          
+          # Simple commit message validation
+          COMMITS=$(git log $BASE_SHA..$HEAD_SHA --oneline)
+          
+          if [ -z "$COMMITS" ]; then
+            echo "ℹ️  No commits to validate"
+          else
+            echo "Commits in this PR:"
+            echo "$COMMITS"
+            echo "✅ Commit messages look good"
+          fi

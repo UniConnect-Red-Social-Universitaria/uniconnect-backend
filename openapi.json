@@ -1,0 +1,2718 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "UniConnect API",
+    "version": "1.0.0",
+    "description": "API REST de la red social universitaria UniConnect"
+  },
+  "servers": [
+    {
+      "url": "https://uniconnect-backend.fly.dev",
+      "description": "Producción"
+    },
+    {
+      "url": "http://localhost:3000",
+      "description": "Desarrollo local"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "Usuario": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "apellido": {
+            "type": "string"
+          },
+          "correo": {
+            "type": "string",
+            "format": "email"
+          },
+          "carrera": {
+            "type": "string"
+          },
+          "semestre": {
+            "type": "integer"
+          }
+        }
+      },
+      "ForoPregunta": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "contenido": {
+            "type": "string"
+          },
+          "autorId": {
+            "type": "string"
+          },
+          "autorNombre": {
+            "type": "string"
+          },
+          "materiaId": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ForoRespuesta": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "contenido": {
+            "type": "string"
+          },
+          "autorId": {
+            "type": "string"
+          },
+          "autorNombre": {
+            "type": "string"
+          },
+          "preguntaId": {
+            "type": "string"
+          },
+          "puntuacion": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SesionEstudio": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "descripcion": {
+            "type": "string"
+          },
+          "lugar": {
+            "type": "string"
+          },
+          "fecha": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "recordatorioMinutos": {
+            "type": "integer"
+          },
+          "cancelada": {
+            "type": "boolean"
+          },
+          "modificada": {
+            "type": "boolean"
+          },
+          "serieId": {
+            "type": "string"
+          },
+          "creadorId": {
+            "type": "string"
+          }
+        }
+      },
+      "SerieEstudio": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "descripcion": {
+            "type": "string"
+          },
+          "lugar": {
+            "type": "string"
+          },
+          "frecuencia": {
+            "type": "string",
+            "enum": [
+              "DIARIA",
+              "SEMANAL",
+              "QUINCENAL"
+            ]
+          },
+          "fechaInicio": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fechaFin": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "recordatorioMinutos": {
+            "type": "integer"
+          },
+          "sesiones": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SesionEstudio"
+            }
+          }
+        }
+      },
+      "Evento": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "descripcion": {
+            "type": "string"
+          },
+          "lugar": {
+            "type": "string"
+          },
+          "fechaEvento": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "categoria": {
+            "type": "string",
+            "enum": [
+              "academico",
+              "cultural",
+              "deportivo",
+              "otro"
+            ]
+          },
+          "creadorId": {
+            "type": "string"
+          }
+        }
+      },
+      "Grupo": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "materiaId": {
+            "type": "string"
+          },
+          "materia": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "nombre": {
+                "type": "string"
+              }
+            }
+          },
+          "creadorId": {
+            "type": "string"
+          },
+          "administradorId": {
+            "type": "string"
+          },
+          "cantidadMiembros": {
+            "type": "integer"
+          },
+          "miembros": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Usuario"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Mensaje": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "contenido": {
+            "type": "string"
+          },
+          "remitenteId": {
+            "type": "string"
+          },
+          "remitenteNombre": {
+            "type": "string"
+          },
+          "destinatarioId": {
+            "type": "string"
+          },
+          "grupoId": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Materia": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "descripcion": {
+            "type": "string"
+          }
+        }
+      },
+      "PreferenciaNotificacion": {
+        "type": "object",
+        "properties": {
+          "tipoEvento": {
+            "type": "string",
+            "enum": [
+              "academico",
+              "social",
+              "grupo",
+              "sistema"
+            ]
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "canales": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "push",
+                "email",
+                "inApp"
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/catalogos/poblar": {
+      "post": {
+        "summary": "Poblar catálogos con datos iniciales (admin)",
+        "tags": [
+          "Catálogos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Catálogos poblados exitosamente"
+          }
+        }
+      }
+    },
+    "/api/catalogos": {
+      "get": {
+        "summary": "Listar catálogos disponibles (materias, programas, etc.)",
+        "tags": [
+          "Catálogos"
+        ],
+        "responses": {
+          "200": {
+            "description": "Catálogos del sistema",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/eventos": {
+      "get": {
+        "summary": "Listar eventos globales (opcionalmente filtrar por categoría)",
+        "tags": [
+          "Eventos"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "categoria",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "academico",
+                "cultural",
+                "deportivo",
+                "otro"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de eventos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Evento"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Crear un evento",
+        "tags": [
+          "Eventos"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "titulo",
+                  "descripcion",
+                  "fechaEvento"
+                ],
+                "properties": {
+                  "titulo": {
+                    "type": "string"
+                  },
+                  "descripcion": {
+                    "type": "string"
+                  },
+                  "lugar": {
+                    "type": "string"
+                  },
+                  "fechaEvento": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "categoria": {
+                    "type": "string",
+                    "enum": [
+                      "academico",
+                      "cultural",
+                      "deportivo",
+                      "otro"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Evento creado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Evento"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/eventos/suscripciones": {
+      "get": {
+        "summary": "Listar categorías suscritas por el usuario",
+        "tags": [
+          "Eventos"
+        ],
+        "responses": {
+          "200": {
+            "description": "Categorías suscritas"
+          }
+        }
+      },
+      "post": {
+        "summary": "Suscribirse a una categoría de eventos",
+        "tags": [
+          "Eventos"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "categoria"
+                ],
+                "properties": {
+                  "categoria": {
+                    "type": "string",
+                    "enum": [
+                      "academico",
+                      "cultural",
+                      "deportivo",
+                      "otro"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Suscripción registrada"
+          }
+        }
+      }
+    },
+    "/api/eventos/suscripciones/{categoria}": {
+      "delete": {
+        "summary": "Desuscribirse de una categoría de eventos",
+        "tags": [
+          "Eventos"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "categoria",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "academico",
+                "cultural",
+                "deportivo",
+                "otro"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Desuscripción exitosa"
+          }
+        }
+      }
+    },
+    "/api/foro/{materiaId}/preguntas": {
+      "get": {
+        "summary": "Obtener preguntas del foro de una materia",
+        "tags": [
+          "Foro"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "materiaId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de preguntas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ForoPregunta"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Publicar una pregunta en el foro",
+        "tags": [
+          "Foro"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "materiaId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "titulo",
+                  "contenido"
+                ],
+                "properties": {
+                  "titulo": {
+                    "type": "string"
+                  },
+                  "contenido": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Pregunta creada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ForoPregunta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin matrícula activa"
+          }
+        }
+      }
+    },
+    "/api/foro/preguntas/{preguntaId}/respuestas": {
+      "get": {
+        "summary": "Obtener respuestas de una pregunta ordenadas por puntuación",
+        "tags": [
+          "Foro"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "preguntaId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de respuestas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ForoRespuesta"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Publicar una respuesta a una pregunta",
+        "tags": [
+          "Foro"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "preguntaId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "contenido",
+                  "materiaId"
+                ],
+                "properties": {
+                  "contenido": {
+                    "type": "string"
+                  },
+                  "materiaId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Respuesta creada"
+          }
+        }
+      }
+    },
+    "/api/foro/respuestas/{respuestaId}/votos": {
+      "post": {
+        "summary": "Votar una respuesta (1 positivo, -1 negativo)",
+        "tags": [
+          "Foro"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "respuestaId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "valor"
+                ],
+                "properties": {
+                  "valor": {
+                    "type": "integer",
+                    "enum": [
+                      1,
+                      -1
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Respuesta con puntuación actualizada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ForoRespuesta"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/grupos": {
+      "post": {
+        "summary": "Crear un nuevo grupo de estudio",
+        "tags": [
+          "Grupos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "nombre",
+                  "materiaId"
+                ],
+                "properties": {
+                  "nombre": {
+                    "type": "string"
+                  },
+                  "materiaId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Grupo creado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Grupo"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Listar grupos del usuario autenticado",
+        "tags": [
+          "Grupos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de grupos del usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Grupo"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/grupos/buscar": {
+      "get": {
+        "summary": "Buscar grupos por nombre o materia",
+        "tags": [
+          "Grupos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Grupos encontrados"
+          }
+        }
+      }
+    },
+    "/api/grupos/disponibles": {
+      "get": {
+        "summary": "Listar grupos disponibles para unirse (mismas materias del usuario)",
+        "tags": [
+          "Grupos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Grupos disponibles"
+          }
+        }
+      }
+    },
+    "/api/grupos/mis-solicitudes": {
+      "get": {
+        "summary": "Listar solicitudes de ingreso enviadas por el usuario",
+        "tags": [
+          "Grupos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Solicitudes enviadas"
+          }
+        }
+      }
+    },
+    "/api/grupos/{id}": {
+      "get": {
+        "summary": "Obtener detalle de un grupo",
+        "tags": [
+          "Grupos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalle del grupo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Grupo"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/grupos/{id}/miembros": {
+      "get": {
+        "summary": "Listar miembros de un grupo",
+        "tags": [
+          "Grupos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de miembros"
+          }
+        }
+      },
+      "post": {
+        "summary": "Agregar un miembro al grupo (solo administrador)",
+        "tags": [
+          "Grupos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "usuarioId"
+                ],
+                "properties": {
+                  "usuarioId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Miembro agregado"
+          }
+        }
+      }
+    },
+    "/api/grupos/{id}/solicitar-ingreso": {
+      "post": {
+        "summary": "Enviar solicitud de ingreso a un grupo",
+        "tags": [
+          "Grupos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Solicitud enviada"
+          }
+        }
+      }
+    },
+    "/api/grupos/{id}/solicitudes": {
+      "get": {
+        "summary": "Listar solicitudes de ingreso al grupo (solo administrador)",
+        "tags": [
+          "Grupos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de solicitudes pendientes"
+          }
+        }
+      }
+    },
+    "/api/grupos/{id}/solicitudes/{solicitudId}/aprobar": {
+      "patch": {
+        "summary": "Aprobar solicitud de ingreso",
+        "tags": [
+          "Grupos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "solicitudId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Solicitud aprobada"
+          }
+        }
+      }
+    },
+    "/api/grupos/{id}/solicitudes/{solicitudId}/rechazar": {
+      "patch": {
+        "summary": "Rechazar solicitud de ingreso",
+        "tags": [
+          "Grupos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "solicitudId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Solicitud rechazada"
+          }
+        }
+      }
+    },
+    "/api/grupos/{id}/abandonar": {
+      "delete": {
+        "summary": "Abandonar un grupo",
+        "tags": [
+          "Grupos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Grupo abandonado exitosamente"
+          },
+          "409": {
+            "description": "El administrador debe transferir el rol antes de abandonar"
+          }
+        }
+      }
+    },
+    "/api/grupos/{id}/archivos": {
+      "post": {
+        "summary": "Subir archivo PDF al grupo",
+        "tags": [
+          "Grupos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "archivo": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Archivo subido a Cloudinary"
+          }
+        }
+      },
+      "get": {
+        "summary": "Listar archivos del grupo",
+        "tags": [
+          "Grupos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de archivos"
+          }
+        }
+      }
+    },
+    "/api/grupos/{id}/archivos/{archivoId}/descargar": {
+      "get": {
+        "summary": "Descargar un archivo del grupo",
+        "tags": [
+          "Grupos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "archivoId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "URL de descarga del archivo"
+          }
+        }
+      }
+    },
+    "/api/grupos/{id}/administrador": {
+      "patch": {
+        "summary": "Transferir rol de administrador a otro miembro",
+        "tags": [
+          "Grupos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "nuevoAdminId"
+                ],
+                "properties": {
+                  "nuevoAdminId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Administración transferida"
+          }
+        }
+      }
+    },
+    "/api/grupos/{id}/mensajes": {
+      "post": {
+        "summary": "Enviar mensaje al chat del grupo",
+        "tags": [
+          "Grupos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "contenido"
+                ],
+                "properties": {
+                  "contenido": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Mensaje enviado"
+          }
+        }
+      },
+      "get": {
+        "summary": "Obtener historial de mensajes del grupo",
+        "tags": [
+          "Grupos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Historial de mensajes"
+          }
+        }
+      }
+    },
+    "/api/materias/buscar": {
+      "get": {
+        "summary": "Buscar materias por nombre",
+        "tags": [
+          "Materias"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Materias encontradas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Materia"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/materias": {
+      "post": {
+        "summary": "Crear una nueva materia",
+        "tags": [
+          "Materias"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "nombre"
+                ],
+                "properties": {
+                  "nombre": {
+                    "type": "string"
+                  },
+                  "codigo": {
+                    "type": "string"
+                  },
+                  "descripcion": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Materia creada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Materia"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Listar todas las materias",
+        "tags": [
+          "Materias"
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de materias",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Materia"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mensajes/grupos": {
+      "post": {
+        "summary": "Enviar mensaje a un grupo",
+        "tags": [
+          "Mensajes"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "grupoId",
+                  "contenido"
+                ],
+                "properties": {
+                  "grupoId": {
+                    "type": "string"
+                  },
+                  "contenido": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Mensaje enviado al grupo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Mensaje"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mensajes/grupos/{grupoId}": {
+      "get": {
+        "summary": "Obtener historial de mensajes de un grupo",
+        "tags": [
+          "Mensajes"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "grupoId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Historial de mensajes del grupo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Mensaje"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mensajes": {
+      "post": {
+        "summary": "Enviar mensaje directo a un compañero",
+        "tags": [
+          "Mensajes"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "destinatarioId",
+                  "contenido"
+                ],
+                "properties": {
+                  "destinatarioId": {
+                    "type": "string"
+                  },
+                  "contenido": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Mensaje enviado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Mensaje"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mensajes/{companeroId}": {
+      "get": {
+        "summary": "Obtener historial de mensajes directos con un compañero",
+        "tags": [
+          "Mensajes"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "companeroId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Historial de mensajes directos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Mensaje"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notificaciones/preferencias/{tipoEvento}": {
+      "get": {
+        "summary": "Obtener preferencias de notificación para un tipo de evento",
+        "tags": [
+          "Notificaciones"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tipoEvento",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "academico",
+                "social",
+                "grupo",
+                "sistema"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Preferencias del usuario para ese tipo de evento",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/PreferenciaNotificacion"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Actualizar preferencias de notificación",
+        "tags": [
+          "Notificaciones"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tipoEvento",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "academico",
+                "social",
+                "grupo",
+                "sistema"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "activo": {
+                    "type": "boolean"
+                  },
+                  "canales": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "push",
+                        "email",
+                        "inApp"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Preferencias actualizadas"
+          }
+        }
+      }
+    },
+    "/api/notificaciones/prueba": {
+      "post": {
+        "summary": "Enviar notificación de prueba al usuario autenticado",
+        "tags": [
+          "Notificaciones"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tipo": {
+                    "type": "string",
+                    "enum": [
+                      "academico",
+                      "social",
+                      "grupo",
+                      "sistema"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Notificación de prueba enviada"
+          }
+        }
+      }
+    },
+    "/api/sesiones/series": {
+      "post": {
+        "summary": "Crear una serie de sesiones de estudio recurrentes",
+        "tags": [
+          "Sesiones"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "titulo",
+                  "descripcion",
+                  "lugar",
+                  "frecuencia",
+                  "fechaInicio",
+                  "fechaFin"
+                ],
+                "properties": {
+                  "titulo": {
+                    "type": "string"
+                  },
+                  "descripcion": {
+                    "type": "string"
+                  },
+                  "lugar": {
+                    "type": "string"
+                  },
+                  "frecuencia": {
+                    "type": "string",
+                    "enum": [
+                      "DIARIA",
+                      "SEMANAL",
+                      "QUINCENAL"
+                    ]
+                  },
+                  "fechaInicio": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "fechaFin": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "recordatorioMinutos": {
+                    "type": "integer",
+                    "default": 30
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Serie creada con todas sus instancias",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/SerieEstudio"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sesiones": {
+      "get": {
+        "summary": "Obtener sesiones activas del usuario autenticado",
+        "tags": [
+          "Sesiones"
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de sesiones no canceladas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SesionEstudio"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sesiones/{sesionId}": {
+      "patch": {
+        "summary": "Modificar una sesión con alcance solo_esta o esta_y_siguientes",
+        "tags": [
+          "Sesiones"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sesionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "alcance"
+                ],
+                "properties": {
+                  "alcance": {
+                    "type": "string",
+                    "enum": [
+                      "solo_esta",
+                      "esta_y_siguientes"
+                    ]
+                  },
+                  "titulo": {
+                    "type": "string"
+                  },
+                  "descripcion": {
+                    "type": "string"
+                  },
+                  "lugar": {
+                    "type": "string"
+                  },
+                  "fecha": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "recordatorioMinutos": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sesión(es) actualizada(s)"
+          }
+        }
+      }
+    },
+    "/api/sesiones/{sesionId}/cancelar": {
+      "post": {
+        "summary": "Cancelar una sesión con alcance solo_esta o esta_y_siguientes",
+        "tags": [
+          "Sesiones"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sesionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "alcance"
+                ],
+                "properties": {
+                  "alcance": {
+                    "type": "string",
+                    "enum": [
+                      "solo_esta",
+                      "esta_y_siguientes"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sesión(es) cancelada(s)"
+          }
+        }
+      }
+    },
+    "/api/usuarios/registro": {
+      "post": {
+        "summary": "Registrar nuevo usuario con correo institucional",
+        "tags": [
+          "Usuarios"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "nombre",
+                  "apellido",
+                  "correo",
+                  "contrasena"
+                ],
+                "properties": {
+                  "nombre": {
+                    "type": "string"
+                  },
+                  "apellido": {
+                    "type": "string"
+                  },
+                  "correo": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "contrasena": {
+                    "type": "string",
+                    "minLength": 8
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Usuario registrado exitosamente"
+          },
+          "400": {
+            "description": "Correo no institucional o datos inválidos"
+          }
+        }
+      }
+    },
+    "/api/usuarios/login": {
+      "post": {
+        "summary": "Iniciar sesión",
+        "tags": [
+          "Usuarios"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "correo",
+                  "contrasena"
+                ],
+                "properties": {
+                  "correo": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "contrasena": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login exitoso, retorna JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "token": {
+                          "type": "string"
+                        },
+                        "usuario": {
+                          "$ref": "#/components/schemas/Usuario"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciales inválidas"
+          }
+        }
+      }
+    },
+    "/api/usuarios": {
+      "get": {
+        "summary": "Listar todos los usuarios",
+        "tags": [
+          "Usuarios"
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de usuarios",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Usuario"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/usuarios/perfil": {
+      "get": {
+        "summary": "Obtener perfil del usuario autenticado",
+        "tags": [
+          "Usuarios"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Perfil del usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Usuario"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Actualizar perfil del usuario autenticado",
+        "tags": [
+          "Usuarios"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nombre": {
+                    "type": "string"
+                  },
+                  "apellido": {
+                    "type": "string"
+                  },
+                  "bio": {
+                    "type": "string"
+                  },
+                  "fotoPerfil": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Perfil actualizado"
+          }
+        }
+      }
+    },
+    "/api/usuarios/logout": {
+      "post": {
+        "summary": "Cerrar sesión",
+        "tags": [
+          "Usuarios"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sesión cerrada"
+          }
+        }
+      }
+    },
+    "/api/usuarios/buscar": {
+      "get": {
+        "summary": "Búsqueda global de usuarios por nombre o correo",
+        "tags": [
+          "Usuarios"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resultados de búsqueda"
+          }
+        }
+      }
+    },
+    "/api/usuarios/buscar-por-materia": {
+      "get": {
+        "summary": "Buscar usuarios que cursan una materia",
+        "tags": [
+          "Usuarios"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "materia",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usuarios encontrados"
+          }
+        }
+      }
+    },
+    "/api/usuarios/solicitudes": {
+      "post": {
+        "summary": "Enviar solicitud de conexión a otro usuario",
+        "tags": [
+          "Usuarios"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "destinatarioId"
+                ],
+                "properties": {
+                  "destinatarioId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Solicitud enviada"
+          }
+        }
+      }
+    },
+    "/api/usuarios/solicitudes-recibidas": {
+      "get": {
+        "summary": "Listar solicitudes de conexión recibidas pendientes",
+        "tags": [
+          "Usuarios"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de solicitudes recibidas"
+          }
+        }
+      }
+    },
+    "/api/usuarios/solicitudes/aceptar": {
+      "post": {
+        "summary": "Aceptar solicitud de conexión",
+        "tags": [
+          "Usuarios"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "solicitudId"
+                ],
+                "properties": {
+                  "solicitudId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Solicitud aceptada, ahora son compañeros"
+          }
+        }
+      }
+    },
+    "/api/usuarios/solicitudes/rechazar": {
+      "post": {
+        "summary": "Rechazar solicitud de conexión",
+        "tags": [
+          "Usuarios"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "solicitudId"
+                ],
+                "properties": {
+                  "solicitudId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Solicitud rechazada"
+          }
+        }
+      }
+    },
+    "/api/usuarios/companeros": {
+      "get": {
+        "summary": "Listar compañeros (conexiones aceptadas)",
+        "tags": [
+          "Usuarios"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de compañeros",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Usuario"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/usuarios/perfil/{id}": {
+      "get": {
+        "summary": "Obtener perfil público de un usuario",
+        "tags": [
+          "Usuarios"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Perfil público"
+          }
+        }
+      }
+    },
+    "/api/usuarios/perfil/{id}/estadisticas": {
+      "get": {
+        "summary": "Obtener perfil enriquecido con estadísticas",
+        "tags": [
+          "Usuarios"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Perfil con estadísticas de grupos, eventos y materias"
+          }
+        }
+      }
+    },
+    "/api/usuarios/{id}": {
+      "delete": {
+        "summary": "Eliminar usuario por ID (admin)",
+        "tags": [
+          "Usuarios"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usuario eliminado"
+          }
+        }
+      }
+    }
+  },
+  "tags": []
+}

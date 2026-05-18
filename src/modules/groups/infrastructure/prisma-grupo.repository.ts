@@ -1,4 +1,4 @@
-import { GroupRepository, GrupoArchivoRepository, GrupoArchivoRecord, CreateGrupoArchivoData } from '../../../domain/contracts';
+import { GroupRepository, GroupStatus, GrupoArchivoRepository, GrupoArchivoRecord, CreateGrupoArchivoData } from '../../../domain/contracts';
 import { GrupoArchivoModel } from '../../../models/grupo-archivo.model';
 import { GrupoModel } from '../../../models/grupo.model';
 
@@ -37,6 +37,14 @@ export class PrismaGrupoRepository implements GroupRepository {
 
   async updateAdministrador(grupoId: string, nuevoAdminId: string) {
     await GrupoModel.actualizarAdministrador(grupoId, nuevoAdminId);
+  }
+
+  async updateEstado(grupoId: string, estado: GroupStatus) {
+    await GrupoModel.actualizarEstado(grupoId, estado);
+  }
+
+  async updateCandidatoAdmin(grupoId: string, candidatoId: string | null) {
+    await GrupoModel.actualizarCandidatoAdmin(grupoId, candidatoId);
   }
 
   async leave(grupoId: string, usuarioId: string) {

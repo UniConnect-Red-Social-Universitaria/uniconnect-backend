@@ -16,6 +16,13 @@ import {
   emitirSolicitudContactoRechazadaTiempoReal,
   emitirSolicitudContactoTiempoReal,
 } from '../../../lib/socket';
+import {
+  EstadisticasPerfilRepository,
+  calcularInsignias,
+} from '../domain/IPerfilEstudiante';
+import { PerfilBase } from './perfil/PerfilBase';
+import { PerfilConEstadisticas } from './perfil/PerfilConEstadisticas';
+import { PerfilConInsignias } from './perfil/PerfilConInsignias';
 
 type RegisterInput = {
   nombre: unknown;
@@ -43,6 +50,7 @@ type UsersUseCasesDependencies = {
   tokenService: TokenService;
   identityVerificationService: IdentityVerificationService;
   tokenBlacklistService: TokenBlacklistService;
+  estadisticasRepository: EstadisticasPerfilRepository;
 };
 
 export class UsersUseCases {
@@ -626,6 +634,70 @@ export class UsersUseCases {
     return {
       message: 'Usuario eliminado correctamente',
     };
+  }
+
+  async obtenerPerfilPublico(id: unknown) {
+    if (typeof id !== 'string' || !id.trim()) {
+      throw new ApplicationError(400, 'ID de usuario inválido');
+    }
+
+    if (!isValidMongoId(id.trim())) {
+      throw new ApplicationError(400, 'ID de usuario con formato inválido');
+    }
+
+    const usuario = await this.deps.userRepository.findSafeById(id.trim());
+
+    if (!usuario) {
+      throw new ApplicationError(404, 'Usuario no encontrado');
+    }
+
+    const perfil = new PerfilBase({
+      id: usuario.id,
+      nombre: usuario.nombre,
+      apellido: usuario.apellido,
+      carrera: usuario.carrera,
+      semestre: usuario.semestre ?? null,
+      asignaturasActivas: usuario.materiasCursando,
+    });
+
+    return { data: perfil.render() };
+  }
+
+  async obtenerPerfilEnriquecido(id: unknown) {
+    if (typeof id !== 'string' || !id.trim()) {
+      throw new ApplicationError(400, 'ID de usuario inválido');
+    }
+
+    if (!isValidMongoId(id.trim())) {
+      throw new ApplicationError(400, 'ID de usuario con formato inválido');
+    }
+
+    const usuario = await this.deps.userRepository.findSafeById(id.trim());
+
+    if (!usuario) {
+      throw new ApplicationError(404, 'Usuario no encontrado');
+    }
+
+    const estadisticas = await this.deps.estadisticasRepository.obtenerEstadisticas(id.trim());
+
+    const insignias = calcularInsignias(estadisticas);
+
+    const perfil = new PerfilConInsignias(
+      new PerfilConEstadisticas(
+        new PerfilBase({
+          id: usuario.id,
+          nombre: usuario.nombre,
+          apellido: usuario.apellido,
+          carrera: usuario.carrera,
+          semestre: usuario.semestre ?? null,
+          asignaturasActivas: usuario.materiasCursando,
+        }),
+        estadisticas,
+      ),
+      insignias,
+    );
+
+    return { data: perfil.render() };
   }
 
   private ensureAuthenticated(usuario: AuthenticatedUser | undefined) {
