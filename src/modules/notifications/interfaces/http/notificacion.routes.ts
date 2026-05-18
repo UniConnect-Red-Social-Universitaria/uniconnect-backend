@@ -58,6 +58,7 @@ const router = Router();
  *       200:
  *         description: Preferencias actualizadas
  */
+router.get('/preferencias', verificarJWT, NotificacionController.obtenerTodasLasPreferencias);
 router.get('/preferencias/:tipoEvento', verificarJWT, NotificacionController.obtenerPreferencias);
 router.put('/preferencias/:tipoEvento', verificarJWT, NotificacionController.actualizarPreferencias);
 

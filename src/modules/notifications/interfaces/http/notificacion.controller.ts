@@ -1,23 +1,37 @@
 import { Request, Response } from 'express';
 import { handleControllerError } from '../../../../shared/controller-error';
 import { notificacionService, preferenciaRepository } from '../../../../container';
-import { CategoriaEvento, CATEGORIAS_EVENTO } from '../../../../domain/contracts';
-import { CanalNotificacion } from '../../domain/contracts';
+import { CanalNotificacion, TIPOS_NOTIFICACION, TipoNotificacion } from '../../domain/contracts';
 import { NotificacionBase } from '../../../../shared/notificacion/INotificacion';
 
 export class NotificacionController {
   static async obtenerPreferencias(req: Request, res: Response) {
     try {
       const usuarioId = req.usuario!.id;
-      const { tipoEvento } = req.params;
+      const tipoEvento = req.params.tipoEvento as string;
 
-      if (!CATEGORIAS_EVENTO.includes(tipoEvento as CategoriaEvento)) {
-        return res.status(400).json({ success: false, message: 'Tipo de evento inválido' });
+      if (!TIPOS_NOTIFICACION.includes(tipoEvento as TipoNotificacion)) {
+        return res.status(400).json({
+          success: false,
+          message: `Tipo de evento inválido. Valores posibles: ${TIPOS_NOTIFICACION.join(', ')}`,
+        });
       }
 
-      const preferencias = await preferenciaRepository.obtenerPreferencias(
-        usuarioId,
-        tipoEvento as CategoriaEvento,
+      const preferencias = await preferenciaRepository.obtenerPreferencias(usuarioId, tipoEvento);
+      return res.json({ success: true, data: preferencias });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al obtener preferencias');
+    }
+  }
+
+  static async obtenerTodasLasPreferencias(req: Request, res: Response) {
+    try {
+      const usuarioId = req.usuario!.id;
+
+      const preferencias = await Promise.all(
+        TIPOS_NOTIFICACION.map((tipo) =>
+          preferenciaRepository.obtenerPreferencias(usuarioId, tipo),
+        ),
       );
 
       return res.json({ success: true, data: preferencias });
@@ -29,11 +43,14 @@ export class NotificacionController {
   static async actualizarPreferencias(req: Request, res: Response) {
     try {
       const usuarioId = req.usuario!.id;
-      const { tipoEvento } = req.params;
+      const tipoEvento = req.params.tipoEvento as string;
       const { canales } = req.body as { canales: CanalNotificacion[] };
 
-      if (!CATEGORIAS_EVENTO.includes(tipoEvento as CategoriaEvento)) {
-        return res.status(400).json({ success: false, message: 'Tipo de evento inválido' });
+      if (!TIPOS_NOTIFICACION.includes(tipoEvento as TipoNotificacion)) {
+        return res.status(400).json({
+          success: false,
+          message: `Tipo de evento inválido. Valores posibles: ${TIPOS_NOTIFICACION.join(', ')}`,
+        });
       }
 
       if (!Array.isArray(canales)) {
@@ -42,7 +59,7 @@ export class NotificacionController {
 
       const preferencias = await preferenciaRepository.actualizarPreferencias(
         usuarioId,
-        tipoEvento as CategoriaEvento,
+        tipoEvento,
         canales,
       );
 
@@ -55,11 +72,7 @@ export class NotificacionController {
   static async enviarPrueba(req: Request, res: Response) {
     try {
       const usuarioId = req.usuario!.id;
-      const { tipoEvento, mensaje } = req.body as { tipoEvento: CategoriaEvento; mensaje: string };
-
-      if (!CATEGORIAS_EVENTO.includes(tipoEvento)) {
-        return res.status(400).json({ success: false, message: 'Tipo de evento inválido' });
-      }
+      const { tipoEvento, mensaje } = req.body as { tipoEvento?: string; mensaje?: string };
 
       const notificacion = new NotificacionBase(
         mensaje ?? 'Notificación de prueba',
@@ -69,7 +82,7 @@ export class NotificacionController {
       const resultados = await notificacionService.notificar(
         notificacion.render(),
         usuarioId,
-        tipoEvento,
+        tipoEvento ?? 'mensaje',
       );
 
       return res.json({ success: true, data: resultados });

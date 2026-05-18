@@ -1,5 +1,4 @@
 import { NotificacionDTO } from '../../../shared/notificacion/INotificacion';
-import { CategoriaEvento } from '../../../domain/contracts';
 import { INotificacionStrategy, ResultadoEnvio } from '../domain/INotificacionStrategy';
 import { CanalNotificacion, PreferenciaCanalRepository } from '../domain/contracts';
 
@@ -12,7 +11,7 @@ export class NotificacionService {
   async notificar(
     notificacion: NotificacionDTO,
     usuarioId: string,
-    tipoEvento: CategoriaEvento,
+    tipoEvento: string,
   ): Promise<ResultadoEnvio[]> {
     const preferencias = await this.preferenciaRepository.obtenerPreferencias(usuarioId, tipoEvento);
     const resultados: ResultadoEnvio[] = [];

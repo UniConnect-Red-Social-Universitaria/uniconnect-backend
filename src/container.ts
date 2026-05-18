@@ -33,7 +33,7 @@ import { InMemoryTokenBlacklistService } from './modules/users/infrastructure/to
 import { PrismaUserRepository } from './modules/users/infrastructure/prisma-user.repository';
 import { PrismaEstadisticasRepository } from './modules/users/infrastructure/prisma-estadisticas.repository';
 import { NotificacionService } from './modules/notifications/application/NotificacionService';
-import { InMemoryPreferenciaRepository } from './modules/notifications/infrastructure/InMemoryPreferenciaRepository';
+import { PrismaPreferenciaRepository } from './modules/notifications/infrastructure/prisma-preferencia.repository';
 import { InAppWebSocketStrategy } from './modules/notifications/infrastructure/strategies/InAppWebSocketStrategy';
 import { EmailInstitucionalStrategy } from './modules/notifications/infrastructure/strategies/EmailInstitucionalStrategy';
 import { PushMovilStrategy } from './modules/notifications/infrastructure/strategies/PushMovilStrategy';
@@ -104,7 +104,7 @@ export const pollAutoCloseScheduler = new PollAutoCloseScheduler(pollRepository,
 export { chatSubject };
 
 // ── Patrón Strategy: Notificaciones ──
-export const preferenciaRepository = new InMemoryPreferenciaRepository();
+export const preferenciaRepository = new PrismaPreferenciaRepository();
 
 export const notificacionService = new NotificacionService(
   [
