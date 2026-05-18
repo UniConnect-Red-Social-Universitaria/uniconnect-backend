@@ -521,9 +521,11 @@ export class GroupUseCases {
     try {
       await this.groupRepository.updateAdministrador(grupo.id, authUser.id);
       await this.groupRepository.updateCandidatoAdmin(grupo.id, null);
+      // Persiste TRANSFERENCIA_ACEPTADA para historial y luego restaura ACTIVO
       if (ctx.pendingEstado) {
         await this.groupRepository.updateEstado(grupo.id, ctx.pendingEstado);
       }
+      await this.groupRepository.updateEstado(grupo.id, 'ACTIVO');
     } catch (error) {
       console.error('Error en aceptarTransferenciaAdministracion, ejecutando rollback:', error);
       await this.groupRepository.updateAdministrador(grupo.id, anteriorAdminId).catch(() => {});
