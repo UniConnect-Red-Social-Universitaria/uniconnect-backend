@@ -183,101 +183,101 @@ jobs:
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
         continue-on-error: true
 
-  rollback-on-failure:
-    name: Rollback on Failure
-    runs-on: ubuntu-latest
-    needs: build-and-deploy
-    if: failure()
-    timeout-minutes: 10
+  # rollback-on-failure:
+  #   name: Rollback on Failure
+  #   runs-on: ubuntu-latest
+  #   needs: build-and-deploy
+  #   if: failure()
+  #   timeout-minutes: 10
 
-    steps:
-      - name: 🛒 Checkout code
-        uses: actions/checkout@v4
-        
-      - name: 🔧 Setup Flyctl
-        uses: superfly/flyctl-actions/setup-flyctl@master
+  #   steps:
+  #     - name: 🛒 Checkout code
+  #       uses: actions/checkout@v4
 
-      - name: 🔄 Perform Rollback
-        id: rollback
-        run: |
-          echo "🔄 Starting rollback process..."
-          
-          # Get last 2 releases
-          RELEASES=$(flyctl releases --json | jq -r '.[0:2] | .[] | .id')
-          CURRENT_RELEASE=$(echo "$RELEASES" | head -n 1)
-          PREVIOUS_RELEASE=$(echo "$RELEASES" | tail -n 1)
-          
-          echo "Current release: $CURRENT_RELEASE"
-          echo "Attempting to rollback to: $PREVIOUS_RELEASE"
-          
-          # Rollback to previous release
-          if [ ! -z "$PREVIOUS_RELEASE" ] && [ "$PREVIOUS_RELEASE" != "null" ]; then
-            flyctl releases rollback $PREVIOUS_RELEASE --force
-            echo "✅ Rollback to $PREVIOUS_RELEASE completed"
-            echo "rollback_release=$PREVIOUS_RELEASE" >> $GITHUB_OUTPUT
-          else
-            echo "❌ No previous release found to rollback to!"
-            echo "rollback_release=FAILED" >> $GITHUB_OUTPUT
-            exit 1
-          fi
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+  #     - name: 🔧 Setup Flyctl
+  #       uses: superfly/flyctl-actions/setup-flyctl@master
 
-      - name: 🏥 Verify rollback
-        run: |
-          echo "⏳ Waiting for rollback to stabilize..."
-          sleep 10
+  #     - name: 🔄 Perform Rollback
+  #       id: rollback
+  #       run: |
+  #         echo "🔄 Starting rollback process..."
           
-          APP_URL=$(flyctl info -j | jq -r '.app' 2>/dev/null)
-          HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://${APP_URL}.fly.dev/health" 2>/dev/null || echo "000")
+  #         # Get last 2 releases
+  #         RELEASES=$(flyctl releases --json | jq -r '.[0:2] | .[] | .id')
+  #         CURRENT_RELEASE=$(echo "$RELEASES" | head -n 1)
+  #         PREVIOUS_RELEASE=$(echo "$RELEASES" | tail -n 1)
           
-          echo "Health check after rollback: $HEALTH_STATUS"
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-        continue-on-error: true
+  #         echo "Current release: $CURRENT_RELEASE"
+  #         echo "Attempting to rollback to: $PREVIOUS_RELEASE"
+          
+  #         # Rollback to previous release
+  #         if [ ! -z "$PREVIOUS_RELEASE" ] && [ "$PREVIOUS_RELEASE" != "null" ]; then
+  #           flyctl releases rollback $PREVIOUS_RELEASE --force
+  #           echo "✅ Rollback to $PREVIOUS_RELEASE completed"
+  #           echo "rollback_release=$PREVIOUS_RELEASE" >> $GITHUB_OUTPUT
+  #         else
+  #           echo "❌ No previous release found to rollback to!"
+  #           echo "rollback_release=FAILED" >> $GITHUB_OUTPUT
+  #           exit 1
+  #         fi
+  #       env:
+  #         FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
-      - name: ❌ Failure Notification - Slack
-        uses: slackapi/slack-github-action@v1.24.0
-        with:
-          payload: |
-            {
-              "text": "❌ Backend Deployment FAILED & Rolled Back",
-              "blocks": [
-                {
-                  "type": "header",
-                  "text": {
-                    "type": "plain_text",
-                    "text": "❌ Backend Deployment Failed"
-                  }
-                },
-                {
-                  "type": "section",
-                  "fields": [
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Environment:*\nProduction"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Status:*\n❌ FAILED"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Action:*\n🔄 Rolled back to: ${{ steps.rollback.outputs.rollback_release }}"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Commit:*\n<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Logs:*\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Details>"
-                    }
-                  ]
-                }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
-        continue-on-error: true
+  #     - name: 🏥 Verify rollback
+  #       run: |
+  #         echo "⏳ Waiting for rollback to stabilize..."
+  #         sleep 10
+          
+  #         APP_URL=$(flyctl info -j | jq -r '.app' 2>/dev/null)
+  #         HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://${APP_URL}.fly.dev/health" 2>/dev/null || echo "000")
+          
+  #         echo "Health check after rollback: $HEALTH_STATUS"
+  #       env:
+  #         FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+  #       continue-on-error: true
+
+  #     - name: ❌ Failure Notification - Slack
+  #       uses: slackapi/slack-github-action@v1.24.0
+  #       with:
+  #         payload: |
+  #           {
+  #             "text": "❌ Backend Deployment FAILED & Rolled Back",
+  #             "blocks": [
+  #               {
+  #                 "type": "header",
+  #                 "text": {
+  #                   "type": "plain_text",
+  #                   "text": "❌ Backend Deployment Failed"
+  #                 }
+  #               },
+  #               {
+  #                 "type": "section",
+  #                 "fields": [
+  #                   {
+  #                     "type": "mrkdwn",
+  #                     "text": "*Environment:*\nProduction"
+  #                   },
+  #                   {
+  #                     "type": "mrkdwn",
+  #                     "text": "*Status:*\n❌ FAILED"
+  #                   },
+  #                   {
+  #                     "type": "mrkdwn",
+  #                     "text": "*Action:*\n🔄 Rolled back to: ${{ steps.rollback.outputs.rollback_release }}"
+  #                   },
+  #                   {
+  #                     "type": "mrkdwn",
+  #                     "text": "*Commit:*\n<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>"
+  #                   },
+  #                   {
+  #                     "type": "mrkdwn",
+  #                     "text": "*Logs:*\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Details>"
+  #                   }
+  #                 ]
+  #               }
+  #             ]
+  #           }
+  #       env:
+  #         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+  #         SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+  #       continue-on-error: true
