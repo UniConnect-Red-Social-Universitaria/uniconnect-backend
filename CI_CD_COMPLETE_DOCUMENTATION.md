@@ -518,7 +518,7 @@ flyctl deploy --dry-run
 
 1. **Verificar releases recientes**:
    ```bash
-   flyctl releases list
+   flyctl releases
    ```
 
 2. **Rollback manual si es necesario**:
