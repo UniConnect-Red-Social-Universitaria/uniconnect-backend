@@ -80,7 +80,7 @@ jobs:
       - name: 🚀 Deploy to Fly.io
         id: deploy
         run: |
-          DEPLOY_OUTPUT=$(flyctl deploy --remote-only 2>&1)
+          DEPLOY_OUTPUT=$(flyctl deploy --remote-only --build-arg COMMIT_SHA=${{ github.sha }} 2>&1)
           echo "$DEPLOY_OUTPUT"
           
           # Capture new release ID
@@ -98,7 +98,11 @@ jobs:
           # Get app URL
           APP_URL=$(flyctl info -j | jq -r '.app' 2>/dev/null || echo "unknown")
           
-          # Health check
+          # Health check response body (for debugging/logs)
+          HEALTH_BODY=$(curl -s "https://${APP_URL}.fly.dev/health" 2>/dev/null || echo "could not fetch body")
+          echo "🏥 Health Endpoint Response: $HEALTH_BODY"
+          
+          # Health check status
           HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://${APP_URL}.fly.dev/health" 2>/dev/null || echo "000")
           echo "health_status=$HEALTH_STATUS" >> $GITHUB_OUTPUT
           
@@ -110,7 +114,6 @@ jobs:
           fi
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-        continue-on-error: true
 
       - name: 📤 Get deployment info
         id: deploy-info

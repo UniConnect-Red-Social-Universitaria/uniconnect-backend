@@ -16,6 +16,9 @@ RUN npm run build
 # ── Etapa 2: runner ───────────────────────────────────────────
 FROM node:20-alpine AS runner
 
+ARG COMMIT_SHA
+ENV COMMIT_SHA=$COMMIT_SHA
+
 WORKDIR /app
 
 COPY package*.json ./

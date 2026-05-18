@@ -279,6 +279,45 @@ ngrok http 3001
 
 ```
 
-## Despliegue
-- **URL Base:** https://tu-app.fly.dev
-- **Health Check:** https://tu-app.fly.dev/health
+## 🚀 CI/CD y Despliegue Continuo (Pipeline)
+
+El backend de UniConnect utiliza un flujo automatizado de integración y despliegue continuo mediante **GitHub Actions**, garantizando la robustez del código, la cobertura de pruebas, la notificación instantánea al equipo y la recuperación ante fallas.
+
+### 📊 Diagrama de Flujo Completo
+
+El pipeline se compone de tres workflows principales que interactúan de la siguiente manera:
+
+![alt text](<Untitled diagram-2026-05-18-001337.png>)
+
+---
+
+### 🌐 Entornos Disponibles
+
+El proyecto cuenta con dos entornos principales de ejecución:
+
+| Entorno | Propósito | URL Base / Acceso | Health Check / Metadata |
+| :--- | :--- | :--- | :--- |
+| **Desarrollo (Local)** | Pruebas locales y desarrollo activo | `http://localhost:3000` *(o `3001` con ngrok)* | `http://localhost:3000/health` *(commit: `"development"`)* |
+| **Producción (Fly.io)** | Servidor real para el frontend de UniConnect | `https://uniconnect-backend.fly.dev` | `https://uniconnect-backend.fly.dev/health` *(commit: `git_hash`)* |
+
+---
+
+### 🔐 Secretos Requeridos en GitHub Actions
+
+Para asegurar el correcto funcionamiento del pipeline y sus integraciones, se deben configurar los siguientes secretos en el repositorio (`Settings > Secrets and variables > Actions > New repository secret`):
+
+1. **`FLY_API_TOKEN`**:
+   - **Descripción**: Token de acceso de Fly.io para compilar de forma remota, publicar imágenes y realizar reversiones (rollbacks) automáticas en caso de fallo.
+   - **Obtención**: Se genera en la consola de Fly.io con el comando `flyctl auth token` o desde el dashboard web.
+2. **`SLACK_WEBHOOK_URL`**:
+   - **Descripción**: URL del Webhook de Slack utilizada para enviar notificaciones automáticas y alertas en tiempo real al canal del equipo (despliegues exitosos, fallas del pipeline o rollbacks).
+   - **Obtención**: Configurando una App en el espacio de trabajo de Slack con la característica "Incoming Webhooks".
+3. **`GITHUB_TOKEN`** *(Implícito)*:
+   - **Descripción**: Token proporcionado de manera automática y segura por GitHub Actions, utilizado por el pipeline para comentar y actualizar los reportes de cobertura en los Pull Requests abiertos. No requiere configuración manual.
+
+---
+
+> [!IMPORTANT]
+> **Políticas de Resiliencia en Producción:**
+> - El merge a la rama principal está bloqueado si la cobertura de pruebas de un Pull Request cae por debajo del **80%**.
+> - En caso de que una nueva versión se despliegue en Fly.io pero no pase el Health Check post-despliegue, el pipeline se autodeclara fallido y se ejecuta un **Rollback automático por hardware** para mantener el servicio activo en la versión anterior estable sin causar downtime.

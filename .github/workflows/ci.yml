@@ -97,3 +97,104 @@ jobs:
         run: npm test -- tests/integration --verbose
         env:
           NODE_ENV: test
+
+  notify-slack:
+    name: Notify Slack
+    runs-on: ubuntu-latest
+    needs: [lint-and-build, tests, integration-tests]
+    if: always() && github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/developer')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get commit details
+        id: commit-info
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=%B || echo "No commit message")
+          COMMIT_AUTHOR=$(git log -1 --pretty=%an || echo "Unknown")
+          echo "commit_msg=$COMMIT_MSG" >> $GITHUB_OUTPUT
+          echo "commit_author=$COMMIT_AUTHOR" >> $GITHUB_OUTPUT
+
+      - name: ✅ Notify Slack - Success
+        if: ${{ needs.lint-and-build.result == 'success' && needs.tests.result == 'success' && needs.integration-tests.result == 'success' }}
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": "✅ CI Success on ${{ github.ref_name }}",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "✅ CI Build Success"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Branch:*\n${{ github.ref_name }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Status:*\n✅ Success"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Author:*\n${{ steps.commit-info.outputs.commit_author }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Commit:*\n<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: ❌ Notify Slack - Failure
+        if: ${{ !(needs.lint-and-build.result == 'success' && needs.tests.result == 'success' && needs.integration-tests.result == 'success') }}
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": "❌ CI Failure on ${{ github.ref_name }}",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "❌ CI Build Failure"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Branch:*\n${{ github.ref_name }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Status:*\n❌ Failed"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Author:*\n${{ steps.commit-info.outputs.commit_author }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Commit:*\n<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

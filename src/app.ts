@@ -51,6 +51,7 @@ app.get("/health", (req, res) => {
   res.status(200).json({
     status: "ok",
     version: version || "1.0.0",
+    commit: process.env.COMMIT_SHA || "development",
   });
 });
 
