@@ -191,6 +191,9 @@ jobs:
     timeout-minutes: 10
 
     steps:
+      - name: 🛒 Checkout code
+        uses: actions/checkout@v4
+        
       - name: 🔧 Setup Flyctl
         uses: superfly/flyctl-actions/setup-flyctl@master
 

@@ -8,6 +8,9 @@ RUN npm ci
 COPY prisma ./prisma
 RUN npx prisma generate
 
+COPY scripts ./scripts
+RUN npm run build
+
 COPY tsconfig*.json ./
 COPY src ./src
 COPY docker-entrypoint.sh ./

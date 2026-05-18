@@ -27,6 +27,9 @@ RUN npm ci --omit=dev
 COPY prisma ./prisma
 RUN npx prisma generate
 
+COPY scripts ./scripts
+RUN npm run build
+
 COPY --from=builder /app/dist ./dist
 
 EXPOSE ${PORT:-3000}
