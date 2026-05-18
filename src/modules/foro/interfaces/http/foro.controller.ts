@@ -42,7 +42,7 @@ export class ForoController {
 
   static async obtenerRespuestas(req: Request, res: Response) {
     try {
-      const resultado = await foroUseCases.obtenerRespuestas(req.params.preguntaId);
+      const resultado = await foroUseCases.obtenerRespuestas(req.usuario, req.params.preguntaId);
       res.json({ success: true, data: resultado.data });
     } catch (error) {
       return handleControllerError(res, error, 'Error al obtener respuestas');

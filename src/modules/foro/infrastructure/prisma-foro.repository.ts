@@ -41,14 +41,17 @@ export class PrismaForoRepository implements IForoRepository {
 
     let diferencia: number = valor;
     if (votoExistente) {
-      // Si el voto es igual al anterior, lo elimina (toggle)
       if (votoExistente.valor === valor) {
-        await db.foroVoto.delete({
-          where: { usuarioId_respuestaId: { usuarioId, respuestaId } },
+        const respuestaActual = await db.foroRespuesta.findUnique({
+          where: { id: respuestaId },
+          include: { autor: { select: { nombre: true, apellido: true } } },
         });
-        diferencia = -valor;
+        if (!respuestaActual) {
+          throw new Error('Respuesta no encontrada');
+        }
+
+        return this.mapRespuesta(respuestaActual);
       } else {
-        // Si cambia el sentido, cuenta doble
         await db.foroVoto.update({
           where: { usuarioId_respuestaId: { usuarioId, respuestaId } },
           data: { valor },
@@ -77,13 +80,30 @@ export class PrismaForoRepository implements IForoRepository {
     return preguntas.map(this.mapPregunta);
   }
 
-  async obtenerRespuestasPorPregunta(preguntaId: string): Promise<ForoRespuestaDTO[]> {
-    const respuestas = await db.foroRespuesta.findMany({
+  async obtenerRespuestasPorPregunta(preguntaId: string, usuarioId?: string): Promise<ForoRespuestaDTO[]> {
+    const respuestas: any[] = await db.foroRespuesta.findMany({
       where: { preguntaId },
       include: { autor: { select: { nombre: true, apellido: true } } },
       orderBy: { puntuacion: 'desc' },
     });
-    return respuestas.map(this.mapRespuesta);
+
+    let votosUsuario: Record<string, 1 | -1> = {};
+    if (usuarioId && respuestas.length > 0) {
+      const votos: Array<{ respuestaId: string; valor: 1 | -1 }> = await db.foroVoto.findMany({
+        where: {
+          usuarioId,
+          respuestaId: { in: respuestas.map((respuesta) => respuesta.id) },
+        },
+        select: { respuestaId: true, valor: true },
+      });
+
+      votosUsuario = votos.reduce((acumulado: Record<string, 1 | -1>, voto) => {
+        acumulado[voto.respuestaId] = voto.valor as 1 | -1;
+        return acumulado;
+      }, {});
+    }
+
+    return respuestas.map((respuesta) => this.mapRespuesta(respuesta, votosUsuario[respuesta.id]));
   }
 
   private mapPregunta(p: any): ForoPreguntaDTO {
@@ -98,7 +118,7 @@ export class PrismaForoRepository implements IForoRepository {
     };
   }
 
-  private mapRespuesta(r: any): ForoRespuestaDTO {
+  private mapRespuesta(r: any, miVoto?: 1 | -1): ForoRespuestaDTO {
     return {
       id: r.id,
       contenido: r.contenido,
@@ -106,6 +126,7 @@ export class PrismaForoRepository implements IForoRepository {
       autorNombre: `${r.autor.nombre} ${r.autor.apellido}`,
       preguntaId: r.preguntaId,
       puntuacion: r.puntuacion,
+      miVoto,
       createdAt: r.createdAt,
     };
   }
