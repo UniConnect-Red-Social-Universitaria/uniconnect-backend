@@ -110,7 +110,7 @@ jobs:
       - name: Get commit details
         id: commit-info
         run: |
-          COMMIT_MSG=$(git log -1 --pretty=%B || echo "No commit message")
+          COMMIT_MSG=$(git log -1 --pretty=%s || echo "No commit message")
           COMMIT_AUTHOR=$(git log -1 --pretty=%an || echo "Unknown")
           echo "commit_msg=$COMMIT_MSG" >> $GITHUB_OUTPUT
           echo "commit_author=$COMMIT_AUTHOR" >> $GITHUB_OUTPUT
