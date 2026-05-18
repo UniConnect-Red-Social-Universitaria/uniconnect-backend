@@ -75,6 +75,7 @@ jobs:
     name: Size Label
     runs-on: ubuntu-latest
     permissions:
+      issues: write
       pull-requests: write
     
     steps:
@@ -96,6 +97,7 @@ jobs:
     name: Conflict Detection
     runs-on: ubuntu-latest
     permissions:
+      issues: write
       pull-requests: write
     
     steps:

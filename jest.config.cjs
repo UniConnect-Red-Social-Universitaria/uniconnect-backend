@@ -10,5 +10,9 @@ module.exports = {
   transform: {
     '^.+\\.ts$': ['ts-jest', { tsconfig: 'tsconfig.jest.json' }]
   },
-  collectCoverageFrom: ['src/**/*.ts', '!src/generated/**', '!src/server.ts']
+
+  collectCoverage: true, 
+  collectCoverageFrom: ['src/**/*.ts', '!src/generated/**', '!src/server.ts'],
+  coverageDirectory: 'coverage',
+  coverageReporters: ['text', 'json-summary', 'lcov']
 };
