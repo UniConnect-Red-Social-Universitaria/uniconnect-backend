@@ -93,9 +93,12 @@ export class ForoUseCases {
     return { data: preguntas };
   }
 
-  async obtenerRespuestas(preguntaId: unknown): Promise<{ data: ForoRespuestaDTO[] }> {
+  async obtenerRespuestas(
+    usuario: UsuarioAutenticado | undefined,
+    preguntaId: unknown,
+  ): Promise<{ data: ForoRespuestaDTO[] }> {
     if (typeof preguntaId !== 'string' || !preguntaId.trim()) throw new ApplicationError(400, 'preguntaId inválido');
-    const respuestas = await this.foroRepository.obtenerRespuestasPorPregunta(preguntaId);
+    const respuestas = await this.foroRepository.obtenerRespuestasPorPregunta(preguntaId, usuario?.id);
     return { data: respuestas };
   }
 }
