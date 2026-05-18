@@ -45,6 +45,7 @@ model Usuario {
   reaccionesMensajes ReaccionMensaje[] @relation("ReaccionesMensajes")
   reaccionesMensajesGrupo ReaccionMensajeGrupo[] @relation("ReaccionesMensajesGrupo")
   recursosCreados Recurso[] @relation("RecursosCreados")
+  preferenciasCanal PreferenciaCanal[] @relation("PreferenciasCanal")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -403,5 +404,19 @@ model ReaccionMensajeGrupo {
 
   @@unique([mensajeId, usuarioId, emoji])
   @@index([mensajeId])
+  @@index([usuarioId])
+}
+
+// Preferencias de canales de notificación por tipo de evento
+model PreferenciaCanal {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  usuarioId        String   @db.ObjectId
+  tipoEvento       String   // mensaje, mensaje-grupo, mencion, encuesta, etc.
+  canalesActivos   String[] @default([]) // ["in-app", "email", "push"]
+  usuario          Usuario  @relation("PreferenciasCanal", fields: [usuarioId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([usuarioId, tipoEvento])
   @@index([usuarioId])
 }

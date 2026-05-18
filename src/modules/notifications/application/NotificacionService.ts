@@ -1,7 +1,6 @@
 import { NotificacionDTO } from '../../../shared/notificacion/INotificacion';
-import { CategoriaEvento } from '../../../domain/contracts';
 import { INotificacionStrategy, ResultadoEnvio } from '../domain/INotificacionStrategy';
-import { CanalNotificacion, PreferenciaCanalRepository } from '../domain/contracts';
+import { CanalNotificacion, TipoNotificacion, PreferenciaCanalRepository } from '../domain/contracts';
 
 export class NotificacionService {
   constructor(
@@ -9,10 +8,18 @@ export class NotificacionService {
     private readonly preferenciaRepository: PreferenciaCanalRepository,
   ) {}
 
+  /**
+   * Envía una notificación a través de los canales que el usuario
+   * haya configurado para ese tipo de evento.
+   *
+   * @param notificacion  DTO con mensaje, destinatario y timestamp
+   * @param usuarioId     ID del usuario receptor (para consultar preferencias)
+   * @param tipoEvento    Tipo de evento que origina la notificación
+   */
   async notificar(
     notificacion: NotificacionDTO,
     usuarioId: string,
-    tipoEvento: CategoriaEvento,
+    tipoEvento: TipoNotificacion,
   ): Promise<ResultadoEnvio[]> {
     const preferencias = await this.preferenciaRepository.obtenerPreferencias(usuarioId, tipoEvento);
     const resultados: ResultadoEnvio[] = [];
