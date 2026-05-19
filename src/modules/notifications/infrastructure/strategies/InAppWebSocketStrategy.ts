@@ -9,7 +9,6 @@ export class InAppWebSocketStrategy implements INotificacionStrategy {
     emitirNotificacion(notificacion.destinatario, {
       mensaje: notificacion.mensaje,
       timestamp: notificacion.timestamp,
-      tipoEvento: notificacion.tipoEvento, // ← AGREGA esta línea
     });
 
     return { canal: this.canal, exito: true };

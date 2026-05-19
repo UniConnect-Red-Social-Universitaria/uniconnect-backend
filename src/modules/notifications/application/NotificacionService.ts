@@ -14,7 +14,7 @@ export class NotificacionService {
    *
    * @param notificacion  DTO con mensaje, destinatario y timestamp
    * @param usuarioId     ID del usuario receptor (para consultar preferencias)
-   * @param tipoEvento    Tipo de evento que origina la notificación (inyectado antes de enviar)
+   * @param tipoEvento    Tipo de evento que origina la notificación
    */
   async notificar(
     notificacion: NotificacionDTO,
@@ -24,16 +24,13 @@ export class NotificacionService {
     const preferencias = await this.preferenciaRepository.obtenerPreferencias(usuarioId, tipoEvento);
     const resultados: ResultadoEnvio[] = [];
 
-    // ✅ Inyecta tipoEvento en la notificación antes de enviar:
-    const notificacionConTipo = { ...notificacion, tipoEvento };
-
     for (const estrategia of this.estrategias) {
       if (!preferencias.canalesActivos.includes(estrategia.canal as CanalNotificacion)) {
         continue;
       }
+
       try {
-        // Usa la notificación con el tipo inyectado
-        const resultado = await estrategia.enviar(notificacionConTipo); 
+        const resultado = await estrategia.enviar(notificacion);
         resultados.push(resultado);
       } catch (error) {
         resultados.push({
