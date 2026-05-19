@@ -1,7 +1,16 @@
-import { EventRecord } from '../../../domain/contracts';
-import { IEventoObserver } from '../../../shared/eventos-observer/IEventoObserver';
-import { NotificacionBase } from '../../../shared/notificacion/INotificacion';
-import { NotificacionService } from '../application/NotificacionService';
+import { EventRecord, CategoriaEvento } from "../../../domain/contracts";
+import { IEventoObserver } from "../../../shared/eventos-observer/IEventoObserver";
+import { NotificacionBase } from "../../../shared/notificacion/INotificacion";
+import { NotificacionService } from "../application/NotificacionService";
+import { TipoNotificacion } from "../domain/contracts";
+
+// Mapa de categoria → tipoEvento exacto que usás en preferencias
+const CATEGORIA_A_TIPO_EVENTO: Partial<Record<string, TipoNotificacion>> = {
+  academico: "evento-academico",
+  cultural: "evento-cultural",
+  deportivo: "evento-deportivo",
+  otro: "evento-otro",
+};
 
 export class NotificacionEventoObserver implements IEventoObserver {
   constructor(
@@ -15,14 +24,21 @@ export class NotificacionEventoObserver implements IEventoObserver {
       this.usuarioId,
     );
 
+    // ✅ Traducir la categoría al tipoEvento que el repositorio conoce
+    const tipoEvento: TipoNotificacion =
+      CATEGORIA_A_TIPO_EVENTO[evento.categoria] ?? "evento-otro";
+
     this.notificacionService
-      .notificar(notificacion.render(), this.usuarioId, evento.categoria)
+      .notificar(notificacion.render(), this.usuarioId, tipoEvento)
       .catch((error) => {
-        console.error('[NotificacionEventoObserver] Error al notificar:', error);
+        console.error(
+          "[NotificacionEventoObserver] Error al notificar:",
+          error,
+        );
       });
   }
 
   getUsuarioId(): string {
-    return `notif:${this.usuarioId}`;
+    return this.usuarioId;
   }
 }
