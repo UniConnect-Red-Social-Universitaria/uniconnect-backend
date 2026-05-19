@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>8/8</span>
+                <span class='fraction'>0/8</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>1/1</span>
+                <span class='fraction'>0/1</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>5/5</span>
+                <span class='fraction'>0/5</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>8/8</span>
+                <span class='fraction'>0/8</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line high'></div>
+    <div class='status-line low'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -116,27 +116,27 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">17x</span>
-<span class="cline-any cline-yes">17x</span>
-<span class="cline-any cline-yes">17x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">19x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -156,27 +156,27 @@ export interface INotificacion {
   render(): NotificacionDTO;
 }
 &nbsp;
-export class NotificacionBase implements INotificacion {
-  constructor(
-    private readonly mensaje: string,
-    private readonly destinatario: string,
-    private readonly timestamp: Date = new Date(),
+<span class="cstat-no" title="statement not covered" >export class N</span>otificacionBase implements INotificacion {
+<span class="fstat-no" title="function not covered" >  constructor(</span>
+    private readonly <span class="cstat-no" title="statement not covered" >mensaje: string,</span>
+    private readonly <span class="cstat-no" title="statement not covered" >destinatario: string,</span>
+    private readonly <span class="cstat-no" title="statement not covered" >timestamp: Date = <span class="branch-0 cbranch-no" title="branch not covered" >n</span>ew Date(),</span>
   ) {}
 &nbsp;
-  getMensaje(): string {
-    return this.mensaje;
+<span class="fstat-no" title="function not covered" >  getMensaje(</span>): string {
+<span class="cstat-no" title="statement not covered" >    return this.mensaje;</span>
   }
 &nbsp;
-  getDestinatario(): string {
-    return this.destinatario;
+<span class="fstat-no" title="function not covered" >  getDestinatario(</span>): string {
+<span class="cstat-no" title="statement not covered" >    return this.destinatario;</span>
   }
 &nbsp;
-  getTimestamp(): Date {
-    return this.timestamp;
+<span class="fstat-no" title="function not covered" >  getTimestamp(</span>): Date {
+<span class="cstat-no" title="statement not covered" >    return this.timestamp;</span>
   }
 &nbsp;
-  render(): NotificacionDTO {
-    return {
+<span class="fstat-no" title="function not covered" >  render(</span>): NotificacionDTO {
+<span class="cstat-no" title="statement not covered" >    return {</span>
       mensaje: this.mensaje,
       destinatario: this.destinatario,
       timestamp: this.timestamp,
@@ -190,7 +190,7 @@ export class NotificacionBase implements INotificacion {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-18T00:32:54.064Z
+                at 2026-05-18T21:27:09.804Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

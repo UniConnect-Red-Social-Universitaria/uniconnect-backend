@@ -6,6 +6,7 @@ import {
 } from "../../domain/INotificacionStrategy";
 import * as nodemailer from "nodemailer";
 
+// Asumo que tienes una interfaz parecida a esta en tu dominio
 interface IUsuarioRepository {
   obtenerEmailPorId(usuarioId: string): Promise<string | null>;
 }
@@ -15,12 +16,13 @@ export class EmailInstitucionalStrategy implements INotificacionStrategy {
 
   constructor(
     private readonly transporter: nodemailer.Transporter,
-    private readonly usuarioRepository: IUsuarioRepository,
+    private readonly usuarioRepository: IUsuarioRepository, // Inyectamos esto para buscar el correo
   ) {}
 
   // ✅ Agrega verificación explícita del resultado y no relances:
   async enviar(notificacion: NotificacionDTO): Promise<ResultadoEnvio> {
     try {
+      // 1. Obtener el email real a partir del ID del destinatario
       const emailReal = await this.usuarioRepository.obtenerEmailPorId(
         notificacion.destinatario,
       );
@@ -34,11 +36,13 @@ export class EmailInstitucionalStrategy implements INotificacionStrategy {
         };
       }
 
+      // 2. Enviar el correo
       const info = await this.transporter.sendMail({
         from: '"UniConnect" <jackeline.rivera23296@ucaldas.edu.co>',
         to: emailReal,
         subject: "Notificación UniConnect",
         text: notificacion.mensaje,
+        // html: `<b>${notificacion.mensaje}</b>` // Opcional: Puedes enviar HTML
       });
 
       // ← Verifica que nodemailer realmente aceptó el mensaje
@@ -51,6 +55,7 @@ export class EmailInstitucionalStrategy implements INotificacionStrategy {
       logger.info(
         `[Email] Enviado a: ${emailReal} | MessageId: ${info.messageId}`,
       );
+      
       return { canal: this.canal, exito: true };
     } catch (error) {
       logger.error(

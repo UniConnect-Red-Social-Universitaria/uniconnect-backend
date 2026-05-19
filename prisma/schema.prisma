@@ -406,11 +406,13 @@ model ReaccionMensajeGrupo {
   @@index([mensajeId])
   @@index([usuarioId])
 }
+
+// Preferencias de canales de notificación por tipo de evento
 model PreferenciaCanal {
   id               String   @id @default(auto()) @map("_id") @db.ObjectId
   usuarioId        String   @db.ObjectId
-  tipoEvento       String
-  canalesActivos   String[] @default([])
+  tipoEvento       String   // mensaje, mensaje-grupo, mencion, encuesta, etc.
+  canalesActivos   String[] @default([]) // ["in-app", "email", "push"]
   usuario          Usuario  @relation("PreferenciasCanal", fields: [usuarioId], references: [id], onDelete: Cascade)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt

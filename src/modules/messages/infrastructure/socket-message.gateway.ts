@@ -8,7 +8,6 @@ import {
   MencionMensajeGrupoRecord,
 } from "../../../domain/contracts";
 import {
-  emitirMensajeGrupoTiempoReal,
   emitirMensajeTiempoReal,
   emitirNotificacion,
   emitirNotificacionGrupo,
@@ -73,6 +72,7 @@ export class SocketMessageGateway implements MessageGateway {
       "nombreGrupo" in payload ||
       "grupoId" in payload ||
       ("mensaje" in payload && (payload as any).mensaje?.grupoId != null);
+    
     // Nota: MencionMensajeGrupoRecord puede no tener nombreGrupo directamente, sino a través de la relación,
     // pero usualmente sabemos que es grupo si viene de mensaje de grupo.
     // En Prisma, si esGrupo=true, lo tratamos como grupo. El payload debería permitirnos distinguir.
@@ -97,7 +97,15 @@ export class SocketMessageGateway implements MessageGateway {
         },
       );
 
-      emitirNotificacion(mencion.usuarioMencionadoId, notificacion.render());
+      const dto = notificacion.render();
+
+      if ((this as any).notificacionService) {
+        (this as any).notificacionService
+          .notificar(dto, mencion.usuarioMencionadoId, 'mencion')
+          .catch((err: any) => console.error('[SocketMessageGateway] Error al notificar mención grupo:', err));
+      } else {
+        emitirNotificacion(mencion.usuarioMencionadoId, dto);
+      }
 
       // Emitir evento por WebSocket al grupo si tenemos el grupoId
       // Para obtener el grupoId podríamos necesitarlo en el payload, pero ChatSubject maneja la emisión.
@@ -128,7 +136,15 @@ export class SocketMessageGateway implements MessageGateway {
         },
       );
 
-      emitirNotificacion(mencion.usuarioMencionadoId, notificacion.render());
+      const dto = notificacion.render();
+
+      if ((this as any).notificacionService) {
+        (this as any).notificacionService
+          .notificar(dto, mencion.usuarioMencionadoId, 'mencion')
+          .catch((err: any) => console.error('[SocketMessageGateway] Error al notificar mención:', err));
+      } else {
+        emitirNotificacion(mencion.usuarioMencionadoId, dto);
+      }
 
       emitirMencionTiempoReal(mencion.usuarioMencionadoId, {
         mensajeId: mencion.mensajeId,
