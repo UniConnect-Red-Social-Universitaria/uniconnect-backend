@@ -32,6 +32,7 @@ export interface ForoRespuestaDTO {
   autorNombre: string;
   preguntaId: string;
   puntuacion: number;
+  miVoto?: 1 | -1 | null;
   createdAt: Date;
 }
 
@@ -40,5 +41,5 @@ export interface IForoRepository {
   crearRespuesta(data: { contenido: string; autorId: string; preguntaId: string; materiaId: string }): Promise<ForoRespuestaDTO>;
   registrarVoto(usuarioId: string, respuestaId: string, valor: 1 | -1): Promise<ForoRespuestaDTO>;
   obtenerPreguntasPorMateria(materiaId: string): Promise<ForoPreguntaDTO[]>;
-  obtenerRespuestasPorPregunta(preguntaId: string): Promise<ForoRespuestaDTO[]>;
+  obtenerRespuestasPorPregunta(preguntaId: string, usuarioId?: string): Promise<ForoRespuestaDTO[]>;
 }

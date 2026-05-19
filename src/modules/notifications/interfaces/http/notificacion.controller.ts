@@ -27,7 +27,7 @@ export class NotificacionController {
   static async obtenerPreferencias(req: Request, res: Response) {
     try {
       const usuarioId = req.usuario!.id;
-      const { tipoEvento } = req.params;
+      const tipoEvento = req.params.tipoEvento as string;
 
       if (!TIPOS_NOTIFICACION.includes(tipoEvento as TipoNotificacion)) {
         return res.status(400).json({
@@ -39,6 +39,21 @@ export class NotificacionController {
       const preferencias = await preferenciaRepository.obtenerPreferencias(
         usuarioId,
         tipoEvento as TipoNotificacion,
+      const preferencias = await preferenciaRepository.obtenerPreferencias(usuarioId, tipoEvento);
+      return res.json({ success: true, data: preferencias });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al obtener preferencias');
+    }
+  }
+
+  static async obtenerTodasLasPreferencias(req: Request, res: Response) {
+    try {
+      const usuarioId = req.usuario!.id;
+
+      const preferencias = await Promise.all(
+        TIPOS_NOTIFICACION.map((tipo) =>
+          preferenciaRepository.obtenerPreferencias(usuarioId, tipo),
+        ),
       );
 
       return res.json({ success: true, data: preferencias });
@@ -55,7 +70,7 @@ export class NotificacionController {
   static async actualizarPreferencias(req: Request, res: Response) {
     try {
       const usuarioId = req.usuario!.id;
-      const { tipoEvento } = req.params;
+      const tipoEvento = req.params.tipoEvento as string;
       const { canales } = req.body as { canales: CanalNotificacion[] };
 
       if (!TIPOS_NOTIFICACION.includes(tipoEvento as TipoNotificacion)) {
@@ -136,7 +151,7 @@ export class NotificacionController {
       const resultados = await notificacionService.notificar(
         notificacion.render(),
         usuarioId,
-        tipoEvento,
+        tipoEvento ?? 'mensaje',
       );
 
       return res.json({ success: true, data: resultados });

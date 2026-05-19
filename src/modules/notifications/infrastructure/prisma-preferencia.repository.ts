@@ -52,39 +52,25 @@ export class PrismaPreferenciaRepository implements PreferenciaCanalRepository {
 
   async actualizarPreferencias(
     usuarioId: string,
-    tipoEvento: TipoNotificacion,
+    tipoEvento: string,
     canales: CanalNotificacion[],
   ): Promise<PreferenciaCanal> {
-    try {
-      console.log(`[PreferenciaRepo] Actualizando preferencias para usuario ${usuarioId}, tipoEvento: ${tipoEvento}, canales:`, canales);
-      
-      const preferencia = await prismaClient.preferenciaCanal.upsert({
-        where: {
-          usuarioId_tipoEvento: {
-            usuarioId,
-            tipoEvento,
-          },
-        },
-        update: {
-          canalesActivos: canales,
-        },
-        create: {
-          usuarioId,
-          tipoEvento,
-          canalesActivos: canales,
-        },
-      });
-
-      console.log(`[PreferenciaRepo] Preferencia actualizada/creada:`, preferencia);
-      
-      return {
-        usuarioId: preferencia.usuarioId,
-        tipoEvento: preferencia.tipoEvento as TipoNotificacion,
-        canalesActivos: preferencia.canalesActivos as CanalNotificacion[],
+    const db = prisma as unknown as {
+      preferenciaCanal: {
+        upsert: (args: unknown) => Promise<{ usuarioId: string; tipoEvento: string; canalesActivos: string[] }>;
       };
-    } catch (error) {
-      console.error(`[PreferenciaRepo] Error actualizarPreferencias:`, error);
-      throw error;
-    }
+    };
+
+    const preferencia = await db.preferenciaCanal.upsert({
+      where: { usuarioId_tipoEvento: { usuarioId, tipoEvento } } as unknown,
+      update: { canalesActivos: canales },
+      create: { usuarioId, tipoEvento, canalesActivos: canales },
+    } as unknown);
+
+    return {
+      usuarioId: preferencia.usuarioId,
+      tipoEvento: preferencia.tipoEvento,
+      canalesActivos: preferencia.canalesActivos as CanalNotificacion[],
+    };
   }
 }

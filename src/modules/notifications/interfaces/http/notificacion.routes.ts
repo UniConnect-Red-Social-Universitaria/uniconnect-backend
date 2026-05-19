@@ -104,6 +104,7 @@ router.get('/preferencias', verificarJWT, NotificacionController.obtenerTodasLas
  *       400:
  *         description: Tipo de evento o canales inválidos
  */
+router.get('/preferencias', verificarJWT, NotificacionController.obtenerTodasLasPreferencias);
 router.get('/preferencias/:tipoEvento', verificarJWT, NotificacionController.obtenerPreferencias);
 router.put('/preferencias/:tipoEvento', verificarJWT, NotificacionController.actualizarPreferencias);
 

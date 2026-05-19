@@ -10,6 +10,23 @@ export const CANALES_DISPONIBLES: CanalNotificacion[] = ['in-app', 'email', 'pus
 
 /** Valor por defecto cuando el usuario no ha configurado preferencias */
 export const CANALES_DEFAULT: CanalNotificacion[] = ['in-app', 'email', 'push'];
+export const CANALES_DISPONIBLES: CanalNotificacion[] = ['in-app', 'email', 'push'];
+
+export type TipoNotificacion =
+  | 'mensaje'
+  | 'mensaje-grupo'
+  | 'mencion'
+  | 'encuesta'
+  | 'recordatorio'
+  | 'evento-academico'
+  | 'evento-cultural'
+  | 'evento-deportivo'
+  | 'evento-otro';
+
+export const TIPOS_NOTIFICACION: TipoNotificacion[] = [
+  'mensaje', 'mensaje-grupo', 'mencion', 'encuesta', 'recordatorio',
+  'evento-academico', 'evento-cultural', 'evento-deportivo', 'evento-otro',
+];
 
 /**
  * Tipos de evento que generan notificaciones en el sistema.

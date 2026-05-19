@@ -136,6 +136,20 @@ export const pollAutoCloseScheduler = new PollAutoCloseScheduler(pollRepository,
 
 export { chatSubject };
 
+// ── Patrón Strategy: Notificaciones ──
+export const preferenciaRepository = new PrismaPreferenciaRepository();
+
+export const notificacionService = new NotificacionService(
+  [
+    new InAppWebSocketStrategy(),
+    new EmailInstitucionalStrategy(),
+    new PushMovilStrategy(),
+    new ResumenDiarioStrategy(),
+  ],
+  preferenciaRepository,
+);
+
+// ── Módulo Foro ──
 const foroRepository = new PrismaForoRepository();
 export const foroUseCases = new ForoUseCases(foroRepository);
 
