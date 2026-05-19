@@ -33,15 +33,14 @@ import { InMemoryTokenBlacklistService } from './modules/users/infrastructure/to
 import { PrismaUserRepository } from './modules/users/infrastructure/prisma-user.repository';
 import { PrismaEstadisticasRepository } from './modules/users/infrastructure/prisma-estadisticas.repository';
 import { NotificacionService } from './modules/notifications/application/NotificacionService';
-import { InMemoryPreferenciaRepository } from './modules/notifications/infrastructure/InMemoryPreferenciaRepository';
+import { PrismaPreferenciaRepository } from './modules/notifications/infrastructure/prisma-preferencia.repository';
 import { InAppWebSocketStrategy } from './modules/notifications/infrastructure/strategies/InAppWebSocketStrategy';
 import { EmailInstitucionalStrategy } from './modules/notifications/infrastructure/strategies/EmailInstitucionalStrategy';
 import { PushMovilStrategy } from './modules/notifications/infrastructure/strategies/PushMovilStrategy';
-import { ResumenDiarioStrategy } from './modules/notifications/infrastructure/strategies/ResumenDiarioStrategy';
 import * as nodemailer from 'nodemailer';
-import { logger } from './lib/logger';
 
-// ── Repositorios ──
+// ── Repositorios ──────────────────────────────────────────────────────────────
+
 const userRepository = new PrismaUserRepository();
 const contactRepository = new PrismaContactRepository();
 const carreraRepository = new PrismaCarreraRepository();
@@ -54,7 +53,6 @@ const eventoRepository = new PrismaEventoRepository();
 const pollRepository = new PrismaPollRepository();
 const estadisticasRepository = new PrismaEstadisticasRepository();
 
-// ── Servicios de infraestructura ──
 // ── Servicios de infraestructura ──────────────────────────────────────────────
 
 const passwordService = new BcryptPasswordService();
@@ -92,44 +90,6 @@ export const notificacionService = new NotificacionService(
 const groupEventObserver = new SocketGroupObserver();
 const groupPersistenciaObserver = new PersistenciaGroupObserver();
 
-// ── SMTP ──
-const mailTransporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT),
-  secure: process.env.SMTP_PORT === '465',
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
-
-mailTransporter.verify((error) => {
-  if (error) {
-    logger.error('[Email] Transporter SMTP no válido:', error);
-  } else {
-    logger.info('[Email] Transporter SMTP listo');
-  }
-});
-
-// ── Notificaciones (deben declararse ANTES que messageUseCases) ── // ← CAMBIO: bloque movido arriba
-export const preferenciaRepository = new InMemoryPreferenciaRepository();
-
-const emailStrategy = new EmailInstitucionalStrategy(mailTransporter, userRepository);
-
-export const notificacionService = new NotificacionService(
-  [
-    new InAppWebSocketStrategy(),
-    emailStrategy,
-    new PushMovilStrategy(),
-    new ResumenDiarioStrategy(),
-  ],
-  preferenciaRepository,
-);
-
-// ── ChatSubject ──
-const chatSubject = ChatSubject.getInstance();
-
-// ── Casos de uso ──
 const messageGateway = new SocketMessageGateway(notificacionService);
 
 const pollGateway = new ModerationPollGatewayDecorator(
@@ -158,21 +118,17 @@ export const groupUseCases = new GroupUseCases(
   userRepository,
   grupoArchivoRepository,
   solicitudGrupoRepository,
-  [groupEventObserver, groupPersistenciaObserver],
+  [groupEventObserver, groupPersistenciaObserver]
 );
-
 export const materiaUseCases = new MateriaUseCases(materiaRepository);
-
-export const messageUseCases = new MessageUseCases( // ← CAMBIO: agregado notificacionService al final
+export const messageUseCases = new MessageUseCases(
   mensajeRepository,
   userRepository,
   contactRepository,
   grupoRepository,
   messageGateway,
   chatSubject,
-  notificacionService,
 );
-
 export const eventUseCases = new EventUseCases(eventoRepository);
 export const catalogUseCases = new CatalogUseCases(carreraRepository, materiaRepository);
 export const pollUseCases = new PollUseCases(pollRepository, grupoRepository, pollGateway);
@@ -180,11 +136,24 @@ export const pollAutoCloseScheduler = new PollAutoCloseScheduler(pollRepository,
 
 export { chatSubject };
 
-// ── Foro ──
+// ── Patrón Strategy: Notificaciones ──
+export const preferenciaRepository = new PrismaPreferenciaRepository();
+
+export const notificacionService = new NotificacionService(
+  [
+    new InAppWebSocketStrategy(),
+    new EmailInstitucionalStrategy(),
+    new PushMovilStrategy(),
+    new ResumenDiarioStrategy(),
+  ],
+  preferenciaRepository,
+);
+
+// ── Módulo Foro ──
 const foroRepository = new PrismaForoRepository();
 export const foroUseCases = new ForoUseCases(foroRepository);
 
-// ── Sesiones de Estudio ──
 const sesionRepository = new PrismaSesionEstudioRepository();
 export const sesionUseCases = new SesionEstudioUseCases(sesionRepository);
+
 export const recordatorioScheduler = new RecordatorioScheduler(sesionRepository, notificacionService);

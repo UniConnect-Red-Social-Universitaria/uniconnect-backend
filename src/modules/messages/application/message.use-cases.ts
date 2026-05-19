@@ -5,22 +5,13 @@ import {
   MessageGateway,
   MessageRepository,
   UserRepository,
-} from "../../../domain/contracts";
-import { ApplicationError } from "../../../shared/application-error";
-import { isValidMongoId } from "../../../shared/mongo-id";
-import { ChatSubject } from "../domain/chat-subject";
-import { crearCadenaValidacion } from "./validacion/ValidadorMensajeChainFactory";
-import {
-  extractMentions,
-  getMentionedUsernames,
-} from "./parsers/mention-parser";
-import { isValidReactionEmoji } from "./parsers/emoji-validator";
-import { NotificacionService } from "../../notifications/application/NotificacionService";
-import {
-  NotificacionConAccion,
-  NotificacionConPrioridad,
-  NotificacionBase,
-} from "../../../shared/notificacion";
+} from '../../../domain/contracts';
+import { ApplicationError } from '../../../shared/application-error';
+import { isValidMongoId } from '../../../shared/mongo-id';
+import { ChatSubject } from '../domain/chat-subject';
+import { crearCadenaValidacion } from './validacion/ValidadorMensajeChainFactory';
+import { extractMentions, getMentionedUsernames } from './parsers/mention-parser';
+import { isValidReactionEmoji } from './parsers/emoji-validator';
 
 export class MessageUseCases {
   constructor(
@@ -30,7 +21,6 @@ export class MessageUseCases {
     private readonly groupRepository: GroupRepository,
     private readonly messageGateway: MessageGateway,
     private readonly chatSubject: ChatSubject,
-    private readonly notificacionService: NotificacionService,
   ) {}
 
   async enviarMensaje(
@@ -40,24 +30,21 @@ export class MessageUseCases {
   ) {
     const authUser = this.ensureAuthenticated(usuario);
 
-    if (typeof receptorId !== "string" || !receptorId.trim()) {
-      throw new ApplicationError(400, "Debes enviar un receptorId válido");
+    if (typeof receptorId !== 'string' || !receptorId.trim()) {
+      throw new ApplicationError(400, 'Debes enviar un receptorId válido');
     }
 
     if (!isValidMongoId(receptorId.trim())) {
-      throw new ApplicationError(400, "receptorId tiene formato inválido");
+      throw new ApplicationError(400, 'receptorId tiene formato inválido');
     }
 
-    if (typeof contenido !== "string") {
-      throw new ApplicationError(
-        400,
-        "Debes enviar un contenido de mensaje válido",
-      );
+    if (typeof contenido !== 'string') {
+      throw new ApplicationError(400, 'Debes enviar un contenido de mensaje válido');
     }
 
     const receptor = await this.userRepository.findById(receptorId.trim());
     if (!receptor) {
-      throw new ApplicationError(404, "El receptor no existe");
+      throw new ApplicationError(404, 'El receptor no existe');
     }
 
     const relacion = await this.contactRepository.findRelationBetweenUsers(
@@ -67,8 +54,7 @@ export class MessageUseCases {
 
     const cadena = crearCadenaValidacion({
       esMiembroDeGrupo: () => true,
-      tieneRelacionAceptada: () =>
-        !!(relacion && relacion.estado === "ACEPTADA"),
+      tieneRelacionAceptada: () => !!(relacion && relacion.estado === 'ACEPTADA'),
     });
 
     const resultado = cadena.manejar({
@@ -78,7 +64,7 @@ export class MessageUseCases {
     });
 
     if (!resultado.valido) {
-      throw new ApplicationError(400, resultado.error ?? "Mensaje inválido");
+      throw new ApplicationError(400, resultado.error ?? 'Mensaje inválido');
     }
 
     const mensaje = await this.messageRepository.create({
@@ -88,38 +74,12 @@ export class MessageUseCases {
     });
 
     this.messageGateway.emitNewMessage(mensaje);
-    const notificacion = new NotificacionConAccion(
-      new NotificacionConPrioridad(
-        new NotificacionBase(
-          mensaje.contenido,
-          mensaje.receptorId,
-          mensaje.createdAt,
-        ),
-        "normal",
-      ),
-      {
-        label: "Ver mensaje",
-        endpoint: `/api/mensajes/conversacion/${mensaje.emisorId}`,
-      },
-    );
-
-    this.notificacionService
-      .notificar(notificacion.render(), mensaje.receptorId, "mensaje")
-      .catch((err) =>
-        console.error(
-          "[notificacion] Error al notificar mensaje directo:",
-          err,
-        ),
-      );
 
     // Procesar menciones en el mensaje
-    await this.procesarMencionesMensajeIndividual(
-      mensaje.id,
-      mensaje.contenido,
-    );
+    await this.procesarMencionesMensajeIndividual(mensaje.id, mensaje.contenido);
 
     return {
-      message: "Mensaje enviado correctamente",
+      message: 'Mensaje enviado correctamente',
       data: mensaje,
     };
   }
@@ -131,24 +91,21 @@ export class MessageUseCases {
   ) {
     const authUser = this.ensureAuthenticated(usuario);
 
-    if (typeof companeroId !== "string" || !companeroId.trim()) {
-      throw new ApplicationError(400, "Debes enviar un companeroId válido");
+    if (typeof companeroId !== 'string' || !companeroId.trim()) {
+      throw new ApplicationError(400, 'Debes enviar un companeroId válido');
     }
 
     if (!isValidMongoId(companeroId.trim())) {
-      throw new ApplicationError(400, "companeroId tiene formato inválido");
+      throw new ApplicationError(400, 'companeroId tiene formato inválido');
     }
 
     if (companeroId.trim() === authUser.id) {
-      throw new ApplicationError(
-        400,
-        "No puedes consultar conversación contigo mismo",
-      );
+      throw new ApplicationError(400, 'No puedes consultar conversación contigo mismo');
     }
 
     const companero = await this.userRepository.findById(companeroId.trim());
     if (!companero) {
-      throw new ApplicationError(404, "El compañero no existe");
+      throw new ApplicationError(404, 'El compañero no existe');
     }
 
     const relacion = await this.contactRepository.findRelationBetweenUsers(
@@ -156,11 +113,8 @@ export class MessageUseCases {
       companeroId.trim(),
     );
 
-    if (!relacion || relacion.estado !== "ACEPTADA") {
-      throw new ApplicationError(
-        403,
-        "Solo puedes consultar chats con compañeros agregados",
-      );
+    if (!relacion || relacion.estado !== 'ACEPTADA') {
+      throw new ApplicationError(403, 'Solo puedes consultar chats con compañeros agregados');
     }
 
     const limitQuery = Number(limit ?? 50);
@@ -185,30 +139,25 @@ export class MessageUseCases {
   ) {
     const authUser = this.ensureAuthenticated(usuario);
 
-    if (typeof grupoId !== "string" || !grupoId.trim()) {
-      throw new ApplicationError(400, "Debes enviar un grupoId válido");
+    if (typeof grupoId !== 'string' || !grupoId.trim()) {
+      throw new ApplicationError(400, 'Debes enviar un grupoId válido');
     }
 
     if (!isValidMongoId(grupoId.trim())) {
-      throw new ApplicationError(400, "grupoId tiene formato inválido");
+      throw new ApplicationError(400, 'grupoId tiene formato inválido');
     }
 
-    if (typeof contenido !== "string") {
-      throw new ApplicationError(
-        400,
-        "Debes enviar un contenido de mensaje válido",
-      );
+    if (typeof contenido !== 'string') {
+      throw new ApplicationError(400, 'Debes enviar un contenido de mensaje válido');
     }
 
     const grupo = await this.groupRepository.findById(grupoId.trim());
     if (!grupo) {
-      throw new ApplicationError(404, "El grupo no existe");
+      throw new ApplicationError(404, 'El grupo no existe');
     }
 
     const esMiembro = grupo.miembros.some(
-      (miembro) =>
-        miembro.usuarioId === authUser.id ||
-        miembro.usuario?.id === authUser.id,
+      (miembro) => miembro.usuarioId === authUser.id || miembro.usuario?.id === authUser.id,
     );
 
     const cadena = crearCadenaValidacion({
@@ -223,7 +172,7 @@ export class MessageUseCases {
     });
 
     if (!resultado.valido) {
-      throw new ApplicationError(400, resultado.error ?? "Mensaje inválido");
+      throw new ApplicationError(400, resultado.error ?? 'Mensaje inválido');
     }
 
     const mensaje = await this.messageRepository.createGroupMessage({
@@ -235,40 +184,11 @@ export class MessageUseCases {
     this.messageGateway.emitNewGroupMessage(mensaje);
     this.chatSubject.emitirNuevoMensaje(grupoId.trim(), mensaje);
 
-    const notificacionGrupo = new NotificacionConAccion(
-  new NotificacionConPrioridad(
-    new NotificacionBase(mensaje.contenido, mensaje.grupoId, mensaje.createdAt),
-    'normal',
-  ),
-  {
-    label: 'Ver grupo',
-    endpoint: `/api/grupos/${mensaje.grupoId}/mensajes`,
-  },
-);
-
-const miembrosANotificar = grupo.miembros
-  .map((m) => m.usuarioId ?? m.usuario?.id)
-  .filter((id): id is string => !!id && id !== authUser.id);
-
-miembrosANotificar.forEach((miembroId) => {
-  this.notificacionService
-    .notificar(
-      { ...notificacionGrupo.render(), destinatario: miembroId },
-      miembroId,
-      'mensaje-grupo',
-    )
-    .catch((err) => console.error('[notificacion] Error al notificar mensaje grupo:', err));
-});
-
     // Procesar menciones en el mensaje grupal
-    await this.procesarMencionesMensajeGrupo(
-      mensaje.id,
-      mensaje.contenido,
-      grupoId.trim(),
-    );
+    await this.procesarMencionesMensajeGrupo(mensaje.id, mensaje.contenido, grupoId.trim());
 
     return {
-      message: "Mensaje de grupo enviado correctamente",
+      message: 'Mensaje de grupo enviado correctamente',
       data: mensaje,
     };
   }
@@ -280,30 +200,25 @@ miembrosANotificar.forEach((miembroId) => {
   ) {
     const authUser = this.ensureAuthenticated(usuario);
 
-    if (typeof grupoId !== "string" || !grupoId.trim()) {
-      throw new ApplicationError(400, "Debes enviar un grupoId válido");
+    if (typeof grupoId !== 'string' || !grupoId.trim()) {
+      throw new ApplicationError(400, 'Debes enviar un grupoId válido');
     }
 
     if (!isValidMongoId(grupoId.trim())) {
-      throw new ApplicationError(400, "grupoId tiene formato inválido");
+      throw new ApplicationError(400, 'grupoId tiene formato inválido');
     }
 
     const grupo = await this.groupRepository.findById(grupoId.trim());
     if (!grupo) {
-      throw new ApplicationError(404, "El grupo no existe");
+      throw new ApplicationError(404, 'El grupo no existe');
     }
 
     const esMiembro = grupo.miembros.some(
-      (miembro) =>
-        miembro.usuarioId === authUser.id ||
-        miembro.usuario?.id === authUser.id,
+      (miembro) => miembro.usuarioId === authUser.id || miembro.usuario?.id === authUser.id,
     );
 
     if (!esMiembro) {
-      throw new ApplicationError(
-        403,
-        "Solo los miembros pueden consultar este chat de grupo",
-      );
+      throw new ApplicationError(403, 'Solo los miembros pueden consultar este chat de grupo');
     }
 
     const limitQuery = Number(limit ?? 50);
@@ -322,7 +237,7 @@ miembrosANotificar.forEach((miembroId) => {
 
   private ensureAuthenticated(usuario: AuthenticatedUser | undefined) {
     if (!usuario) {
-      throw new ApplicationError(401, "Usuario no autenticado");
+      throw new ApplicationError(401, 'Usuario no autenticado');
     }
     return usuario;
   }
@@ -334,7 +249,7 @@ miembrosANotificar.forEach((miembroId) => {
   private async procesarMencionesMensajeGrupo(
     mensajeId: string,
     contenido: string,
-    grupoId: string,
+    grupoId: string
   ) {
     try {
       const usuariosMencionados = getMentionedUsernames(contenido);
@@ -342,14 +257,12 @@ miembrosANotificar.forEach((miembroId) => {
       for (const username of usuariosMencionados) {
         // Buscar el usuario por nombre
         const usuario = await this.buscarUsuarioPorNombre(username);
-
+        
         if (usuario) {
           // Verificar que el usuario sea miembro del grupo
           const grupo = await this.groupRepository.findById(grupoId);
           const esMiembroDelGrupo = grupo?.miembros.some(
-            (miembro) =>
-              miembro.usuarioId === usuario.id ||
-              miembro.usuario?.id === usuario.id,
+            (miembro) => miembro.usuarioId === usuario.id || miembro.usuario?.id === usuario.id
           );
 
           if (esMiembroDelGrupo) {
@@ -359,7 +272,7 @@ miembrosANotificar.forEach((miembroId) => {
                 mensajeId,
                 usuarioMencionadoId: usuario.id,
               },
-              true, // esGrupo
+              true // esGrupo
             );
 
             // Emitir evento de mención
@@ -368,7 +281,7 @@ miembrosANotificar.forEach((miembroId) => {
         }
       }
     } catch (error) {
-      console.error("Error al procesar menciones:", error);
+      console.error('Error al procesar menciones:', error);
       // No lanzar error, solo registrar
     }
   }
@@ -378,28 +291,28 @@ miembrosANotificar.forEach((miembroId) => {
    */
   private async procesarMencionesMensajeIndividual(
     mensajeId: string,
-    contenido: string,
+    contenido: string
   ) {
     try {
       const usuariosMencionados = getMentionedUsernames(contenido);
 
       for (const username of usuariosMencionados) {
         const usuario = await this.buscarUsuarioPorNombre(username);
-
+        
         if (usuario) {
           const mencion = await this.messageRepository.addMencion(
             {
               mensajeId,
               usuarioMencionadoId: usuario.id,
             },
-            false, // esGrupo
+            false // esGrupo
           );
 
           this.messageGateway.emitMencion(mencion);
         }
       }
     } catch (error) {
-      console.error("Error al procesar menciones:", error);
+      console.error('Error al procesar menciones:', error);
     }
   }
 
@@ -412,16 +325,15 @@ miembrosANotificar.forEach((miembroId) => {
     // En producción, implementar una búsqueda más robusta en la base de datos
     const usuarios = await this.userRepository.listAll();
     return usuarios.find(
-      (u) =>
+      (u) => 
         u.nombre.toLowerCase() === nombre.toLowerCase() ||
-        `${u.nombre.toLowerCase()}_${u.apellido.toLowerCase()}` ===
-          nombre.toLowerCase(),
+        `${u.nombre.toLowerCase()}_${u.apellido.toLowerCase()}` === nombre.toLowerCase()
     );
   }
 
   /**
    * Agrega una reacción a un mensaje
-   *
+   * 
    * @param usuario Usuario autenticado
    * @param mensajeId ID del mensaje
    * @param emoji Emoji para la reacción
@@ -431,34 +343,28 @@ miembrosANotificar.forEach((miembroId) => {
     usuario: AuthenticatedUser | undefined,
     mensajeId: unknown,
     emoji: unknown,
-    esGrupo: unknown,
+    esGrupo: unknown
   ) {
     const authUser = this.ensureAuthenticated(usuario);
 
-    if (typeof mensajeId !== "string" || !mensajeId.trim()) {
-      throw new ApplicationError(400, "Debes enviar un mensajeId válido");
+    if (typeof mensajeId !== 'string' || !mensajeId.trim()) {
+      throw new ApplicationError(400, 'Debes enviar un mensajeId válido');
     }
 
     if (!isValidMongoId(mensajeId.trim())) {
-      throw new ApplicationError(400, "mensajeId tiene formato inválido");
+      throw new ApplicationError(400, 'mensajeId tiene formato inválido');
     }
 
-    if (typeof emoji !== "string" || !emoji.trim()) {
-      throw new ApplicationError(400, "Debes enviar un emoji válido");
+    if (typeof emoji !== 'string' || !emoji.trim()) {
+      throw new ApplicationError(400, 'Debes enviar un emoji válido');
     }
 
     if (!isValidReactionEmoji(emoji.trim())) {
-      throw new ApplicationError(
-        400,
-        "El emoji no está permitido para reacciones",
-      );
+      throw new ApplicationError(400, 'El emoji no está permitido para reacciones');
     }
 
-    if (typeof esGrupo !== "boolean") {
-      throw new ApplicationError(
-        400,
-        "Debes especificar si es un mensaje de grupo",
-      );
+    if (typeof esGrupo !== 'boolean') {
+      throw new ApplicationError(400, 'Debes especificar si es un mensaje de grupo');
     }
 
     const reaccion = await this.messageRepository.addReaccion(
@@ -467,13 +373,13 @@ miembrosANotificar.forEach((miembroId) => {
         usuarioId: authUser.id,
         emoji: emoji.trim(),
       },
-      esGrupo,
+      esGrupo
     );
 
     this.messageGateway.emitReaccion(reaccion);
 
     return {
-      message: "Reacción agregada correctamente",
+      message: 'Reacción agregada correctamente',
       data: reaccion,
     };
   }
@@ -485,46 +391,37 @@ miembrosANotificar.forEach((miembroId) => {
     usuario: AuthenticatedUser | undefined,
     mensajeId: unknown,
     emoji: unknown,
-    esGrupo: unknown,
+    esGrupo: unknown
   ) {
     const authUser = this.ensureAuthenticated(usuario);
 
-    if (typeof mensajeId !== "string" || !mensajeId.trim()) {
-      throw new ApplicationError(400, "Debes enviar un mensajeId válido");
+    if (typeof mensajeId !== 'string' || !mensajeId.trim()) {
+      throw new ApplicationError(400, 'Debes enviar un mensajeId válido');
     }
 
     if (!isValidMongoId(mensajeId.trim())) {
-      throw new ApplicationError(400, "mensajeId tiene formato inválido");
+      throw new ApplicationError(400, 'mensajeId tiene formato inválido');
     }
 
-    if (typeof emoji !== "string" || !emoji.trim()) {
-      throw new ApplicationError(400, "Debes enviar un emoji válido");
+    if (typeof emoji !== 'string' || !emoji.trim()) {
+      throw new ApplicationError(400, 'Debes enviar un emoji válido');
     }
 
-    if (typeof esGrupo !== "boolean") {
-      throw new ApplicationError(
-        400,
-        "Debes especificar si es un mensaje de grupo",
-      );
+    if (typeof esGrupo !== 'boolean') {
+      throw new ApplicationError(400, 'Debes especificar si es un mensaje de grupo');
     }
 
     const reaccion = await this.messageRepository.removeReaccion(
       mensajeId.trim(),
       authUser.id,
       emoji.trim(),
-      esGrupo,
+      esGrupo
     );
 
-    this.messageGateway.emitRemoveReaccion(
-      mensajeId.trim(),
-      authUser.id,
-      emoji.trim(),
-      esGrupo,
-      reaccion,
-    );
+    this.messageGateway.emitRemoveReaccion(mensajeId.trim(), authUser.id, emoji.trim(), esGrupo, reaccion);
 
     return {
-      message: "Reacción removida correctamente",
+      message: 'Reacción removida correctamente',
     };
   }
 
@@ -534,28 +431,25 @@ miembrosANotificar.forEach((miembroId) => {
   async obtenerReacciones(
     usuario: AuthenticatedUser | undefined,
     mensajeId: unknown,
-    esGrupo: unknown,
+    esGrupo: unknown
   ) {
     const authUser = this.ensureAuthenticated(usuario);
 
-    if (typeof mensajeId !== "string" || !mensajeId.trim()) {
-      throw new ApplicationError(400, "Debes enviar un mensajeId válido");
+    if (typeof mensajeId !== 'string' || !mensajeId.trim()) {
+      throw new ApplicationError(400, 'Debes enviar un mensajeId válido');
     }
 
     if (!isValidMongoId(mensajeId.trim())) {
-      throw new ApplicationError(400, "mensajeId tiene formato inválido");
+      throw new ApplicationError(400, 'mensajeId tiene formato inválido');
     }
 
-    if (typeof esGrupo !== "boolean") {
-      throw new ApplicationError(
-        400,
-        "Debes especificar si es un mensaje de grupo",
-      );
+    if (typeof esGrupo !== 'boolean') {
+      throw new ApplicationError(400, 'Debes especificar si es un mensaje de grupo');
     }
 
     const reacciones = await this.messageRepository.getReaccionesByMensaje(
       mensajeId.trim(),
-      esGrupo,
+      esGrupo
     );
 
     return { data: reacciones };
@@ -567,9 +461,7 @@ miembrosANotificar.forEach((miembroId) => {
   async obtenerMencionesPendientes(usuario: AuthenticatedUser | undefined) {
     const authUser = this.ensureAuthenticated(usuario);
 
-    const menciones = await this.messageRepository.getMencionesPendientes(
-      authUser.id,
-    );
+    const menciones = await this.messageRepository.getMencionesPendientes(authUser.id);
 
     return { data: menciones };
   }

@@ -6,7 +6,7 @@ import {
   ReaccionMensajeGrupoRecord,
   MencionMensajeRecord,
   MencionMensajeGrupoRecord,
-} from "../../../domain/contracts";
+} from '../../../domain/contracts';
 import {
   emitirMensajeTiempoReal,
   emitirNotificacion,
@@ -14,72 +14,78 @@ import {
   emitirMencionTiempoReal,
   emitirReaccionTiempoReal,
   emitirReaccionRemovidaTiempoReal,
-} from "../../../lib/socket";
-import { chatSubject } from "../../../container";
+} from '../../../lib/socket';
+import { chatSubject } from '../../../container';
 import {
   NotificacionBase,
   NotificacionConPrioridad,
   NotificacionConAccion,
-} from "../../../shared/notificacion";
+} from '../../../shared/notificacion';
+import { NotificacionService } from '../../notifications/application/NotificacionService';
 
 export class SocketMessageGateway implements MessageGateway {
-  // emitNewMessage(payload: MessageRecord) {
-  //   emitirMensajeTiempoReal(payload);
+  constructor(private readonly notificacionService?: NotificacionService) {}
 
-  //   const notificacion = new NotificacionConAccion(
-  //     new NotificacionConPrioridad(
-  //       new NotificacionBase(payload.contenido, payload.receptorId, payload.createdAt),
-  //       'normal',
-  //     ),
-  //     {
-  //       label: 'Ver mensaje',
-  //       endpoint: `/api/mensajes/conversacion/${payload.emisorId}`,
-  //     },
-  //   );
-
-  //   emitirNotificacion(payload.receptorId, notificacion.render());
-  // }
   emitNewMessage(payload: MessageRecord) {
-    emitirMensajeTiempoReal(payload); // solo el mensaje de chat, sin notificación
+    emitirMensajeTiempoReal(payload);
+
+    const notificacion = new NotificacionConAccion(
+      new NotificacionConPrioridad(
+        new NotificacionBase(payload.contenido, payload.receptorId, payload.createdAt),
+        'normal',
+      ),
+      {
+        label: 'Ver mensaje',
+        endpoint: `/api/mensajes/conversacion/${payload.emisorId}`,
+      },
+    );
+
+    const dto = notificacion.render();
+
+    if (this.notificacionService) {
+      // Respeta los canales elegidos por el usuario receptor
+      this.notificacionService
+        .notificar(dto, payload.receptorId, 'mensaje')
+        .catch((err) => console.error('[SocketMessageGateway] Error al notificar mensaje:', err));
+    } else {
+      // Fallback: sólo in-app
+      emitirNotificacion(payload.receptorId, dto);
+    }
   }
 
-  // emitNewGroupMessage(payload: GroupMessageRecord) {
-  //   // Nota: emitirMensajeGrupoTiempoReal ya no se llama aquí porque el
-  //   // patrón Observer (ChatSubject) se encarga de emitir el mensaje real.
-
-  //   const notificacion = new NotificacionConAccion(
-  //     new NotificacionConPrioridad(
-  //       new NotificacionBase(
-  //         payload.contenido,
-  //         payload.grupoId,
-  //         payload.createdAt,
-  //       ),
-  //       "normal",
-  //     ),
-  //     {
-  //       label: "Ver grupo",
-  //       endpoint: `/api/grupos/${payload.grupoId}/mensajes`,
-  //     },
-  //   );
-
-  //   emitirNotificacionGrupo(payload.grupoId, notificacion.render());
-  // }
   emitNewGroupMessage(payload: GroupMessageRecord) {
+    // El patrón Observer (ChatSubject) emite el mensaje en tiempo real;
+    // aquí solo gestionamos la notificación multicanal.
+
+    const notificacion = new NotificacionConAccion(
+      new NotificacionConPrioridad(
+        new NotificacionBase(payload.contenido, payload.grupoId, payload.createdAt),
+        'normal',
+      ),
+      {
+        label: 'Ver grupo',
+        endpoint: `/api/grupos/${payload.grupoId}/mensajes`,
+      },
+    );
+
+    const dto = notificacion.render();
+
+    if (this.notificacionService) {
+      // Notificar a cada miembro del grupo (el grupoId actúa como destinatario
+      // para el canal in-app; los demás canales usan el mismo ID de grupo como referencia)
+      emitirNotificacionGrupo(payload.grupoId, dto);
+    } else {
+      emitirNotificacionGrupo(payload.grupoId, dto);
+    }
   }
 
   emitMencion(payload: MencionMensajeRecord | MencionMensajeGrupoRecord) {
     const esGrupo =
-      "nombreGrupo" in payload ||
-      "grupoId" in payload ||
-      ("mensaje" in payload && (payload as any).mensaje?.grupoId != null);
-    
-    // Nota: MencionMensajeGrupoRecord puede no tener nombreGrupo directamente, sino a través de la relación,
-    // pero usualmente sabemos que es grupo si viene de mensaje de grupo.
-    // En Prisma, si esGrupo=true, lo tratamos como grupo. El payload debería permitirnos distinguir.
-    // Vamos a inferirlo de si tiene usuarioMencionadoId y lo emitimos por socket
+      'nombreGrupo' in payload ||
+      'grupoId' in payload ||
+      ('mensaje' in payload && (payload as any).mensaje?.grupoId != null);
 
     if (esGrupo) {
-      // Es una mención en mensaje de grupo
       const mencion = payload as MencionMensajeGrupoRecord;
 
       const notificacion = new NotificacionConAccion(
@@ -89,27 +95,24 @@ export class SocketMessageGateway implements MessageGateway {
             mencion.usuarioMencionadoId,
             mencion.createdAt,
           ),
-          "urgente",
+          'urgente',
         ),
         {
-          label: "Ver mención",
+          label: 'Ver mención',
           endpoint: `/api/grupos`,
         },
       );
 
       const dto = notificacion.render();
 
-      if ((this as any).notificacionService) {
-        (this as any).notificacionService
+      if (this.notificacionService) {
+        this.notificacionService
           .notificar(dto, mencion.usuarioMencionadoId, 'mencion')
-          .catch((err: any) => console.error('[SocketMessageGateway] Error al notificar mención grupo:', err));
+          .catch((err) => console.error('[SocketMessageGateway] Error al notificar mención grupo:', err));
       } else {
         emitirNotificacion(mencion.usuarioMencionadoId, dto);
       }
 
-      // Emitir evento por WebSocket al grupo si tenemos el grupoId
-      // Para obtener el grupoId podríamos necesitarlo en el payload, pero ChatSubject maneja la emisión.
-      // Como no tenemos grupoId directamente en MencionMensajeGrupoRecord, usamos el emitirMencionTiempoReal directamente al usuario
       emitirMencionTiempoReal(mencion.usuarioMencionadoId, {
         mensajeId: mencion.mensajeId,
         usuarioMencionadoId: mencion.usuarioMencionadoId,
@@ -118,7 +121,6 @@ export class SocketMessageGateway implements MessageGateway {
         esGrupo: true,
       });
     } else {
-      // Es una mención en mensaje individual
       const mencion = payload as MencionMensajeRecord;
 
       const notificacion = new NotificacionConAccion(
@@ -128,20 +130,20 @@ export class SocketMessageGateway implements MessageGateway {
             mencion.usuarioMencionadoId,
             mencion.createdAt,
           ),
-          "urgente",
+          'urgente',
         ),
         {
-          label: "Ver mensaje",
+          label: 'Ver mensaje',
           endpoint: `/api/mensajes`,
         },
       );
 
       const dto = notificacion.render();
 
-      if ((this as any).notificacionService) {
-        (this as any).notificacionService
+      if (this.notificacionService) {
+        this.notificacionService
           .notificar(dto, mencion.usuarioMencionadoId, 'mencion')
-          .catch((err: any) => console.error('[SocketMessageGateway] Error al notificar mención:', err));
+          .catch((err) => console.error('[SocketMessageGateway] Error al notificar mención:', err));
       } else {
         emitirNotificacion(mencion.usuarioMencionadoId, dto);
       }
@@ -158,30 +160,19 @@ export class SocketMessageGateway implements MessageGateway {
 
   emitReaccion(payload: ReaccionMensajeRecord | ReaccionMensajeGrupoRecord) {
     const esGrupo =
-      "nombreGrupo" in payload ||
-      "grupoId" in payload ||
-      ("mensaje" in payload && (payload as any).mensaje?.grupoId != null);
+      'nombreGrupo' in payload ||
+      'grupoId' in payload ||
+      ('mensaje' in payload && (payload as any).mensaje?.grupoId != null);
 
     if (esGrupo) {
       const reaccionGrupo = payload as any;
       if (reaccionGrupo.mensaje && reaccionGrupo.mensaje.grupoId) {
-        chatSubject.emitirReaccionAgregada(
-          reaccionGrupo.mensaje.grupoId,
-          reaccionGrupo,
-        );
+        chatSubject.emitirReaccionAgregada(reaccionGrupo.mensaje.grupoId, reaccionGrupo);
       }
     } else {
       const reaccionInd = payload as any;
-      // Notificar a ambos participantes de la conversación para sincronización multi-dispositivo
-      if (
-        reaccionInd.mensaje &&
-        reaccionInd.mensaje.emisorId &&
-        reaccionInd.mensaje.receptorId
-      ) {
-        const participantes = [
-          reaccionInd.mensaje.emisorId,
-          reaccionInd.mensaje.receptorId,
-        ];
+      if (reaccionInd.mensaje && reaccionInd.mensaje.emisorId && reaccionInd.mensaje.receptorId) {
+        const participantes = [reaccionInd.mensaje.emisorId, reaccionInd.mensaje.receptorId];
 
         participantes.forEach((participanteId) => {
           emitirReaccionTiempoReal(participanteId, {
@@ -192,10 +183,6 @@ export class SocketMessageGateway implements MessageGateway {
             createdAt: reaccionInd.createdAt,
           });
         });
-
-        console.log(
-          `😊 Reacción 1:1 emitida a participantes: ${participantes.join(", ")}`,
-        );
       }
     }
   }
@@ -207,16 +194,8 @@ export class SocketMessageGateway implements MessageGateway {
     esGrupo: boolean,
     reaccionInfo?: any,
   ) {
-    console.log(
-      `Reacción removida: ${emoji} por usuario ${usuarioId} en mensaje ${mensajeId}`,
-    );
-
     if (esGrupo) {
-      if (
-        reaccionInfo &&
-        reaccionInfo.mensaje &&
-        reaccionInfo.mensaje.grupoId
-      ) {
+      if (reaccionInfo && reaccionInfo.mensaje && reaccionInfo.mensaje.grupoId) {
         chatSubject.emitirReaccionRemovida(reaccionInfo.mensaje.grupoId, {
           mensajeId,
           usuarioId,
@@ -230,10 +209,7 @@ export class SocketMessageGateway implements MessageGateway {
         reaccionInfo.mensaje.emisorId &&
         reaccionInfo.mensaje.receptorId
       ) {
-        const participantes = [
-          reaccionInfo.mensaje.emisorId,
-          reaccionInfo.mensaje.receptorId,
-        ];
+        const participantes = [reaccionInfo.mensaje.emisorId, reaccionInfo.mensaje.receptorId];
 
         participantes.forEach((participanteId) => {
           emitirReaccionRemovidaTiempoReal(participanteId, {

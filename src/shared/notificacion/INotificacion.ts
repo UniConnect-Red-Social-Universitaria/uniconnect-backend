@@ -2,7 +2,6 @@ export interface NotificacionDTO {
   mensaje: string;
   destinatario: string;
   timestamp: Date;
-  tipoEvento?: string; 
 }
 
 export interface INotificacion {
@@ -10,7 +9,6 @@ export interface INotificacion {
   getDestinatario(): string;
   getTimestamp(): Date;
   render(): NotificacionDTO;
-  tipoEvento?: string;
 }
 
 export class NotificacionBase implements INotificacion {
