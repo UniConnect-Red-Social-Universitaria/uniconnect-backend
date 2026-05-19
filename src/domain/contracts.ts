@@ -410,6 +410,7 @@ export interface UserRepository {
   }>>;
   updateProfile(id: string, data: UpdateUserProfileData): Promise<UserSummary>;
   delete(id: string): Promise<void>;
+  obtenerEmailPorId(id: string): Promise<string | null>;
 }
 
 export interface ContactRepository {

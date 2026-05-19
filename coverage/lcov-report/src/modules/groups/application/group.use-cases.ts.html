@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">3.13% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>10/319</span>
+                <span class='fraction'>0/319</span>
             </div>
         
             
@@ -37,16 +37,16 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">2% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>1/50</span>
+                <span class='fraction'>0/50</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">3.52% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>10/284</span>
+                <span class='fraction'>0/284</span>
             </div>
         
             
@@ -843,9 +843,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -861,14 +861,14 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1613,9 +1613,9 @@
   GroupEventObserver,
   UserRepository,
 } from '../../../domain/contracts';
-import { ApplicationError } from '../../../shared/application-error';
-import { cloudinary } from '../../../lib/cloudinary';
-import { GroupContext } from '../domain/group-state';
+<span class="cstat-no" title="statement not covered" >import { ApplicationError } from '../../../shared/application-error';</span>
+<span class="cstat-no" title="statement not covered" >import { cloudinary } from '../../../lib/cloudinary';</span>
+<span class="cstat-no" title="statement not covered" >import { GroupContext } from '../domain/group-state';</span>
 &nbsp;
 type CreateGroupInput = {
   nombre: unknown;
@@ -1631,14 +1631,14 @@ type UploadedFile = {
   size: number;
 };
 &nbsp;
-export class GroupUseCases {
-  constructor(
-    private readonly groupRepository: GroupRepository,
-    private readonly materiaRepository: MateriaRepository,
-    private readonly userRepository: UserRepository,
-    private readonly grupoArchivoRepository: GrupoArchivoRepository,
-    private readonly solicitudGrupoRepository: SolicitudGrupoRepository,
-    private readonly observers: GroupEventObserver[] = <span class="branch-0 cbranch-no" title="branch not covered" >[],</span>
+<span class="cstat-no" title="statement not covered" >export class G</span>roupUseCases {
+<span class="fstat-no" title="function not covered" >  constructor(</span>
+    private readonly <span class="cstat-no" title="statement not covered" >groupRepository: GroupRepository,</span>
+    private readonly <span class="cstat-no" title="statement not covered" >materiaRepository: MateriaRepository,</span>
+    private readonly <span class="cstat-no" title="statement not covered" >userRepository: UserRepository,</span>
+    private readonly <span class="cstat-no" title="statement not covered" >grupoArchivoRepository: GrupoArchivoRepository,</span>
+    private readonly <span class="cstat-no" title="statement not covered" >solicitudGrupoRepository: SolicitudGrupoRepository,</span>
+    private readonly <span class="cstat-no" title="statement not covered" >observers: GroupEventObserver[] = <span class="branch-0 cbranch-no" title="branch not covered" >[</span>],</span>
   ) { }
 &nbsp;
 <span class="fstat-no" title="function not covered" >  async </span>crearGrupo(usuario: AuthenticatedUser | undefined, input: CreateGroupInput) {
@@ -2380,7 +2380,7 @@ function <span class="fstat-no" title="function not covered" >formatearGrupo(</s
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-18T00:32:54.064Z
+                at 2026-05-18T21:27:09.804Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

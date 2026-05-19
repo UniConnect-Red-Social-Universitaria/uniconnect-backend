@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">7.84% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>12/153</span>
+                <span class='fraction'>0/153</span>
             </div>
         
             
@@ -37,16 +37,16 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">4.76% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>1/21</span>
+                <span class='fraction'>0/21</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">7.84% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>12/153</span>
+                <span class='fraction'>0/153</span>
             </div>
         
             
@@ -539,21 +539,21 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1007,21 +1007,21 @@
   MessageRepository,
   UserRepository,
 } from '../../../domain/contracts';
-import { ApplicationError } from '../../../shared/application-error';
-import { isValidMongoId } from '../../../shared/mongo-id';
+<span class="cstat-no" title="statement not covered" >import { ApplicationError } from '../../../shared/application-error';</span>
+<span class="cstat-no" title="statement not covered" >import { isValidMongoId } from '../../../shared/mongo-id';</span>
 import { ChatSubject } from '../domain/chat-subject';
-import { crearCadenaValidacion } from './validacion/ValidadorMensajeChainFactory';
-import { extractMentions, getMentionedUsernames } from './parsers/mention-parser';
-import { isValidReactionEmoji } from './parsers/emoji-validator';
+<span class="cstat-no" title="statement not covered" >import { crearCadenaValidacion } from './validacion/ValidadorMensajeChainFactory';</span>
+<span class="cstat-no" title="statement not covered" >import { extractMentions, getMentionedUsernames } from './parsers/mention-parser';</span>
+<span class="cstat-no" title="statement not covered" >import { isValidReactionEmoji } from './parsers/emoji-validator';</span>
 &nbsp;
-export class MessageUseCases {
-  constructor(
-    private readonly messageRepository: MessageRepository,
-    private readonly userRepository: UserRepository,
-    private readonly contactRepository: ContactRepository,
-    private readonly groupRepository: GroupRepository,
-    private readonly messageGateway: MessageGateway,
-    private readonly chatSubject: ChatSubject,
+<span class="cstat-no" title="statement not covered" >export class M</span>essageUseCases {
+<span class="fstat-no" title="function not covered" >  constructor(</span>
+    private readonly <span class="cstat-no" title="statement not covered" >messageRepository: MessageRepository,</span>
+    private readonly <span class="cstat-no" title="statement not covered" >userRepository: UserRepository,</span>
+    private readonly <span class="cstat-no" title="statement not covered" >contactRepository: ContactRepository,</span>
+    private readonly <span class="cstat-no" title="statement not covered" >groupRepository: GroupRepository,</span>
+    private readonly <span class="cstat-no" title="statement not covered" >messageGateway: MessageGateway,</span>
+    private readonly <span class="cstat-no" title="statement not covered" >chatSubject: ChatSubject,</span>
   ) {}
 &nbsp;
 <span class="fstat-no" title="function not covered" >  async </span>enviarMensaje(
@@ -1474,7 +1474,7 @@ export class MessageUseCases {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-18T00:32:54.064Z
+                at 2026-05-18T21:27:09.804Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>
