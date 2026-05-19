@@ -26,14 +26,19 @@ export class NotificacionEventoObserver implements IEventoObserver {
       this.usuarioId,
     );
 
+    const tipoEvento: TipoNotificacion = categoriaATipo(evento.categoria);
+
     this.notificacionService
-      .notificar(notificacion.render(), this.usuarioId, categoriaATipo(evento.categoria))
+      .notificar(notificacion.render(), this.usuarioId, tipoEvento)
       .catch((error) => {
-        console.error('[NotificacionEventoObserver] Error al notificar:', error);
+        console.error(
+          '[NotificacionEventoObserver] Error al notificar:',
+          error,
+        );
       });
   }
 
   getUsuarioId(): string {
-    return `notif:${this.usuarioId}`;
+    return this.usuarioId;
   }
 }

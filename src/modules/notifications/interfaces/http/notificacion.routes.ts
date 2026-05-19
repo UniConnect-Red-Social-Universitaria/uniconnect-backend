@@ -106,7 +106,7 @@ router.get('/preferencias', verificarJWT, NotificacionController.obtenerTodasLas
  */
 router.get('/preferencias', verificarJWT, NotificacionController.obtenerTodasLasPreferencias);
 router.get('/preferencias/:tipoEvento', verificarJWT, NotificacionController.obtenerPreferencias);
-router.put('/preferencias/:tipoEvento', verificarJWT, NotificacionController.actualizarPreferencias);
+router.put('/preferencias', verificarJWT, NotificacionController.actualizarPreferencias);
 
 /**
  * @swagger
