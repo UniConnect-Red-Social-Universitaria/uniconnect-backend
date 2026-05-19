@@ -10,11 +10,8 @@ import {
     NotificacionConEncuesta,
     NotificacionConPrioridad,
 } from '../../../shared/notificacion';
-import { NotificacionService } from '../../notifications/application/NotificacionService';
 
 export class SocketPollGateway implements PollGateway {
-    constructor(private readonly notificacionService?: NotificacionService) {}
-
     emitNewPoll(payload: PollBroadcastRecord): void {
         if (payload.target.type !== 'CHANNEL') {
             return;
@@ -47,20 +44,7 @@ export class SocketPollGateway implements PollGateway {
             },
         );
 
-        const dto = notificacion.render();
-
-        if (this.notificacionService) {
-            // El destinatario del DTO es el grupoId; el servicio notifica por los
-            // canales activos del grupo (in-app lo difunde via emitirNotificacionGrupo,
-            // email/push se envían con el grupoId como referencia).
-            this.notificacionService
-                .notificar(dto, payload.grupoId, 'encuesta')
-                .catch((err) =>
-                    console.error('[SocketPollGateway] Error al notificar encuesta:', err),
-                );
-        } else {
-            emitirNotificacionGrupo(payload.grupoId, dto);
-        }
+        emitirNotificacionGrupo(payload.grupoId, notificacion.render());
     }
 
     emitUpdatedPoll(payload: PollBroadcastRecord): void {

@@ -1,18 +1,16 @@
-import { CategoriaEvento, EventRecord } from '../../../domain/contracts';
-import { IEventoObserver } from '../../../shared/eventos-observer/IEventoObserver';
-import { NotificacionBase } from '../../../shared/notificacion/INotificacion';
-import { NotificacionService } from '../application/NotificacionService';
-import { TipoNotificacion } from '../domain/contracts';
+import { EventRecord, CategoriaEvento } from "../../../domain/contracts";
+import { IEventoObserver } from "../../../shared/eventos-observer/IEventoObserver";
+import { NotificacionBase } from "../../../shared/notificacion/INotificacion";
+import { NotificacionService } from "../application/NotificacionService";
+import { TipoNotificacion } from "../domain/contracts";
 
-/** Mapea CategoriaEvento al TipoNotificacion unificado */
-function categoriaATipo(categoria: CategoriaEvento): TipoNotificacion {
-  switch (categoria) {
-    case 'academico':  return 'evento-academico';
-    case 'cultural':   return 'evento-cultural';
-    case 'deportivo':  return 'evento-deportivo';
-    default:           return 'evento-otro';
-  }
-}
+// Mapa de categoria → tipoEvento exacto que usás en preferencias
+const CATEGORIA_A_TIPO_EVENTO: Partial<Record<string, TipoNotificacion>> = {
+  academico: "evento-academico",
+  cultural: "evento-cultural",
+  deportivo: "evento-deportivo",
+  otro: "evento-otro",
+};
 
 export class NotificacionEventoObserver implements IEventoObserver {
   constructor(
@@ -26,13 +24,15 @@ export class NotificacionEventoObserver implements IEventoObserver {
       this.usuarioId,
     );
 
-    const tipoEvento: TipoNotificacion = categoriaATipo(evento.categoria);
+    // ✅ Traducir la categoría al tipoEvento que el repositorio conoce
+    const tipoEvento: TipoNotificacion =
+      CATEGORIA_A_TIPO_EVENTO[evento.categoria] ?? "evento-otro";
 
     this.notificacionService
       .notificar(notificacion.render(), this.usuarioId, tipoEvento)
       .catch((error) => {
         console.error(
-          '[NotificacionEventoObserver] Error al notificar:',
+          "[NotificacionEventoObserver] Error al notificar:",
           error,
         );
       });

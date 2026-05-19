@@ -28,7 +28,7 @@ export class RecordatorioScheduler {
         new Date(),
       );
 
-      await this.notificacionService.notificar(notificacion.render(), sesion.creadorId, 'recordatorio');
+      await this.notificacionService.notificar(notificacion.render(), sesion.creadorId, 'academico');
       await this.sesionRepository.marcarRecordatorioEnviado(sesion.id);
     }
   }

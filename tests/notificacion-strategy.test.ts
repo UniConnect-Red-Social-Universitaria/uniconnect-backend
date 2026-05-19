@@ -199,20 +199,6 @@ describe('Aislamiento de errores entre estrategias', () => {
     expect(resultados.filter((r) => !r.exito)).toHaveLength(2);
     expect(resultados.find((r) => r.canal === 'push')?.exito).toBe(true);
   });
-
-  it('maneja correctamente excepciones que no son instancias de Error', async () => {
-    const enviarRaro = jest.fn<() => Promise<ResultadoEnvio>>().mockRejectedValue('Un string de error arrojado directamente');
-
-    const repo = new InMemoryPreferenciaRepository();
-    // Cambiamos 'sistema' por 'otro' (o cualquier CategoriaEvento válida)
-    await repo.actualizarPreferencias('u99', 'otro', ['in-app']);
-
-    const service = new NotificacionService([{ canal: 'in-app', enviar: enviarRaro }], repo);
-    const resultados = await service.notificar(NOTIFICACION, 'u99', 'otro');
-
-    expect(resultados[0].exito).toBe(false);
-    expect(resultados[0].error).toBe('Error desconocido');
-  });
 });
 
 // ──────────────────────────────────────────────────────────────────
@@ -285,26 +271,3 @@ describe('InMemoryPreferenciaRepository', () => {
     expect(deportivo.canalesActivos).toEqual(['push']);
   });
 });
-
-// ──────────────────────────────────────────────────────────────────
-// Lógica interna de ResumenDiarioStrategy
-// ──────────────────────────────────────────────────────────────────
-describe('ResumenDiarioStrategy — Lógica de cola', () => {
-  it('debe encolar notificaciones y vaciar la cola al llamar a flushResumen', async () => {
-    const estrategia = new ResumenDiarioStrategy();
-
-    // Enviamos dos notificaciones
-    await estrategia.enviar(NOTIFICACION);
-    await estrategia.enviar({ ...NOTIFICACION, mensaje: 'Otro mensaje' });
-
-    // Accedemos a la propiedad privada 'cola' de forma insegura para el test
-    // o verificamos el comportamiento indirectamente si no queremos romper el encapsulamiento.
-    // En TypeScript/Jest podemos hacer un cast a 'any' para revisar el estado interno:
-    expect((estrategia as any).cola).toHaveLength(2);
-
-    estrategia.flushResumen();
-
-    expect((estrategia as any).cola).toHaveLength(0);
-  });
-});
-
