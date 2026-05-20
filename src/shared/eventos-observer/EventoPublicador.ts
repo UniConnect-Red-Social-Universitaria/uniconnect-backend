@@ -25,8 +25,9 @@ export class EventoPublicador {
     this.suscriptores.get(categoria)?.delete(observer.getUsuarioId());
   }
 
-  notificar(categoria: CategoriaEvento, evento: EventRecord): void {
+  notificar(categoria: CategoriaEvento, evento: EventRecord, usuarioExcluido?: string): void {
     this.suscriptores.get(categoria)?.forEach((obs) => {
+      if (obs.getUsuarioId() === usuarioExcluido) return;
       try {
         obs.onNuevoEvento(evento);
       } catch (error) {

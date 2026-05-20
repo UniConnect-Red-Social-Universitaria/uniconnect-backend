@@ -33,7 +33,8 @@ import { InMemoryTokenBlacklistService } from './modules/users/infrastructure/to
 import { PrismaUserRepository } from './modules/users/infrastructure/prisma-user.repository';
 import { PrismaEstadisticasRepository } from './modules/users/infrastructure/prisma-estadisticas.repository';
 import { NotificacionService } from './modules/notifications/application/NotificacionService';
-import { InMemoryPreferenciaRepository } from './modules/notifications/infrastructure/InMemoryPreferenciaRepository';
+import { PrismaPreferenciaRepository } from './modules/notifications/infrastructure/prisma-preferencia.repository';
+import { PrismaNotificacionRepository } from './modules/notifications/infrastructure/prisma-notificacion.repository';
 import { InAppWebSocketStrategy } from './modules/notifications/infrastructure/strategies/InAppWebSocketStrategy';
 import { EmailInstitucionalStrategy } from './modules/notifications/infrastructure/strategies/EmailInstitucionalStrategy';
 import { PushMovilStrategy } from './modules/notifications/infrastructure/strategies/PushMovilStrategy';
@@ -59,7 +60,6 @@ const passwordService = new BcryptPasswordService();
 const tokenService = new JwtTokenService();
 const identityVerificationService = new Auth0IdentityVerificationService();
 const tokenBlacklistService = new InMemoryTokenBlacklistService();
-const messageGateway = new SocketMessageGateway();
 const pollGateway = new ModerationPollGatewayDecorator(
   new LoggingPollGatewayDecorator(new SocketPollGateway()),
 );
@@ -83,8 +83,9 @@ if (process.env.NODE_ENV !== 'test') {
   });
 }
 
-// ── Notificaciones (deben declararse ANTES que messageUseCases) ── // ← CAMBIO: bloque movido arriba
-export const preferenciaRepository = new InMemoryPreferenciaRepository();
+// ── Notificaciones ──
+export const preferenciaRepository = new PrismaPreferenciaRepository();
+export const notificacionRepository = new PrismaNotificacionRepository();
 
 const emailStrategy = new EmailInstitucionalStrategy(mailTransporter, userRepository);
 
@@ -96,7 +97,10 @@ export const notificacionService = new NotificacionService(
     new ResumenDiarioStrategy(),
   ],
   preferenciaRepository,
+  notificacionRepository,
 );
+
+const messageGateway = new SocketMessageGateway(notificacionService);
 
 // ── ChatSubject ──
 const chatSubject = ChatSubject.getInstance();
