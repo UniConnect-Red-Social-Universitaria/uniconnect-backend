@@ -3,6 +3,8 @@ import { PrismaForoRepository } from './modules/foro/infrastructure/prisma-foro.
 import { SesionEstudioUseCases } from './modules/sesiones/application/sesion.use-cases';
 import { PrismaSesionEstudioRepository } from './modules/sesiones/infrastructure/prisma-sesion.repository';
 import { RecordatorioScheduler } from './modules/sesiones/infrastructure/RecordatorioScheduler';
+import { SesionSubject } from './modules/sesiones/domain/SesionSubject';
+import { NotificacionSesionObserver } from './modules/sesiones/infrastructure/NotificacionSesionObserver';
 import { CatalogUseCases } from './modules/catalog/application/catalog.use-cases';
 import { PrismaCarreraRepository } from './modules/catalog/infrastructure/prisma-carrera.repository';
 import { EventUseCases } from './modules/events/application/event.use-cases';
@@ -223,3 +225,11 @@ export const metricasUseCases = new MetricasUseCases(
 export const trazabilidadUseCases = new TrazabilidadUseCases(trazabilidadRepository);
 export const retrospectivaUseCases = new RetrospectivaUseCases(retrospectivaRepository);
 export const impedimentoUseCases = new ImpedimentoUseCases(impedimentoRepository);
+const sesionSubject = SesionSubject.getInstance();
+const notificacionSesionObserver = new NotificacionSesionObserver(notificacionService);
+
+// Suscribir observer para Criterio 7: notificar al organizador cuando cambia disponibilidad
+sesionSubject.suscribir('*', notificacionSesionObserver);
+
+export const sesionUseCases = new SesionEstudioUseCases(sesionRepository, sesionSubject, userRepository);
+export const recordatorioScheduler = new RecordatorioScheduler(sesionRepository, notificacionService);
