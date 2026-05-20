@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/6</span>
+                <span class='fraction'>6/6</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/2</span>
+                <span class='fraction'>2/2</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/2</span>
+                <span class='fraction'>2/2</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/6</span>
+                <span class='fraction'>6/6</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -91,7 +91,7 @@
 <a name='L26'></a><a href='#L26'>26</a>
 <a name='L27'></a><a href='#L27'>27</a>
 <a name='L28'></a><a href='#L28'>28</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -100,16 +100,16 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -118,7 +118,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { RecursoComponent } from '../RecursoComponent';
-<span class="cstat-no" title="statement not covered" >import { RecursoDecorator } from '../RecursoDecorator';</span>
+import { RecursoDecorator } from '../RecursoDecorator';
 &nbsp;
 export interface ComentarioRecurso {
     autorId: string;
@@ -127,16 +127,16 @@ export interface ComentarioRecurso {
     fecha: Date;
 }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export class R</span>ecursoConComentarios extends RecursoDecorator {
-<span class="fstat-no" title="function not covered" >    constructor(c</span>omponente: RecursoComponent, private <span class="cstat-no" title="statement not covered" >comentarios: ComentarioRecurso[])</span> {
-<span class="cstat-no" title="statement not covered" >        super(componente);</span>
+export class RecursoConComentarios extends RecursoDecorator {
+    constructor(componente: RecursoComponent, private comentarios: ComentarioRecurso[]) {
+        super(componente);
     }
 &nbsp;
-<span class="fstat-no" title="function not covered" >    getMetadata(</span>): any {
-        const baseMetadata = <span class="cstat-no" title="statement not covered" >super.getMetadata();</span>
+    getMetadata(): any {
+        const baseMetadata = super.getMetadata();
 &nbsp;
         // Agregamos comentarios sin sobrescribir o perder los previos si los ubiera (aunque típicamente vienen en cascada)
-<span class="cstat-no" title="statement not covered" >        return {</span>
+        return {
             ...baseMetadata,
             comentarios: [
                 ...(baseMetadata.comentarios || []),
@@ -151,7 +151,7 @@ export interface ComentarioRecurso {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-20T01:58:58.582Z
+                at 2026-05-20T02:44:55.582Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

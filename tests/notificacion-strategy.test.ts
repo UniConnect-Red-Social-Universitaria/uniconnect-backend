@@ -9,14 +9,13 @@ import { EmailInstitucionalStrategy } from '../src/modules/notifications/infrast
 import { PushMovilStrategy } from '../src/modules/notifications/infrastructure/strategies/PushMovilStrategy';
 import { ResumenDiarioStrategy } from '../src/modules/notifications/infrastructure/strategies/ResumenDiarioStrategy';
 import { NotificacionDTO } from '../src/shared/notificacion/INotificacion';
-import { CanalNotificacion } from '../src/modules/notifications/domain/contracts';
+import { CanalNotificacion, TipoNotificacion } from '../src/modules/notifications/domain/contracts';
+import type { Transporter, SentMessageInfo } from 'nodemailer';
 
-// ── Stub para evitar la dependencia de socket.io en tests ──
 jest.mock('../src/lib/socket', () => ({
   emitirNotificacion: jest.fn(),
 }));
 
-// ── Stub para evitar la dependencia del logger ──
 jest.mock('../src/lib/logger', () => ({
   logger: { info: jest.fn(), error: jest.fn(), debug: jest.fn() },
 }));
@@ -26,6 +25,35 @@ const NOTIFICACION: NotificacionDTO = {
   destinatario: 'usuario-abc',
   timestamp: new Date('2024-06-01T10:00:00Z'),
 };
+
+const TIPO_ACADEMICO: TipoNotificacion  = 'evento-academico';
+const TIPO_CULTURAL: TipoNotificacion   = 'evento-cultural';
+const TIPO_DEPORTIVO: TipoNotificacion  = 'evento-deportivo';
+const TIPO_OTRO: TipoNotificacion       = 'evento-otro';
+
+// ── Interfaz local para el repositorio de usuario ──
+interface IUsuarioRepository {
+  obtenerEmailPorId(usuarioId: string): Promise<string | null>;
+}
+
+// ── Mock del transporter: se castea como Transporter pero solo implementa sendMail ──
+const sendMailMock = jest.fn<() => Promise<SentMessageInfo>>()
+  .mockResolvedValue({ messageId: 'test-id-123' } as SentMessageInfo);
+
+const mockTransporter = {
+  sendMail: sendMailMock,
+} as unknown as Transporter;
+
+// ── Mock del repositorio de usuario con tipo explícito ──
+const obtenerEmailMock = jest.fn<() => Promise<string | null>>()
+  .mockResolvedValue('test@ucaldas.edu.co');
+
+const mockUsuarioRepository: IUsuarioRepository = {
+  obtenerEmailPorId: obtenerEmailMock,
+};
+
+const makeEmailStrategy = () =>
+  new EmailInstitucionalStrategy(mockTransporter, mockUsuarioRepository);
 
 // ──────────────────────────────────────────────────────────────────
 // 1. Interfaz INotificacionStrategy
@@ -38,7 +66,7 @@ describe('INotificacionStrategy — contrato de interfaz', () => {
   });
 
   it('EmailInstitucionalStrategy expone canal "email"', () => {
-    const s = new EmailInstitucionalStrategy();
+    const s = makeEmailStrategy();
     expect(s.canal).toBe('email');
     expect(typeof s.enviar).toBe('function');
   });
@@ -60,14 +88,33 @@ describe('INotificacionStrategy — contrato de interfaz', () => {
 // 2. Estrategias concretas — retornan ResultadoEnvio correcto
 // ──────────────────────────────────────────────────────────────────
 describe('Estrategias concretas — enviar()', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    sendMailMock.mockResolvedValue({ messageId: 'test-id-123' } as SentMessageInfo);
+    obtenerEmailMock.mockResolvedValue('test@ucaldas.edu.co');
+  });
+
   it('InAppWebSocketStrategy retorna exito: true', async () => {
     const resultado = await new InAppWebSocketStrategy().enviar(NOTIFICACION);
     expect(resultado).toEqual({ canal: 'in-app', exito: true });
   });
 
   it('EmailInstitucionalStrategy retorna exito: true', async () => {
-    const resultado = await new EmailInstitucionalStrategy().enviar(NOTIFICACION);
+    const resultado = await makeEmailStrategy().enviar(NOTIFICACION);
     expect(resultado).toEqual({ canal: 'email', exito: true });
+  });
+
+  it('EmailInstitucionalStrategy retorna exito: false si el usuario no tiene email', async () => {
+    obtenerEmailMock.mockResolvedValue(null);
+    const resultado = await makeEmailStrategy().enviar(NOTIFICACION);
+    expect(resultado.exito).toBe(false);
+    expect(resultado.canal).toBe('email');
+  });
+
+  it('EmailInstitucionalStrategy retorna exito: false si el transporter falla', async () => {
+    sendMailMock.mockRejectedValue(new Error('SMTP caído') as never);
+    const resultado = await makeEmailStrategy().enviar(NOTIFICACION);
+    expect(resultado).toEqual({ canal: 'email', exito: false, error: 'SMTP caído' });
   });
 
   it('PushMovilStrategy retorna exito: true', async () => {
@@ -82,32 +129,34 @@ describe('Estrategias concretas — enviar()', () => {
 });
 
 // ──────────────────────────────────────────────────────────────────
-// 3. NotificacionService recibe estrategias por inyección de dependencias
+// 3. NotificacionService — inyección de dependencias
 // ──────────────────────────────────────────────────────────────────
 describe('NotificacionService — inyección de dependencias', () => {
   it('no instancia estrategias internamente; las recibe como parámetro', () => {
     const estrategiaMock: INotificacionStrategy = {
       canal: 'mock',
-      enviar: jest.fn<() => Promise<ResultadoEnvio>>().mockResolvedValue({ canal: 'mock', exito: true }),
+      enviar: jest.fn<(n: NotificacionDTO) => Promise<ResultadoEnvio>>()
+        .mockResolvedValue({ canal: 'mock', exito: true }),
     };
     const repo = new InMemoryPreferenciaRepository();
     const service = new NotificacionService([estrategiaMock], repo);
-
     expect(service).toBeInstanceOf(NotificacionService);
   });
 
   it('ejecuta todas las estrategias cuyos canales están activos', async () => {
-    const enviarA = jest.fn<() => Promise<ResultadoEnvio>>().mockResolvedValue({ canal: 'a', exito: true });
-    const enviarB = jest.fn<() => Promise<ResultadoEnvio>>().mockResolvedValue({ canal: 'b', exito: true });
+    const enviarA = jest.fn<(n: NotificacionDTO) => Promise<ResultadoEnvio>>()
+      .mockResolvedValue({ canal: 'in-app', exito: true });
+    const enviarB = jest.fn<(n: NotificacionDTO) => Promise<ResultadoEnvio>>()
+      .mockResolvedValue({ canal: 'email', exito: true });
 
     const estrategiaA: INotificacionStrategy = { canal: 'in-app', enviar: enviarA };
-    const estrategiaB: INotificacionStrategy = { canal: 'email', enviar: enviarB };
+    const estrategiaB: INotificacionStrategy = { canal: 'email',  enviar: enviarB };
 
     const repo = new InMemoryPreferenciaRepository();
-    await repo.actualizarPreferencias('u1', 'academico', ['in-app', 'email']);
+    await repo.actualizarPreferencias('u1', TIPO_ACADEMICO, ['in-app', 'email']);
 
     const service = new NotificacionService([estrategiaA, estrategiaB], repo);
-    await service.notificar(NOTIFICACION, 'u1', 'academico');
+    await service.notificar(NOTIFICACION, 'u1', TIPO_ACADEMICO);
 
     expect(enviarA).toHaveBeenCalledTimes(1);
     expect(enviarB).toHaveBeenCalledTimes(1);
@@ -119,19 +168,21 @@ describe('NotificacionService — inyección de dependencias', () => {
 // ──────────────────────────────────────────────────────────────────
 describe('Preferencias de canal por tipo de evento', () => {
   it('solo ejecuta los canales activos para ese tipo de evento', async () => {
-    const enviarInApp = jest.fn<() => Promise<ResultadoEnvio>>().mockResolvedValue({ canal: 'in-app', exito: true });
-    const enviarEmail = jest.fn<() => Promise<ResultadoEnvio>>().mockResolvedValue({ canal: 'email', exito: true });
+    const enviarInApp = jest.fn<(n: NotificacionDTO) => Promise<ResultadoEnvio>>()
+      .mockResolvedValue({ canal: 'in-app', exito: true });
+    const enviarEmail = jest.fn<(n: NotificacionDTO) => Promise<ResultadoEnvio>>()
+      .mockResolvedValue({ canal: 'email', exito: true });
 
     const estrategias: INotificacionStrategy[] = [
       { canal: 'in-app', enviar: enviarInApp },
-      { canal: 'email', enviar: enviarEmail },
+      { canal: 'email',  enviar: enviarEmail },
     ];
 
     const repo = new InMemoryPreferenciaRepository();
-    await repo.actualizarPreferencias('u2', 'cultural', ['in-app'] as CanalNotificacion[]);
+    await repo.actualizarPreferencias('u2', TIPO_CULTURAL, ['in-app'] as CanalNotificacion[]);
 
     const service = new NotificacionService(estrategias, repo);
-    const resultados = await service.notificar(NOTIFICACION, 'u2', 'cultural');
+    const resultados = await service.notificar(NOTIFICACION, 'u2', TIPO_CULTURAL);
 
     expect(resultados).toHaveLength(1);
     expect(resultados[0].canal).toBe('in-app');
@@ -139,15 +190,13 @@ describe('Preferencias de canal por tipo de evento', () => {
   });
 
   it('sin canales activos no ejecuta ninguna estrategia', async () => {
-    const enviar = jest.fn<() => Promise<ResultadoEnvio>>().mockResolvedValue({ canal: 'push', exito: true });
+    const enviar = jest.fn<(n: NotificacionDTO) => Promise<ResultadoEnvio>>()
+      .mockResolvedValue({ canal: 'push', exito: true });
     const repo = new InMemoryPreferenciaRepository();
-    await repo.actualizarPreferencias('u3', 'deportivo', [] as CanalNotificacion[]);
+    await repo.actualizarPreferencias('u3', TIPO_DEPORTIVO, [] as CanalNotificacion[]);
 
-    const service = new NotificacionService(
-      [{ canal: 'push', enviar }],
-      repo,
-    );
-    const resultados = await service.notificar(NOTIFICACION, 'u3', 'deportivo');
+    const service = new NotificacionService([{ canal: 'push', enviar }], repo);
+    const resultados = await service.notificar(NOTIFICACION, 'u3', TIPO_DEPORTIVO);
 
     expect(resultados).toHaveLength(0);
     expect(enviar).not.toHaveBeenCalled();
@@ -155,45 +204,43 @@ describe('Preferencias de canal por tipo de evento', () => {
 });
 
 // ──────────────────────────────────────────────────────────────────
-// 5. Aislamiento de errores — una estrategia falla, las demás siguen
+// 5. Aislamiento de errores
 // ──────────────────────────────────────────────────────────────────
 describe('Aislamiento de errores entre estrategias', () => {
   it('si una estrategia lanza, el error queda aislado y las demás continúan', async () => {
-    const enviarOk = jest.fn<() => Promise<ResultadoEnvio>>().mockResolvedValue({ canal: 'email', exito: true });
-    const enviarFalla = jest.fn<() => Promise<ResultadoEnvio>>().mockRejectedValue(new Error('Fallo de red'));
+    const enviarOk = jest.fn<(n: NotificacionDTO) => Promise<ResultadoEnvio>>()
+      .mockResolvedValue({ canal: 'email', exito: true });
+    const enviarFalla = jest.fn<(n: NotificacionDTO) => Promise<ResultadoEnvio>>()
+      .mockRejectedValue(new Error('Fallo de red') as never);
 
     const estrategias: INotificacionStrategy[] = [
       { canal: 'in-app', enviar: enviarFalla },
-      { canal: 'email', enviar: enviarOk },
+      { canal: 'email',  enviar: enviarOk },
     ];
 
     const repo = new InMemoryPreferenciaRepository();
-    await repo.actualizarPreferencias('u4', 'academico', ['in-app', 'email']);
+    await repo.actualizarPreferencias('u4', TIPO_ACADEMICO, ['in-app', 'email']);
 
     const service = new NotificacionService(estrategias, repo);
-    const resultados = await service.notificar(NOTIFICACION, 'u4', 'academico');
+    const resultados = await service.notificar(NOTIFICACION, 'u4', TIPO_ACADEMICO);
 
     expect(resultados).toHaveLength(2);
-
-    const fallido = resultados.find((r) => r.canal === 'in-app');
-    expect(fallido).toEqual({ canal: 'in-app', exito: false, error: 'Fallo de red' });
-
-    const exitoso = resultados.find((r) => r.canal === 'email');
-    expect(exitoso).toEqual({ canal: 'email', exito: true });
+    expect(resultados.find((r) => r.canal === 'in-app')).toEqual({ canal: 'in-app', exito: false, error: 'Fallo de red' });
+    expect(resultados.find((r) => r.canal === 'email')).toEqual({ canal: 'email', exito: true });
   });
 
   it('múltiples estrategias fallidas quedan todas aisladas', async () => {
     const repo = new InMemoryPreferenciaRepository();
-    await repo.actualizarPreferencias('u5', 'otro', ['in-app', 'email', 'push']);
+    await repo.actualizarPreferencias('u5', TIPO_OTRO, ['in-app', 'email', 'push']);
 
     const estrategias: INotificacionStrategy[] = [
-      { canal: 'in-app', enviar: jest.fn<() => Promise<ResultadoEnvio>>().mockRejectedValue(new Error('E1')) },
-      { canal: 'email', enviar: jest.fn<() => Promise<ResultadoEnvio>>().mockRejectedValue(new Error('E2')) },
-      { canal: 'push', enviar: jest.fn<() => Promise<ResultadoEnvio>>().mockResolvedValue({ canal: 'push', exito: true }) },
+      { canal: 'in-app', enviar: jest.fn<(n: NotificacionDTO) => Promise<ResultadoEnvio>>().mockRejectedValue(new Error('E1') as never) },
+      { canal: 'email',  enviar: jest.fn<(n: NotificacionDTO) => Promise<ResultadoEnvio>>().mockRejectedValue(new Error('E2') as never) },
+      { canal: 'push',   enviar: jest.fn<(n: NotificacionDTO) => Promise<ResultadoEnvio>>().mockResolvedValue({ canal: 'push', exito: true }) },
     ];
 
     const service = new NotificacionService(estrategias, repo);
-    const resultados = await service.notificar(NOTIFICACION, 'u5', 'otro');
+    const resultados = await service.notificar(NOTIFICACION, 'u5', TIPO_OTRO);
 
     expect(resultados).toHaveLength(3);
     expect(resultados.filter((r) => !r.exito)).toHaveLength(2);
@@ -202,17 +249,16 @@ describe('Aislamiento de errores entre estrategias', () => {
 });
 
 // ──────────────────────────────────────────────────────────────────
-// 6. Principio Open/Closed — ResumenDiarioStrategy se agrega sin
-//    modificar NotificacionService ni las estrategias existentes
+// 6. Open/Closed — ResumenDiarioStrategy
 // ──────────────────────────────────────────────────────────────────
 describe('Open/Closed — agregar ResumenDiarioStrategy sin modificar el servicio', () => {
   it('NotificacionService acepta ResumenDiarioStrategy como canal adicional', async () => {
     const resumen = new ResumenDiarioStrategy();
     const repo = new InMemoryPreferenciaRepository();
-    await repo.actualizarPreferencias('u6', 'cultural', ['resumen-diario'] as CanalNotificacion[]);
+    await repo.actualizarPreferencias('u6', TIPO_CULTURAL, ['resumen-diario'] as CanalNotificacion[]);
 
     const service = new NotificacionService([resumen], repo);
-    const resultados = await service.notificar(NOTIFICACION, 'u6', 'cultural');
+    const resultados = await service.notificar(NOTIFICACION, 'u6', TIPO_CULTURAL);
 
     expect(resultados).toHaveLength(1);
     expect(resultados[0]).toEqual({ canal: 'resumen-diario', exito: true });
@@ -220,17 +266,17 @@ describe('Open/Closed — agregar ResumenDiarioStrategy sin modificar el servici
 
   it('mezcla de canales existentes + ResumenDiarioStrategy funciona sin cambios en el servicio', async () => {
     const repo = new InMemoryPreferenciaRepository();
-    await repo.actualizarPreferencias('u7', 'academico', ['in-app', 'resumen-diario'] as CanalNotificacion[]);
+    await repo.actualizarPreferencias('u7', TIPO_ACADEMICO, ['in-app', 'resumen-diario'] as CanalNotificacion[]);
 
     const service = new NotificacionService(
       [
         new InAppWebSocketStrategy(),
-        new EmailInstitucionalStrategy(),
+        makeEmailStrategy(),
         new ResumenDiarioStrategy(),
       ],
       repo,
     );
-    const resultados = await service.notificar(NOTIFICACION, 'u7', 'academico');
+    const resultados = await service.notificar(NOTIFICACION, 'u7', TIPO_ACADEMICO);
 
     expect(resultados).toHaveLength(2);
     expect(resultados.map((r) => r.canal).sort()).toEqual(['in-app', 'resumen-diario']);
@@ -248,24 +294,24 @@ describe('InMemoryPreferenciaRepository', () => {
   });
 
   it('retorna canales por defecto cuando no hay preferencias guardadas', async () => {
-    const prefs = await repo.obtenerPreferencias('nuevo-usuario', 'academico');
+    const prefs = await repo.obtenerPreferencias('nuevo-usuario', TIPO_ACADEMICO);
     expect(prefs.canalesActivos).toContain('in-app');
     expect(prefs.canalesActivos).toContain('email');
     expect(prefs.canalesActivos).toContain('push');
   });
 
   it('persiste y retorna preferencias actualizadas', async () => {
-    await repo.actualizarPreferencias('u8', 'deportivo', ['push']);
-    const prefs = await repo.obtenerPreferencias('u8', 'deportivo');
+    await repo.actualizarPreferencias('u8', TIPO_DEPORTIVO, ['push']);
+    const prefs = await repo.obtenerPreferencias('u8', TIPO_DEPORTIVO);
     expect(prefs.canalesActivos).toEqual(['push']);
   });
 
   it('cada usuario y tipo de evento tiene preferencias independientes', async () => {
-    await repo.actualizarPreferencias('u9', 'cultural', ['email']);
-    await repo.actualizarPreferencias('u9', 'deportivo', ['push']);
+    await repo.actualizarPreferencias('u9', TIPO_CULTURAL,  ['email']);
+    await repo.actualizarPreferencias('u9', TIPO_DEPORTIVO, ['push']);
 
-    const cultural = await repo.obtenerPreferencias('u9', 'cultural');
-    const deportivo = await repo.obtenerPreferencias('u9', 'deportivo');
+    const cultural  = await repo.obtenerPreferencias('u9', TIPO_CULTURAL);
+    const deportivo = await repo.obtenerPreferencias('u9', TIPO_DEPORTIVO);
 
     expect(cultural.canalesActivos).toEqual(['email']);
     expect(deportivo.canalesActivos).toEqual(['push']);

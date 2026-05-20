@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/8</span>
+                <span class='fraction'>8/8</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/2</span>
+                <span class='fraction'>2/2</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/4</span>
+                <span class='fraction'>4/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/8</span>
+                <span class='fraction'>8/8</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -97,7 +97,7 @@
 <a name='L32'></a><a href='#L32'>32</a>
 <a name='L33'></a><a href='#L33'>33</a>
 <a name='L34'></a><a href='#L34'>34</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -105,32 +105,32 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">14x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">21x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10x</span>
+<span class="cline-any cline-yes">10x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { CategoriaEvento } from '../../../domain/contracts';
-<span class="cstat-no" title="statement not covered" >import {</span>
+import {
   CanalNotificacion,
   CANALES_DEFAULT,
   PreferenciaCanal,
@@ -138,28 +138,28 @@
   TipoNotificacion
 } from '../domain/contracts';
 &nbsp;
-<span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >export class I</span></span>nMemoryPreferenciaRepository implements PreferenciaCanalRepository {
-  private <span class="cstat-no" title="statement not covered" >store = new Map&lt;string, CanalNotificacion[]&gt;();</span>
+export class InMemoryPreferenciaRepository implements PreferenciaCanalRepository {
+  private store = new Map&lt;string, CanalNotificacion[]&gt;();
 &nbsp;
-  private <span class="fstat-no" title="function not covered" >key(</span>usuarioId: string, tipoEvento: TipoNotificacion): string {  // ← ya no CategoriaEvento
-<span class="cstat-no" title="statement not covered" >  return `${usuarioId}::${tipoEvento}`;</span>
+  private key(usuarioId: string, tipoEvento: TipoNotificacion): string {  // ← ya no CategoriaEvento
+  return `${usuarioId}::${tipoEvento}`;
 }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  async </span>obtenerPreferencias(
+  async obtenerPreferencias(
   usuarioId: string,
   tipoEvento: TipoNotificacion,  // ← cambiado
 ): Promise&lt;PreferenciaCanal&gt; {
-    const canalesActivos = <span class="cstat-no" title="statement not covered" >this.store.get(this.key(usuarioId, tipoEvento)) ?? [...CANALES_DEFAULT];</span>
-<span class="cstat-no" title="statement not covered" >    return { usuarioId, tipoEvento, canalesActivos };</span>
+    const canalesActivos = this.store.get(this.key(usuarioId, tipoEvento)) ?? [...CANALES_DEFAULT];
+    return { usuarioId, tipoEvento, canalesActivos };
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  async </span>actualizarPreferencias(
+  async actualizarPreferencias(
   usuarioId: string,
   tipoEvento: TipoNotificacion,  // ← cambiado
   canales: CanalNotificacion[],
 ): Promise&lt;PreferenciaCanal&gt; {
-<span class="cstat-no" title="statement not covered" >    this.store.set(this.key(usuarioId, tipoEvento), canales);</span>
-<span class="cstat-no" title="statement not covered" >    return { usuarioId, tipoEvento, canalesActivos: canales };</span>
+    this.store.set(this.key(usuarioId, tipoEvento), canales);
+    return { usuarioId, tipoEvento, canalesActivos: canales };
   }
 }
 &nbsp;</pre></td></tr></table></pre>
@@ -169,7 +169,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-20T01:58:58.582Z
+                at 2026-05-20T02:44:55.582Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

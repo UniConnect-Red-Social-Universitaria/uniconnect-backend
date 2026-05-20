@@ -64,7 +64,7 @@ export class EventUseCases {
       creadorId: authUser.id,
     });
 
-    this.publicador.notificar(categoriaValida, evento as EventRecord);
+    this.publicador.notificar(categoriaValida, evento as EventRecord, authUser.id);
 
     return {
       message: 'Evento creado correctamente',
