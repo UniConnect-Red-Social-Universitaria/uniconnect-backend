@@ -15,6 +15,7 @@ import foroRoutes from "./modules/foro/interfaces/http/foro.routes";
 import sesionRoutes from "./modules/sesiones/interfaces/http/sesion.routes";
 import encuestaRoutes from "./modules/polls/interfaces/http/encuesta.routes";
 import recursoRoutes from "./modules/recursos/recurso.routes";
+import scrumRoutes from "./modules/scrum/interfaces/http/scrum.routes";
 
 import { version } from "../package.json";
 
@@ -43,6 +44,7 @@ app.use("/api/foro", foroRoutes);
 app.use("/api/sesiones", sesionRoutes);
 app.use("/api/encuestas", encuestaRoutes);
 app.use("/api/recursos", recursoRoutes);
+app.use("/api/scrum", scrumRoutes);
 
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.get("/openapi.json", (_req, res) => res.json(swaggerSpec));

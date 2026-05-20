@@ -1,107 +1,96 @@
-# AGENTS.md — UniConnect Backend
+# UniConnect Backend — Agent Guide
 
 ## Quick start
 
 ```bash
-cp .env_ejemplo .env    # then edit values
+cp .env_ejemplo .env   # edit real values
 npm install
 npx prisma generate
-npx prisma db push       # sync schema to MongoDB
-npm run dev              # nodemon on src/server.ts
+npx prisma db push      # sync Prisma schema to MongoDB
+npm run dev             # nodemon on src/server.ts
 ```
-
-## Commands
-
-| Command | Purpose |
-|---|---|
-| `npm run dev` | Dev server with nodemon (port 3000) |
-| `npm test` | Jest all `*.test.ts` |
-| `npm test -- -t "describe pattern"` | Run subset by name |
-| `npm test -- tests/integration/` | Integration suite only |
-| `npm test -- --coverage` | With coverage (threshold: 80%) |
-| `npm run build` | Generate OpenAPI spec + `tsc` to `dist/` |
-| `npx tsc --noEmit` | Type-check without emitting |
-| `npm run generate:openapi` | Rebuild `openapi.json` from JSDoc |
-| `npm run test:coverage` | Test + coverage report |
-| `npx prisma generate` | Regenerate Prisma client after schema changes |
-| `npx prisma db push` | Push Prisma schema to MongoDB |
 
 ## Architecture
 
-- **Monorepo?** No — single backend package (`commonjs`, TypeScript).
-- **Framework:** Express 5 + Socket.IO (real-time chat on same port).
-- **Database:** MongoDB via Prisma ORM.
-- **Auth:** JWT (`Authorization: Bearer <token>`). `DEV_MODE=true` skips Google token validation.
-- **OpenAPI 3 spec** auto-generated from JSDoc in `*.routes.ts`. Served at `/docs` and `/openapi.json`.
-
-## Module structure (clean architecture)
+Hexagonal (ports & adapters) with DDD-lite. Every module under `src/modules/<name>/` has:
 
 ```
-src/modules/<module>/
-  application/     — use cases (*.use-cases.ts), optional validacion/ (Chain of Resp)
-  domain/          — contracts.ts + entities/interfaces
-  infrastructure/  — prisma-*.repository.ts, gateways, observers, schedulers
-  interfaces/http/ — <module>.controller.ts + <module>.routes.ts
+domain/             interfaces & types (ports)
+application/        use-case classes (pure business logic)
+infrastructure/     Prisma repos, gateways, adapters
+interfaces/http/    Express routes + controllers (thin)
 ```
 
-11 modules: `catalog`, `events`, `foro`, `groups`, `messages`, `materias`, `notifications`, `polls`, `recursos`, `sesiones`, `users`.
+Wiring: `src/container.ts` — single DI container instantiating all repos, services, and use cases.
 
-**Exception:** `recursos/` is flat (controller + routes + service, no layers).
+Shared contracts: `src/domain/contracts.ts` (re-exported per-module).
 
-## Dependency injection
+## Key commands
 
-Manual wiring in `src/container.ts` (no DI framework). Imports and instantiates all repositories, services, use cases, and schedulers. The Express app imports use cases from here. Socket.IO initializer also imports from container.
+| Command | Purpose |
+|---|---|
+| `npm run dev` | Dev server with nodemon |
+| `npm run build` | `generate:openapi && tsc` |
+| `npm test` | All Jest tests (`*.test.ts`) |
+| `npm test -- tests/integration --verbose` | Integration tests only |
+| `npx tsc --noEmit` | Type-check without emitting |
+| `npm run generate:openapi` | Regenerate `openapi.json` from JSDoc |
 
-## Entrypoints
+CI runs: `npx prisma generate` → `npx tsc --noEmit` → `npm run build` → `npm test -- --coverage --verbose`.
 
-- `src/server.ts` — creates HTTP server, initializes Socket.IO, starts schedulers
-- `src/app.ts` — Express app with all routes mounted at `/api/<entity>`
+No linter or formatter is configured.
 
 ## Testing quirks
 
-- Prisma client is **mocked globally** in `tests/setup/jest.setup.ts`. Tests do not need a real database.
-- Integration tests in `tests/integration/` exercise the Express app layer with supertest (still uses mocked Prisma).
-- `NODE_ENV=test` is set by Jest config. SMTP verification is skipped when `NODE_ENV === 'test'` (see `container.ts:80`).
+- Prisma is **mocked globally** in `tests/setup/jest.setup.ts` — unit tests don't need a real DB.
+- Tests live alongside source (`src/**/*.test.ts`) and in `tests/`.
+- Coverage reports to `coverage/`. **80% threshold** enforced on PRs to `main`.
+- Integration tests in `tests/integration/` require `NODE_ENV=test`.
 
-## CI/CD
+## Database
 
-| Workflow | Triggers | What it does |
-|---|---|---|
-| `ci.yml` | push/PR to `main` or `developer` | TypeScript check + build + unit tests + integration tests + Slack notification |
-| `pr-validation.yml` | PR to `main`/`developer` | Validates conventional commit title format `type(scope): desc`, checks conflicts, labels size |
-| `pr-coverage.yml` | PR + CI completion | Runs coverage, comments on PR (threshold 80%) |
-| `fly-deploy.yml` | push to `main` + CI passes | Builds, tests, deploys to Fly.io, health check at `/health`, Slack notification |
-| `security-quality.yml` | push/PR + weekly | `npm audit`, outdated check, `tsc --noEmit` |
+MongoDB via Prisma ORM. Schema: `prisma/schema.prisma`. Always run `npx prisma generate` after schema changes. Use `npx prisma db push` (not `prisma migrate`) for schema sync.
 
-- Deployed to `https://uniconnect-backend.fly.dev`
-- Health endpoint: `GET /health` (used by Fly.io checks and deploy workflow)
-- Rollback commented out in CI config but documented as intent
+## Auth & real-time
 
-## Conventions
+- JWT auth via `Authorization: Bearer <token>` — middleware at `src/middleware/autenticacion.middleware.ts`.
+- `DEV_MODE=true` skips Google OAuth validation (dev only).
+- Token revocation is **in-memory** (lost on restart).
+- Socket.IO on the same port, auth via `socket.handshake.auth.token`. Room naming: `usuario:<id>`, `grupo:<id>`.
+- Socket event types defined in `src/lib/socket.ts`.
 
-- **Language:** Spanish — routes, controllers, models, comments, and error messages are in Spanish.
-- **Route files:** always `*.routes.ts`, controllers always `*.controller.ts`.
-- **Code style:** No ESLint or Prettier config found. Keep consistent with existing code.
-- **No codegen** beyond Prisma and OpenAPI. Avoid adding new codegen.
-- **PR titles** must match `type(scope): description` where type is `feat|fix|docs|style|refactor|test|chore|perf|ci|build`.
+## API docs
 
-## Design patterns used
+- OpenAPI 3 spec generated from JSDoc in `src/modules/**/interfaces/http/*.routes.ts`.
+- Swagger UI: `http://localhost:3000/docs`. Raw spec: `GET /openapi.json`.
+- Schemas in `src/docs/swagger.ts`.
 
-- **Decorator** — polls (logging/moderation gateway decorators), users (perfil decorators)
-- **State** — groups (`group-state.ts`, 8 states)
-- **Observer** — groups (socket + persistencia observers), messages (chat subject), notifications (event observer)
-- **Chain of Responsibility** — foro (5 handlers), messages (7 message validators)
-- **Strategy** — notifications (4 delivery strategies: in-app WS, email, push, daily digest)
-- **Singleton** — `Auth` class, `ChatSubject`
+## Module notes
 
-## Env vars (required)
+| Prefix | Module |
+|---|---|
+| `/api/usuarios` | users |
+| `/api/materias` | materias |
+| `/api/grupos` | groups |
+| `/api/mensajes` | messages |
+| `/api/eventos` | events |
+| `/api/catalogos` | catalog |
+| `/api/notificaciones` | notifications |
+| `/api/foro` | foro |
+| `/api/sesiones` | sesiones (study sessions) |
+| `/api/encuestas` | polls |
+| `/api/recursos` | recursos (resources) |
+| `/api/scrum` | scrum module |
 
-`PORT`, `JWT_SECRET`, `DATABASE_URL` (MongoDB). Optional: `GOOGLE_CLIENT_ID`, `DEV_MODE`, `SMTP_*`, `CLOUDINARY_*`, `NGROK_AUTHTOKEN`, `INSTITUTIONAL_EMAIL_DOMAINS` (defaults to `ucaldas.edu.co`).
+## Deploy
 
-## Notable
+- Docker multi-stage build (`Dockerfile`), deployed to Fly.io.
+- Health check: `GET /health` returns `{ status, version, commit }`.
+- CI auto-rollbacks on failed health checks after deploy.
+- Fly.io secrets: `FLY_API_TOKEN`, `SLACK_WEBHOOK_URL` (set as GitHub Actions secrets).
 
-- No linter/formatter config — do not add one unless asked.
-- No tests require a running database; Prisma is fully mocked.
-- The `src/generated/` directory is gitignored.
-- VS Code setting: `prisma.pinToPrisma6: true`.
-- Node 20 (per Dockerfile and CI). npm 9+. TypeScript 5.9.
+## PR conventions
+
+- Title must match: `type(scope): description` — types: `feat|fix|docs|style|refactor|test|chore|perf|ci|build`.
+- Coverage must stay ≥ 80%.
+- Default branch: `developer`. PRs to `main` from `developer`.
