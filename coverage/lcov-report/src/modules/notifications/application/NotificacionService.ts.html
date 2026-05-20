@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/14</span>
+                <span class='fraction'>14/14</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">75% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/4</span>
+                <span class='fraction'>3/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/2</span>
+                <span class='fraction'>2/2</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/14</span>
+                <span class='fraction'>14/14</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -107,32 +107,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -140,47 +118,69 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">14x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { NotificacionDTO } from '../../../shared/notificacion/INotificacion';
 import { INotificacionStrategy, ResultadoEnvio } from '../domain/INotificacionStrategy';
 import { CanalNotificacion, PreferenciaCanalRepository } from '../domain/contracts';
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export class N</span>otificacionService {
-<span class="fstat-no" title="function not covered" >  constructor(</span>
-    private readonly <span class="cstat-no" title="statement not covered" >estrategias: INotificacionStrategy[],</span>
-    private readonly <span class="cstat-no" title="statement not covered" >preferenciaRepository: PreferenciaCanalRepository,</span>
+export class NotificacionService {
+  constructor(
+    private readonly estrategias: INotificacionStrategy[],
+    private readonly preferenciaRepository: PreferenciaCanalRepository,
   ) {}
 &nbsp;
   // ✅ Inyecta tipoEvento en la notificación antes de enviar:
-<span class="fstat-no" title="function not covered" >async </span>notificar(
+async notificar(
   notificacion: NotificacionDTO,
   usuarioId: string,
   tipoEvento: string,
 ): Promise&lt;ResultadoEnvio[]&gt; {
-  const preferencias = <span class="cstat-no" title="statement not covered" >await this.preferenciaRepository.obtenerPreferencias(usuarioId, tipoEvento);</span>
-  const resultados: ResultadoEnvio[] = <span class="cstat-no" title="statement not covered" >[];</span>
+  const preferencias = await this.preferenciaRepository.obtenerPreferencias(usuarioId, tipoEvento);
+  const resultados: ResultadoEnvio[] = [];
 &nbsp;
-  const notificacionConTipo = <span class="cstat-no" title="statement not covered" >{ ...notificacion, tipoEvento };</span> // ← AGREGA
+  const notificacionConTipo = { ...notificacion, tipoEvento }; // ← AGREGA
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  for (const estrategia of this.estrategias) {</span>
-<span class="cstat-no" title="statement not covered" >    if (!preferencias.canalesActivos.includes(estrategia.canal as CanalNotificacion)) {</span>
-<span class="cstat-no" title="statement not covered" >      continue;</span>
+  for (const estrategia of this.estrategias) {
+    if (!preferencias.canalesActivos.includes(estrategia.canal as CanalNotificacion)) {
+      continue;
     }
-<span class="cstat-no" title="statement not covered" >    try {</span>
-      const resultado = <span class="cstat-no" title="statement not covered" >await estrategia.enviar(notificacionConTipo);</span> // ← usa notificacionConTipo
-<span class="cstat-no" title="statement not covered" >      resultados.push(resultado);</span>
+    try {
+      const resultado = await estrategia.enviar(notificacionConTipo); // ← usa notificacionConTipo
+      resultados.push(resultado);
     } catch (error) {
-<span class="cstat-no" title="statement not covered" >      resultados.push({</span>
+      resultados.push({
         canal: estrategia.canal,
         exito: false,
-        error: error instanceof Error ? error.message : 'Error desconocido',
+        error: error instanceof Error ? error.message : <span class="branch-1 cbranch-no" title="branch not covered" >'Error desconocido',</span>
       });
     }
   }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  return resultados;</span>
+  return resultados;
 }
 }
 &nbsp;</pre></td></tr></table></pre>
@@ -190,7 +190,7 @@ import { CanalNotificacion, PreferenciaCanalRepository } from '../domain/contrac
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-20T01:58:58.582Z
+                at 2026-05-20T02:44:55.582Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

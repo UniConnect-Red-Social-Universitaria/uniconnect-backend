@@ -77,13 +77,11 @@ const mailTransporter = nodemailer.createTransport({
   },
 });
 
-mailTransporter.verify((error) => {
-  if (error) {
-    logger.error('[Email] Transporter SMTP no válido:', error);
-  } else {
-    logger.info('[Email] Transporter SMTP listo');
-  }
-});
+if (process.env.NODE_ENV !== 'test') {
+  mailTransporter.verify((error: Error | null) => {
+    if (error) logger.error('[Email] Transporter SMTP no válido:', error);
+  });
+}
 
 // ── Notificaciones (deben declararse ANTES que messageUseCases) ── // ← CAMBIO: bloque movido arriba
 export const preferenciaRepository = new InMemoryPreferenciaRepository();
