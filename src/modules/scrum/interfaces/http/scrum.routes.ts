@@ -202,14 +202,6 @@ router.post('/trazabilidad', autenticacion, TrazabilidadController.linkear);
 router.get('/historias/:huId/trazabilidad', autenticacion, TrazabilidadController.obtenerDeHU);
 
 /**
- * @route GET /api/scrum/trazabilidad/:repositorio
- * @description Listar trazabilidades de un repositorio específico
- * @param {string} repositorio - BACKEND o FRONTEND
- * @access Private
- */
-router.get('/trazabilidad/:repositorio', autenticacion, TrazabilidadController.listarPorRepositorio);
-
-/**
  * @route GET /api/scrum/trazabilidad/buscar
  * @description Buscar HU por commit SHA
  * @query {string} sha - SHA del commit
@@ -217,6 +209,14 @@ router.get('/trazabilidad/:repositorio', autenticacion, TrazabilidadController.l
  * @access Private
  */
 router.get('/trazabilidad/buscar', autenticacion, TrazabilidadController.buscarPorCommit);
+
+/**
+ * @route GET /api/scrum/trazabilidad/:repositorio
+ * @description Listar trazabilidades de un repositorio específico
+ * @param {string} repositorio - BACKEND o FRONTEND
+ * @access Private
+ */
+router.get('/trazabilidad/:repositorio', autenticacion, TrazabilidadController.listarPorRepositorio);
 
 // ════════════════════════════════════════════════════════════════════════════════════
 // RETROSPECTIVA ROUTES
@@ -262,13 +262,6 @@ router.post('/retrospectivas/:retroId/impedimentos', autenticacion, Retrospectiv
 router.post('/impedimentos', autenticacion, ImpedimentoController.crear);
 
 /**
- * @route GET /api/scrum/impedimentos/:impedimentoId
- * @description Obtener datos de un impedimento específico
- * @access Private
- */
-router.get('/impedimentos/:impedimentoId', autenticacion, ImpedimentoController.obtener);
-
-/**
  * @route GET /api/scrum/impedimentos/abiertos
  * @description Listar todos los impedimentos abiertos
  * @access Private
@@ -281,6 +274,13 @@ router.get('/impedimentos/abiertos', autenticacion, ImpedimentoController.listar
  * @access Private
  */
 router.get('/impedimentos/criticos', autenticacion, ImpedimentoController.listarCriticos);
+
+/**
+ * @route GET /api/scrum/impedimentos/:impedimentoId
+ * @description Obtener datos de un impedimento específico
+ * @access Private
+ */
+router.get('/impedimentos/:impedimentoId', autenticacion, ImpedimentoController.obtener);
 
 /**
  * @route GET /api/scrum/sprints/:sprintId/impedimentos
