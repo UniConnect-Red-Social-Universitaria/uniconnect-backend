@@ -62,25 +62,10 @@ router.get('/preferencias', verificarJWT, NotificacionController.obtenerTodasLas
 router.get('/preferencias/:tipoEvento', verificarJWT, NotificacionController.obtenerPreferencias);
 router.put('/preferencias', verificarJWT, NotificacionController.actualizarPreferencias);
 
-/**
- * @swagger
- * /api/notificaciones/prueba:
- *   post:
- *     summary: Enviar notificación de prueba al usuario autenticado
- *     tags: [Notificaciones]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               tipo: { type: string, enum: [academico, social, grupo, sistema] }
- *     responses:
- *       200:
- *         description: Notificación de prueba enviada
- */
+router.get('/', verificarJWT, NotificacionController.listar);
+router.put('/:id/leer', verificarJWT, NotificacionController.marcarLeida);
+router.put('/leer-todas', verificarJWT, NotificacionController.marcarTodasLeidas);
+
 router.post('/prueba', verificarJWT, NotificacionController.enviarPrueba);
 
 export default router;

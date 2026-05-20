@@ -11,12 +11,12 @@ import {
   emitirMensajeGrupoTiempoReal,
   emitirMensajeTiempoReal,
   emitirNotificacion,
-  emitirNotificacionGrupo,
   emitirMencionTiempoReal,
   emitirReaccionTiempoReal,
   emitirReaccionRemovidaTiempoReal,
 } from "../../../lib/socket";
 import { chatSubject } from "../../../container";
+import { NotificacionService } from "../../notifications/application/NotificacionService";
 import {
   NotificacionBase,
   NotificacionConPrioridad,
@@ -24,6 +24,7 @@ import {
 } from "../../../shared/notificacion";
 
 export class SocketMessageGateway implements MessageGateway {
+  constructor(private readonly notificacionService?: NotificacionService) {}
   // emitNewMessage(payload: MessageRecord) {
   //   emitirMensajeTiempoReal(payload);
 
@@ -73,13 +74,8 @@ export class SocketMessageGateway implements MessageGateway {
       "nombreGrupo" in payload ||
       "grupoId" in payload ||
       ("mensaje" in payload && (payload as any).mensaje?.grupoId != null);
-    // Nota: MencionMensajeGrupoRecord puede no tener nombreGrupo directamente, sino a través de la relación,
-    // pero usualmente sabemos que es grupo si viene de mensaje de grupo.
-    // En Prisma, si esGrupo=true, lo tratamos como grupo. El payload debería permitirnos distinguir.
-    // Vamos a inferirlo de si tiene usuarioMencionadoId y lo emitimos por socket
 
     if (esGrupo) {
-      // Es una mención en mensaje de grupo
       const mencion = payload as MencionMensajeGrupoRecord;
 
       const notificacion = new NotificacionConAccion(
@@ -97,11 +93,18 @@ export class SocketMessageGateway implements MessageGateway {
         },
       );
 
-      emitirNotificacion(mencion.usuarioMencionadoId, notificacion.render());
+      if (this.notificacionService) {
+        this.notificacionService.notificarYPersistir(
+          notificacion.render(),
+          mencion.usuarioMencionadoId,
+          'mencion',
+          `Fuiste mencionado en un grupo`,
+          mencion.mensajeId,
+        ).catch(() => {});
+      } else {
+        emitirNotificacion(mencion.usuarioMencionadoId, notificacion.render());
+      }
 
-      // Emitir evento por WebSocket al grupo si tenemos el grupoId
-      // Para obtener el grupoId podríamos necesitarlo en el payload, pero ChatSubject maneja la emisión.
-      // Como no tenemos grupoId directamente en MencionMensajeGrupoRecord, usamos el emitirMencionTiempoReal directamente al usuario
       emitirMencionTiempoReal(mencion.usuarioMencionadoId, {
         mensajeId: mencion.mensajeId,
         usuarioMencionadoId: mencion.usuarioMencionadoId,
@@ -110,7 +113,6 @@ export class SocketMessageGateway implements MessageGateway {
         esGrupo: true,
       });
     } else {
-      // Es una mención en mensaje individual
       const mencion = payload as MencionMensajeRecord;
 
       const notificacion = new NotificacionConAccion(
@@ -128,7 +130,17 @@ export class SocketMessageGateway implements MessageGateway {
         },
       );
 
-      emitirNotificacion(mencion.usuarioMencionadoId, notificacion.render());
+      if (this.notificacionService) {
+        this.notificacionService.notificarYPersistir(
+          notificacion.render(),
+          mencion.usuarioMencionadoId,
+          'mencion',
+          `Fuiste mencionado en un mensaje`,
+          mencion.mensajeId,
+        ).catch(() => {});
+      } else {
+        emitirNotificacion(mencion.usuarioMencionadoId, notificacion.render());
+      }
 
       emitirMencionTiempoReal(mencion.usuarioMencionadoId, {
         mensajeId: mencion.mensajeId,

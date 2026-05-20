@@ -46,6 +46,7 @@ model Usuario {
   reaccionesMensajesGrupo ReaccionMensajeGrupo[] @relation("ReaccionesMensajesGrupo")
   recursosCreados Recurso[] @relation("RecursosCreados")
   preferenciasCanal PreferenciaCanal[] @relation("PreferenciasCanal")
+  notificaciones Notificacion[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -411,6 +412,22 @@ model ReaccionMensajeGrupo {
   @@unique([mensajeId, usuarioId, emoji])
   @@index([mensajeId])
   @@index([usuarioId])
+}
+
+// Notificaciones persistentes
+model Notificacion {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  usuarioId    String   @db.ObjectId
+  tipo         String   // mensaje, solicitud-contacto, solicitud-grupo, evento-nuevo, etc.
+  titulo       String
+  mensaje      String
+  referenciaId String?  // ID del recurso relacionado (solicitudId, eventoId, grupoId, etc.)
+  leida        Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  usuario      Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId, leida])
+  @@index([usuarioId, createdAt])
 }
 
 // Preferencias de canales de notificación por tipo de evento
