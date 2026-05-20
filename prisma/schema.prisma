@@ -98,6 +98,7 @@ model Grupo {
   archivos  GrupoArchivo[]
   encuestas Encuesta[]
   recursos  Recurso[]
+  sesionesEstudio SesionEstudioSerie[]
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 }
@@ -279,7 +280,9 @@ model SesionEstudioSerie {
   fechaFin            DateTime
   recordatorioMinutos Int                   @default(30)
   creadorId           String                @db.ObjectId
+  grupoId             String?               @db.ObjectId
   creador             Usuario               @relation(fields: [creadorId], references: [id])
+  grupo               Grupo?                @relation(fields: [grupoId], references: [id])
   sesiones            SesionEstudio[]
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
@@ -299,14 +302,35 @@ model SesionEstudio {
   creadorId           String              @db.ObjectId
   serie               SesionEstudioSerie  @relation(fields: [serieId], references: [id])
   creador             Usuario             @relation(fields: [creadorId], references: [id])
+  asistentes          SesionAsistente[]
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
+}
+
+model SesionAsistente {
+  id        String            @id @default(auto()) @map("_id") @db.ObjectId
+  sesionId  String            @db.ObjectId
+  usuarioId String            @db.ObjectId
+  estado    EstadoAsistencia  @default(PENDIENTE)
+  sesion    SesionEstudio     @relation(fields: [sesionId], references: [id], onDelete: Cascade)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@unique([sesionId, usuarioId])
+  @@index([sesionId])
+  @@index([usuarioId])
 }
 
 enum FrecuenciaRecurrencia {
   DIARIA
   SEMANAL
   QUINCENAL
+}
+
+enum EstadoAsistencia {
+  PENDIENTE
+  CONFIRMADA
+  DECLINADA
 }
 
 enum EstadoContacto {
