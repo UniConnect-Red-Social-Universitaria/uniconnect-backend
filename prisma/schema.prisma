@@ -443,3 +443,258 @@ model PreferenciaCanal {
   @@unique([usuarioId, tipoEvento])
   @@index([usuarioId])
 }
+
+// ════════════════════════════════════════════════════════════════════════════════════
+// 📊 MÓDULO SCRUM: MÉTRICAS, VELOCIDAD, BURN-DOWN Y TRAZABILIDAD
+// ════════════════════════════════════════════════════════════════════════════════════
+
+enum EstadoSprint {
+  PLANEACION
+  ACTIVO
+  COMPLETADO
+  CANCELADO
+}
+
+enum EstadoHU {
+  PENDIENTE
+  EN_PROGRESO
+  BLOQUEADA
+  COMPLETADA
+  CANCELADA
+}
+
+enum EstadoImpedimento {
+  ABIERTO
+  EN_PROGRESO
+  RESUELTO
+  CERRADO
+}
+
+enum TipoRepositorio {
+  BACKEND
+  FRONTEND
+}
+
+// Sprint base para gestión de sprints
+model Sprint {
+  id                  String                 @id @default(auto()) @map("_id") @db.ObjectId
+  numero              Int                    // Número del sprint (1, 2, 3...)
+  nombre              String                 // Ej: "Sprint 1 - Auth"
+  descripcion         String?
+  estado              EstadoSprint           @default(PLANEACION)
+  fechaInicio         DateTime?
+  fechaFin            DateTime?
+  velocidadPlaneada   Int                    @default(0) // Story points totales
+  velocidadReal       Int?                   // Se calcula automáticamente
+  historiasUsuarios   HistoriaUsuario[]
+  velocidades         VelocidadSprint[]
+  burndowns           BurndownDiario[]
+  retrospectiva       Retrospectiva?
+  impedimentos        Impedimento[]
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+
+  @@index([estado, fechaInicio])
+  @@index([numero])
+}
+
+// Historia de Usuario (HU)
+model HistoriaUsuario {
+  id                  String                 @id @default(auto()) @map("_id") @db.ObjectId
+  codigo              String                 @unique // HU-001, HU-002, etc
+  titulo              String
+  descripcion         String
+  storyPoints         Int
+  estado              EstadoHU               @default(PENDIENTE)
+  prioridad           Int                    @default(100) // Menor número = mayor prioridad
+  asignadoA           String?                @db.ObjectId // usuarioId opcional
+  sprintId            String                 @db.ObjectId
+  sprint              Sprint                 @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+  criteriosAceptacion CriterioAceptacion[]
+  trazabilidades      TrazabilidadHU[]
+  // burndownDatos       BurndownDiario[]       @relation("HUBurndown")
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+
+  @@unique([codigo, sprintId])
+  @@index([sprintId, estado])
+  @@index([estado])
+}
+
+// Criterio de Aceptación para cada HU
+model CriterioAceptacion {
+  id                  String                 @id @default(auto()) @map("_id") @db.ObjectId
+  numero              Int                    // 1, 2, 3...
+  descripcion         String
+  huId                String                 @db.ObjectId
+  historiaUsuario     HistoriaUsuario        @relation(fields: [huId], references: [id], onDelete: Cascade)
+  evaluaciones        EvaluacionCriterio[]
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+
+  @@unique([huId, numero])
+  @@index([huId])
+}
+
+// Evaluación de cumplimiento de criterios
+model EvaluacionCriterio {
+  id                  String                 @id @default(auto()) @map("_id") @db.ObjectId
+  criterioId          String                 @db.ObjectId
+  criterio            CriterioAceptacion     @relation(fields: [criterioId], references: [id], onDelete: Cascade)
+  cumplido            Boolean
+  observaciones       String?
+  evaluador           String?                @db.ObjectId // usuarioId del que evalúa
+  fechaEvaluacion     DateTime
+  createdAt           DateTime               @default(now())
+
+  @@index([criterioId])
+  @@index([fechaEvaluacion])
+}
+
+// Trazabilidad: relación entre HU y commits/PRs/despliegues
+model TrazabilidadHU {
+  id                  String                 @id @default(auto()) @map("_id") @db.ObjectId
+  huId                String                 @db.ObjectId
+  historiaUsuario     HistoriaUsuario        @relation(fields: [huId], references: [id], onDelete: Cascade)
+  
+  // Información de GitHub
+  repositorio         TipoRepositorio
+  nombreRepositorio   String                 // "uniconnect-backend", "Frontend-UnConnect"
+  shaCommit           String?                // Hash del commit
+  urlCommit           String?                // URL completa en GitHub
+  mensajeCommit       String?                // Mensaje del commit
+  autorCommit         String?                // Autor del commit
+  
+  // PR relacionado
+  numeroPR            Int?                   // PR #123
+  urlPR               String?                // URL de PR
+  estadoPR            String?                // OPEN, MERGED, CLOSED
+  
+  // Despliegue
+  numeroDespliegue    Int?
+  urlDespliegue       String?
+  estadoDespliegue    String?                // SUCCESS, FAILED, IN_PROGRESS
+  
+  // Metadata
+  extraido            DateTime?              // Cuándo se extrajo de GitHub
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+
+  @@unique([huId, shaCommit])
+  @@index([huId])
+  @@index([repositorio, nombreRepositorio])
+}
+
+// Velocidad histórica de sprints
+model VelocidadSprint {
+  id                  String                 @id @default(auto()) @map("_id") @db.ObjectId
+  sprintId            String                 @db.ObjectId
+  sprint              Sprint                 @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+  
+  velocidadPlaneada   Int                    // SP planeados
+  velocidadReal       Int                    // SP completados
+  porcentajeCumplimiento Float               // Porcentaje (0-100)
+  huCompletadas       Int                    // Cantidad
+  huTotales           Int                    // Cantidad
+  
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+
+  @@unique([sprintId])
+}
+
+// Datos diarios para Burn-down Chart
+model BurndownDiario {
+  id                  String                 @id @default(auto()) @map("_id") @db.ObjectId
+  sprintId            String                 @db.ObjectId
+  sprint              Sprint                 @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+  
+  fecha               DateTime
+  dia                 Int                    // 1, 2, 3... del sprint
+  
+  // Real
+  spRestantes         Int                    // SP pendientes al final del día
+  huCompletadasEnDia  Int
+  
+  // Ideal
+  spIdealRestantes    Int                    // SP que idealmente deberían quedar
+  
+  // HUs completadas en este día
+  huIds               String[] // Referencia a IDs de HistoriaUsuario
+  
+  createdAt           DateTime               @default(now())
+
+  @@unique([sprintId, fecha])
+}
+
+// Retrospectiva del Sprint
+model Retrospectiva {
+  id                  String                 @id @default(auto()) @map("_id") @db.ObjectId
+  sprintId            String                 @db.ObjectId @unique
+  sprint              Sprint                 @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+  
+  fechaRetrospectiva  DateTime
+  comentariosGenerales String?
+  
+  acuerdos             AccuerdoRetro[]
+  impedimentos         ImpedimentoRetro[]
+  
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+
+}
+
+// Acuerdos de Retrospectiva
+model AccuerdoRetro {
+  id                  String                 @id @default(auto()) @map("_id") @db.ObjectId
+  retroId             String                 @db.ObjectId
+  retrospectiva       Retrospectiva          @relation(fields: [retroId], references: [id], onDelete: Cascade)
+  
+  descripcion         String
+  responsable         String?                @db.ObjectId // usuarioId
+  estado              String                 @default("PENDIENTE") // PENDIENTE, EN_PROGRESO, COMPLETADO
+  
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+
+  @@index([retroId])
+}
+
+// Impedimentos de Retrospectiva (se pueden crear desde aquí o detectarse automáticamente)
+model ImpedimentoRetro {
+  id                  String                 @id @default(auto()) @map("_id") @db.ObjectId
+  retroId             String                 @db.ObjectId
+  retrospectiva       Retrospectiva          @relation(fields: [retroId], references: [id], onDelete: Cascade)
+  
+  descripcion         String
+  impacto             String?                // Alto, Medio, Bajo
+  responsable         String?                @db.ObjectId // usuarioId
+  estado              String                 @default("ABIERTO") // ABIERTO, EN_PROGRESO, RESUELTO
+  
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+
+  @@index([retroId])
+}
+
+// Impedimentos generales (fuera de retrospectiva, para detección automática)
+model Impedimento {
+  id                  String                 @id @default(auto()) @map("_id") @db.ObjectId
+  sprintId            String?                @db.ObjectId
+  sprint              Sprint?                @relation(fields: [sprintId], references: [id], onDelete: SetNull)
+  
+  descripcion         String
+  estado              EstadoImpedimento      @default(ABIERTO)
+  esCritico           Boolean                @default(false) // Se marca automáticamente si lleva > 3 días hábiles
+  diasAbierto         Int                    @default(0) // Se calcula automáticamente
+  responsable         String?                @db.ObjectId // usuarioId
+  
+  fechaApertura       DateTime               @default(now())
+  fechaResolucion     DateTime?
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+
+  @@index([sprintId, esCritico])
+  @@index([estado])
+  @@index([esCritico])
+}
