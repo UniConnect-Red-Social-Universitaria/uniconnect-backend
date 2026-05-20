@@ -11,8 +11,8 @@ const db = prisma as unknown as {
 export class PrismaEstadisticasRepository implements EstadisticasPerfilRepository {
   async obtenerEstadisticas(usuarioId: string): Promise<EstadisticasPerfil> {
     const [gruposCreados, gruposParticipa, mensajesDirectos, mensajesGrupo] = await Promise.all([
-      db.grupo.count({ where: { creadorId: usuarioId } }),
-      db.usuarioGrupo.count({ where: { usuarioId } }),
+      db.grupo.count({ where: { creadorId: usuarioId, estado: 'ACTIVO' } }),
+      db.usuarioGrupo.count({ where: { usuarioId, grupo: { estado: 'ACTIVO' } } }),
       db.mensaje.count({ where: { emisorId: usuarioId } }),
       db.grupoMensaje.count({ where: { emisorId: usuarioId } }),
     ]);
