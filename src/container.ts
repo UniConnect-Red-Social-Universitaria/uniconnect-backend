@@ -114,6 +114,7 @@ export const usersUseCases = new UsersUseCases({
   identityVerificationService,
   tokenBlacklistService,
   estadisticasRepository,
+  notificacionService,
 });
 
 export const groupUseCases = new GroupUseCases(
@@ -123,6 +124,7 @@ export const groupUseCases = new GroupUseCases(
   grupoArchivoRepository,
   solicitudGrupoRepository,
   [groupEventObserver, groupPersistenciaObserver],
+  notificacionService,
 );
 
 export const materiaUseCases = new MateriaUseCases(materiaRepository);

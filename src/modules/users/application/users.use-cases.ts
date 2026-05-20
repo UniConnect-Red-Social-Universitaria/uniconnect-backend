@@ -16,6 +16,8 @@ import {
   emitirSolicitudContactoRechazadaTiempoReal,
   emitirSolicitudContactoTiempoReal,
 } from '../../../lib/socket';
+import { NotificacionService } from '../../notifications/application/NotificacionService';
+import { NotificacionBase, NotificacionConAccion, NotificacionConPrioridad } from '../../../shared/notificacion';
 import {
   EstadisticasPerfilRepository,
   calcularInsignias,
@@ -51,6 +53,7 @@ type UsersUseCasesDependencies = {
   identityVerificationService: IdentityVerificationService;
   tokenBlacklistService: TokenBlacklistService;
   estadisticasRepository: EstadisticasPerfilRepository;
+  notificacionService?: NotificacionService;
 };
 
 export class UsersUseCases {
@@ -199,6 +202,29 @@ export class UsersUseCases {
       createdAt: solicitud.createdAt,
     });
 
+    if (this.deps.notificacionService) {
+      const notificacion = new NotificacionConAccion(
+        new NotificacionConPrioridad(
+          new NotificacionBase(
+            `${solicitante?.nombre ?? authUser.nombre} te envió una solicitud de amistad`,
+            solicitud.receptorId,
+            solicitud.createdAt,
+          ),
+          'normal',
+        ),
+        {
+          label: 'Ver solicitudes',
+          endpoint: '/solicitudes',
+        },
+      );
+
+      this.deps.notificacionService
+        .notificar(notificacion.render(), solicitud.receptorId, 'solicitud-contacto')
+        .catch((error) =>
+          console.error('[notificacion] Error al notificar solicitud de amistad:', error),
+        );
+    }
+
     return {
       message: 'Solicitud de conexión enviada',
       data: {
@@ -239,6 +265,29 @@ export class UsersUseCases {
         solicitudId.trim(),
         authUser.id,
       );
+
+      if (this.deps.notificacionService) {
+        const notificacion = new NotificacionConAccion(
+          new NotificacionConPrioridad(
+            new NotificacionBase(
+              `${authUser.nombre} aceptó tu solicitud de amistad`,
+              solicitudActualizada.solicitanteId,
+              solicitudActualizada.updatedAt,
+            ),
+            'normal',
+          ),
+          {
+            label: 'Ver compañeros',
+            endpoint: '/solicitudes',
+          },
+        );
+
+        this.deps.notificacionService
+          .notificar(notificacion.render(), solicitudActualizada.solicitanteId, 'solicitud-contacto')
+          .catch((error) =>
+            console.error('[notificacion] Error al notificar solicitud de amistad aceptada:', error),
+          );
+      }
 
       return {
         message: 'Solicitud aceptada correctamente',
@@ -283,14 +332,38 @@ export class UsersUseCases {
         authUser.id,
       );
 
-      const usuarioReceptor = await this.deps.userRepository.findSafeById(authUser.id);
+      const solicitante = await this.deps.userRepository.findSafeById(
+        solicitudActualizada.solicitanteId,
+      );
+
+      if (this.deps.notificacionService) {
+        const notificacion = new NotificacionConAccion(
+          new NotificacionConPrioridad(
+            new NotificacionBase(
+              `${authUser.nombre} rechazó tu solicitud de amistad`,
+              solicitudActualizada.solicitanteId,
+              solicitudActualizada.updatedAt,
+            ),
+            'normal',
+          ),
+          {
+            label: 'Reintentar contacto',
+            endpoint: '/solicitudes',
+          },
+        );
+
+        this.deps.notificacionService
+          .notificar(notificacion.render(), solicitudActualizada.solicitanteId, 'solicitud-contacto')
+          .catch((error) =>
+            console.error('[notificacion] Error al notificar solicitud de amistad rechazada:', error),
+          );
+      }
 
       emitirSolicitudContactoRechazadaTiempoReal({
         solicitudId: solicitudActualizada.id,
         solicitanteId: solicitudActualizada.solicitanteId,
         receptorId: solicitudActualizada.receptorId,
-        receptorNombre: usuarioReceptor?.nombre ?? authUser.nombre,
-        receptorApellido: usuarioReceptor?.apellido,
+        receptorNombre: authUser.nombre,
         updatedAt: solicitudActualizada.updatedAt,
       });
 

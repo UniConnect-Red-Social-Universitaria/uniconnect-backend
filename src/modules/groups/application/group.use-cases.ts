@@ -11,6 +11,8 @@ import {
 import { ApplicationError } from '../../../shared/application-error';
 import { cloudinary } from '../../../lib/cloudinary';
 import { GroupContext } from '../domain/group-state';
+import { NotificacionService } from '../../notifications/application/NotificacionService';
+import { NotificacionBase, NotificacionConAccion, NotificacionConPrioridad } from '../../../shared/notificacion';
 
 type CreateGroupInput = {
   nombre: unknown;
@@ -34,6 +36,7 @@ export class GroupUseCases {
     private readonly grupoArchivoRepository: GrupoArchivoRepository,
     private readonly solicitudGrupoRepository: SolicitudGrupoRepository,
     private readonly observers: GroupEventObserver[] = [],
+    private readonly notificacionService?: NotificacionService,
   ) { }
 
   async crearGrupo(usuario: AuthenticatedUser | undefined, input: CreateGroupInput) {
@@ -184,6 +187,27 @@ export class GroupUseCases {
       solicitanteApellido: solicitante?.apellido || '',
     }));
 
+    if (this.notificacionService) {
+      const notificacion = new NotificacionConAccion(
+        new NotificacionConPrioridad(
+          new NotificacionBase(
+            `${solicitante?.nombre || authUser.nombre} quiere unirse a tu grupo "${grupo.nombre}"`,
+            grupo.administradorId,
+            solicitud.createdAt,
+          ),
+          'normal',
+        ),
+        {
+          label: 'Ver solicitudes',
+          endpoint: `/api/grupos/${grupo.id}/solicitudes`,
+        },
+      );
+
+      this.notificacionService
+        .notificar(notificacion.render(), grupo.administradorId, 'solicitud-grupo')
+        .catch((error) => console.error('[notificacion] Error al notificar solicitud de grupo:', error));
+    }
+
     return {
       message: 'Solicitud de ingreso enviada correctamente',
       data: {
@@ -294,6 +318,27 @@ export class GroupUseCases {
       solicitanteApellido: invitador?.apellido || '',
     }));
 
+    if (this.notificacionService) {
+      const notificacion = new NotificacionConAccion(
+        new NotificacionConPrioridad(
+          new NotificacionBase(
+            `Te invitaron a unirte al grupo "${grupo.nombre}"`,
+            usuarioDestinoId,
+            solicitud.createdAt,
+          ),
+          'normal',
+        ),
+        {
+          label: 'Ver notificación',
+          endpoint: '/notificaciones',
+        },
+      );
+
+      this.notificacionService
+        .notificar(notificacion.render(), usuarioDestinoId, 'invitacion-grupo')
+        .catch((error) => console.error('[notificacion] Error al notificar invitación de grupo:', error));
+    }
+
     return { message: 'Solicitud enviada al estudiante' };
   }
 
@@ -336,6 +381,27 @@ export class GroupUseCases {
       estado: 'APROBADA',
     }));
 
+    if (this.notificacionService) {
+      const notificacion = new NotificacionConAccion(
+        new NotificacionConPrioridad(
+          new NotificacionBase(
+            `Aceptaron tu invitación para unirte a "${grupo.nombre}"`,
+            grupo.administradorId,
+            new Date(),
+          ),
+          'normal',
+        ),
+        {
+          label: 'Ver grupo',
+          endpoint: `/api/grupos/${grupo.id}`,
+        },
+      );
+
+      this.notificacionService
+        .notificar(notificacion.render(), grupo.administradorId, 'invitacion-grupo')
+        .catch((error) => console.error('[notificacion] Error al notificar invitación de grupo aceptada:', error));
+    }
+
     return { message: 'Has aceptado unirte al grupo' };
   }
 
@@ -377,6 +443,27 @@ export class GroupUseCases {
       solicitanteId: authUser.id,
       estado: 'RECHAZADA',
     }));
+
+    if (this.notificacionService) {
+      const notificacion = new NotificacionConAccion(
+        new NotificacionConPrioridad(
+          new NotificacionBase(
+            `Rechazaste la invitación al grupo "${grupo.nombre}"`,
+            grupo.administradorId,
+            new Date(),
+          ),
+          'normal',
+        ),
+        {
+          label: 'Ver grupo',
+          endpoint: `/api/grupos/${grupo.id}`,
+        },
+      );
+
+      this.notificacionService
+        .notificar(notificacion.render(), grupo.administradorId, 'invitacion-grupo')
+        .catch((error) => console.error('[notificacion] Error al notificar invitación de grupo rechazada:', error));
+    }
 
     return { message: 'Has rechazado la invitación al grupo' };
   }
@@ -641,6 +728,27 @@ export class GroupUseCases {
       nuevoEstado: 'PENDIENTE_TRANSFERENCIA',
     }));
 
+    if (this.notificacionService) {
+      const notificacion = new NotificacionConAccion(
+        new NotificacionConPrioridad(
+          new NotificacionBase(
+            `El administrador de "${grupo.nombre}" quiere transferirte la administración`,
+            candidatoId,
+            new Date(),
+          ),
+          'urgente',
+        ),
+        {
+          label: 'Revisar grupo',
+          endpoint: `/api/grupos/${grupo.id}`,
+        },
+      );
+
+      this.notificacionService
+        .notificar(notificacion.render(), candidatoId, 'transferencia-admin')
+        .catch((error) => console.error('[notificacion] Error al notificar transferencia de admin:', error));
+    }
+
     return { message: 'Transferencia de administración iniciada. El candidato debe aceptar o rechazar.' };
   }
 
@@ -686,6 +794,27 @@ export class GroupUseCases {
       nuevoEstado: 'TRANSFERENCIA_ACEPTADA',
     }));
 
+    if (this.notificacionService) {
+      const notificacion = new NotificacionConAccion(
+        new NotificacionConPrioridad(
+          new NotificacionBase(
+            `Aceptaron la transferencia de administración de "${grupo.nombre}"`,
+            anteriorAdminId,
+            new Date(),
+          ),
+          'normal',
+        ),
+        {
+          label: 'Ver grupo',
+          endpoint: `/api/grupos/${grupo.id}`,
+        },
+      );
+
+      this.notificacionService
+        .notificar(notificacion.render(), anteriorAdminId, 'transferencia-admin')
+        .catch((error) => console.error('[notificacion] Error al notificar transferencia aceptada:', error));
+    }
+
     return { message: 'Has aceptado la administración del grupo correctamente' };
   }
 
@@ -719,6 +848,27 @@ export class GroupUseCases {
       nuevoEstado: 'ACTIVO',
     }));
 
+    if (this.notificacionService) {
+      const notificacion = new NotificacionConAccion(
+        new NotificacionConPrioridad(
+          new NotificacionBase(
+            `Rechazaste la transferencia de administración de "${grupo.nombre}"`,
+            grupo.administradorId,
+            new Date(),
+          ),
+          'normal',
+        ),
+        {
+          label: 'Ver grupo',
+          endpoint: `/api/grupos/${grupo.id}`,
+        },
+      );
+
+      this.notificacionService
+        .notificar(notificacion.render(), grupo.administradorId, 'transferencia-admin')
+        .catch((error) => console.error('[notificacion] Error al notificar transferencia rechazada:', error));
+    }
+
     return { message: 'Has rechazado la administración del grupo' };
   }
 
@@ -751,6 +901,27 @@ export class GroupUseCases {
       candidatoId: candidatoId ?? '',
       nuevoEstado: 'ACTIVO',
     }));
+
+    if (this.notificacionService && candidatoId) {
+      const notificacion = new NotificacionConAccion(
+        new NotificacionConPrioridad(
+          new NotificacionBase(
+            `La transferencia de administración de "${grupo.nombre}" fue cancelada`,
+            candidatoId,
+            new Date(),
+          ),
+          'normal',
+        ),
+        {
+          label: 'Ver grupo',
+          endpoint: `/api/grupos/${grupo.id}`,
+        },
+      );
+
+      this.notificacionService
+        .notificar(notificacion.render(), candidatoId, 'transferencia-admin')
+        .catch((error) => console.error('[notificacion] Error al notificar transferencia cancelada:', error));
+    }
 
     return { message: 'Transferencia de administración cancelada' };
   }

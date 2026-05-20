@@ -6,6 +6,10 @@ export const CANALES_DISPONIBLES: CanalNotificacion[] = ['in-app', 'email', 'pus
 export type TipoNotificacion =
   | 'mensaje'
   | 'mensaje-grupo'
+  | 'solicitud-contacto'
+  | 'solicitud-grupo'
+  | 'invitacion-grupo'
+  | 'transferencia-admin'
   | 'mencion'
   | 'encuesta'
   | 'recordatorio'
@@ -15,7 +19,8 @@ export type TipoNotificacion =
   | 'evento-otro';
 
 export const TIPOS_NOTIFICACION: TipoNotificacion[] = [
-  'mensaje', 'mensaje-grupo', 'mencion', 'encuesta', 'recordatorio',
+  'mensaje', 'mensaje-grupo', 'solicitud-contacto', 'solicitud-grupo', 'invitacion-grupo', 'transferencia-admin',
+  'mencion', 'encuesta', 'recordatorio',
   'evento-academico', 'evento-cultural', 'evento-deportivo', 'evento-otro',
 ];
 
