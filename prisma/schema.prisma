@@ -116,6 +116,7 @@ model SolicitudGrupo {
   id            String                @id @default(auto()) @map("_id") @db.ObjectId
   solicitanteId String                @db.ObjectId
   grupoId       String                @db.ObjectId
+  tipo          TipoSolicitudGrupo    @default(INGRESO)
   estado        EstadoSolicitudGrupo  @default(PENDIENTE)
   solicitante   Usuario               @relation("SolicitudesGrupoEnviadas", fields: [solicitanteId], references: [id])
   grupo         Grupo                 @relation(fields: [grupoId], references: [id])
@@ -326,6 +327,11 @@ enum EstadoSolicitudGrupo {
   PENDIENTE
   APROBADA
   RECHAZADA
+}
+
+enum TipoSolicitudGrupo {
+  INGRESO
+  INVITACION
 }
 
 enum EstadoEncuesta {

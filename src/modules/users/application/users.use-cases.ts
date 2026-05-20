@@ -103,11 +103,10 @@ export class UsersUseCases {
       throw new ApplicationError(400, 'Debes enviar la materia a buscar');
     }
 
-    const idsRelacionados = await this.deps.contactRepository.getRelatedIds(authUser.id);
     const resultados = await this.deps.userRepository.searchByMateriaExcluding(
       materiaQuery.trim(),
       authUser.id,
-      idsRelacionados,
+      [],
     );
 
     return { data: resultados };

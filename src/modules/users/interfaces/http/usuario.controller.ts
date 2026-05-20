@@ -21,7 +21,7 @@ export class UsuarioController {
     }
   }
 
-  // Buscar estudiantes por materia (excluye al usuario autenticado y relaciones existentes)
+  // Buscar estudiantes por materia (excluye al usuario autenticado)
   static async buscarPorMateria(req: Request, res: Response) {
     try {
       const resultado = await usersUseCases.buscarPorMateria(

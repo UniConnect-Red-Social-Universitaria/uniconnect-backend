@@ -563,6 +563,7 @@ export interface GroupEventObserver {
     grupoNombre: string;
     administradorId: string;
     solicitanteId: string;
+    tipo: 'INGRESO' | 'INVITACION';
     solicitanteNombre: string;
     solicitanteApellido?: string;
   }): void;
@@ -623,11 +624,13 @@ export interface GroupEventObserver {
 // ── Solicitudes de ingreso a grupo ──
 
 export type SolicitudGrupoStatus = 'PENDIENTE' | 'APROBADA' | 'RECHAZADA';
+export type SolicitudGrupoTipo = 'INGRESO' | 'INVITACION';
 
 export interface SolicitudGrupoRecord {
   id: string;
   solicitanteId: string;
   grupoId: string;
+  tipo: SolicitudGrupoTipo;
   estado: SolicitudGrupoStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -645,12 +648,12 @@ export interface SolicitudGrupoRecord {
 }
 
 export interface SolicitudGrupoRepository {
-  crear(solicitanteId: string, grupoId: string): Promise<SolicitudGrupoRecord>;
-  buscarPendiente(solicitanteId: string, grupoId: string): Promise<SolicitudGrupoRecord | null>;
+  crear(solicitanteId: string, grupoId: string, tipo?: SolicitudGrupoTipo): Promise<SolicitudGrupoRecord>;
+  buscarPendiente(solicitanteId: string, grupoId: string, tipo?: SolicitudGrupoTipo): Promise<SolicitudGrupoRecord | null>;
   listarPorGrupo(grupoId: string): Promise<SolicitudGrupoRecord[]>;
   listarPorUsuario(solicitanteId: string): Promise<SolicitudGrupoRecord[]>;
   aprobar(solicitudId: string): Promise<SolicitudGrupoRecord>;
   rechazar(solicitudId: string): Promise<SolicitudGrupoRecord>;
   buscarPorId(solicitudId: string): Promise<SolicitudGrupoRecord | null>;
-  eliminarRechazada(solicitanteId: string, grupoId: string): Promise<void>;
+  eliminarRechazada(solicitanteId: string, grupoId: string, tipo?: SolicitudGrupoTipo): Promise<void>;
 }

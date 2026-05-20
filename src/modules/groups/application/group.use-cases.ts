@@ -157,18 +157,19 @@ export class GroupUseCases {
     ctx.solicitarIngreso(authUser.id);
 
     // Limpiar solicitudes rechazadas previas para permitir reenvío
-    await this.solicitudGrupoRepository.eliminarRechazada(authUser.id, grupo.id);
+    await this.solicitudGrupoRepository.eliminarRechazada(authUser.id, grupo.id, 'INGRESO');
 
     // Verificar que no haya solicitud pendiente
     const solicitudExistente = await this.solicitudGrupoRepository.buscarPendiente(
       authUser.id,
       grupo.id,
+      'INGRESO',
     );
     if (solicitudExistente) {
       throw new ApplicationError(409, 'Ya tienes una solicitud pendiente para este grupo');
     }
 
-    const solicitud = await this.solicitudGrupoRepository.crear(authUser.id, grupo.id);
+    const solicitud = await this.solicitudGrupoRepository.crear(authUser.id, grupo.id, 'INGRESO');
 
     // Notificar al administrador del grupo
     const solicitante = await this.userRepository.findSafeById(authUser.id);
@@ -178,6 +179,7 @@ export class GroupUseCases {
       grupoNombre: grupo.nombre,
       administradorId: grupo.administradorId,
       solicitanteId: authUser.id,
+      tipo: 'INGRESO',
       solicitanteNombre: solicitante?.nombre || '',
       solicitanteApellido: solicitante?.apellido || '',
     }));
@@ -237,6 +239,148 @@ export class GroupUseCases {
     };
   }
 
+  async invitarMiembro(
+    usuario: AuthenticatedUser | undefined,
+    grupoId: unknown,
+    usuarioDestinoId: unknown,
+  ) {
+    const authUser = this.ensureAuthenticated(usuario);
+
+    if (!grupoId || typeof grupoId !== 'string') {
+      throw new ApplicationError(400, 'ID de grupo inválido');
+    }
+    if (!usuarioDestinoId || typeof usuarioDestinoId !== 'string') {
+      throw new ApplicationError(400, 'ID del miembro inválido');
+    }
+
+    const grupo = await this.groupRepository.findById(grupoId);
+    if (!grupo) throw new ApplicationError(404, 'Grupo no encontrado');
+
+    const usuarioDestino = await this.userRepository.findSafeById(usuarioDestinoId);
+    if (!usuarioDestino) throw new ApplicationError(404, 'Usuario no encontrado');
+
+    const materiasUsuarioDestino = (usuarioDestino.materiasCursando || []).map((m) =>
+      this.normalizarMateria(m),
+    );
+    if (!materiasUsuarioDestino.includes(this.normalizarMateria(grupo.materia.nombre))) {
+      throw new ApplicationError(403, 'Solo puedes invitar usuarios que estén cursando esta materia');
+    }
+
+    const ctx = new GroupContext(grupo);
+    ctx.agregarMiembro(usuarioDestinoId, authUser.id);
+
+    await this.solicitudGrupoRepository.eliminarRechazada(usuarioDestinoId, grupo.id, 'INVITACION');
+
+    const solicitudExistente = await this.solicitudGrupoRepository.buscarPendiente(
+      usuarioDestinoId,
+      grupo.id,
+      'INVITACION',
+    );
+    if (solicitudExistente) {
+      throw new ApplicationError(409, 'Ya existe una invitación pendiente para este estudiante');
+    }
+
+    const solicitud = await this.solicitudGrupoRepository.crear(usuarioDestinoId, grupo.id, 'INVITACION');
+    const invitador = await this.userRepository.findSafeById(authUser.id);
+
+    this.observers.forEach(obs => obs.onSolicitudNueva({
+      solicitudId: solicitud.id,
+      grupoId: grupo.id,
+      grupoNombre: grupo.nombre,
+      administradorId: usuarioDestinoId,
+      solicitanteId: authUser.id,
+      tipo: 'INVITACION',
+      solicitanteNombre: invitador?.nombre || '',
+      solicitanteApellido: invitador?.apellido || '',
+    }));
+
+    return { message: 'Solicitud enviada al estudiante' };
+  }
+
+  async aceptarInvitacion(
+    usuario: AuthenticatedUser | undefined,
+    grupoId: unknown,
+    solicitudId: unknown,
+  ) {
+    const authUser = this.ensureAuthenticated(usuario);
+
+    if (!grupoId || typeof grupoId !== 'string') {
+      throw new ApplicationError(400, 'ID de grupo inválido');
+    }
+    if (!solicitudId || typeof solicitudId !== 'string') {
+      throw new ApplicationError(400, 'ID de solicitud inválido');
+    }
+
+    const grupo = await this.groupRepository.findById(grupoId);
+    if (!grupo) throw new ApplicationError(404, 'Grupo no encontrado');
+
+    const solicitud = await this.solicitudGrupoRepository.buscarPorId(solicitudId);
+    if (!solicitud || solicitud.grupoId !== grupo.id || solicitud.tipo !== 'INVITACION') {
+      throw new ApplicationError(404, 'Solicitud no encontrada');
+    }
+    if (solicitud.solicitanteId !== authUser.id) {
+      throw new ApplicationError(403, 'No tienes permiso para aceptar esta invitación');
+    }
+    if (solicitud.estado !== 'PENDIENTE') {
+      throw new ApplicationError(400, 'Esta solicitud ya fue procesada');
+    }
+
+    await this.solicitudGrupoRepository.aprobar(solicitud.id);
+    await this.groupRepository.join(grupo.id, authUser.id);
+
+    this.observers.forEach(obs => obs.onSolicitudResuelta({
+      solicitudId: solicitud.id,
+      grupoId: grupo.id,
+      grupoNombre: grupo.nombre,
+      solicitanteId: authUser.id,
+      estado: 'APROBADA',
+    }));
+
+    return { message: 'Has aceptado unirte al grupo' };
+  }
+
+  async rechazarInvitacion(
+    usuario: AuthenticatedUser | undefined,
+    grupoId: unknown,
+    solicitudId: unknown,
+  ) {
+    const authUser = this.ensureAuthenticated(usuario);
+
+    if (!grupoId || typeof grupoId !== 'string') {
+      throw new ApplicationError(400, 'ID de grupo inválido');
+    }
+    if (!solicitudId || typeof solicitudId !== 'string') {
+      throw new ApplicationError(400, 'ID de solicitud inválido');
+    }
+
+    const grupo = await this.groupRepository.findById(grupoId);
+    if (!grupo) throw new ApplicationError(404, 'Grupo no encontrado');
+
+    const solicitud = await this.solicitudGrupoRepository.buscarPorId(solicitudId);
+    if (!solicitud || solicitud.grupoId !== grupo.id || solicitud.tipo !== 'INVITACION') {
+      throw new ApplicationError(404, 'Solicitud no encontrada');
+    }
+    if (solicitud.solicitanteId !== authUser.id) {
+      throw new ApplicationError(403, 'No tienes permiso para rechazar esta invitación');
+    }
+    if (solicitud.estado !== 'PENDIENTE') {
+      throw new ApplicationError(400, 'Esta solicitud ya fue procesada');
+    }
+
+    await this.solicitudGrupoRepository.rechazar(solicitud.id);
+    await this.solicitudGrupoRepository.eliminarRechazada(authUser.id, grupo.id, 'INVITACION');
+
+    this.observers.forEach(obs => obs.onSolicitudResuelta({
+      solicitudId: solicitud.id,
+      grupoId: grupo.id,
+      grupoNombre: grupo.nombre,
+      solicitanteId: authUser.id,
+      estado: 'RECHAZADA',
+    }));
+
+    return { message: 'Has rechazado la invitación al grupo' };
+  }
+
   async aprobarSolicitud(
     usuario: AuthenticatedUser | undefined,
     grupoId: unknown,
@@ -276,7 +420,7 @@ export class GroupUseCases {
     } catch (error) {
       // Rollback lógico en caso de fallo parcial
       console.error('Error en aprobarSolicitud, ejecutando rollback:', error);
-      await this.groupRepository.leave(grupo.id, solicitud.solicitanteId).catch(() => {});
+      await this.groupRepository.leave(grupo.id, solicitud.solicitanteId).catch(() => { });
       throw new ApplicationError(500, 'Error de integridad al aprobar la solicitud. Se han revertido los cambios.');
     }
 
@@ -528,7 +672,7 @@ export class GroupUseCases {
       await this.groupRepository.updateEstado(grupo.id, 'ACTIVO');
     } catch (error) {
       console.error('Error en aceptarTransferenciaAdministracion, ejecutando rollback:', error);
-      await this.groupRepository.updateAdministrador(grupo.id, anteriorAdminId).catch(() => {});
+      await this.groupRepository.updateAdministrador(grupo.id, anteriorAdminId).catch(() => { });
       throw new ApplicationError(500, 'Error al aceptar la transferencia. Se revirtieron los cambios.');
     }
 
@@ -616,46 +760,7 @@ export class GroupUseCases {
     grupoId: unknown,
     nuevoMiembroId: unknown,
   ) {
-    const authUser = this.ensureAuthenticated(usuario);
-
-    if (!grupoId || typeof grupoId !== 'string') {
-      throw new ApplicationError(400, 'ID de grupo inválido');
-    }
-    if (!nuevoMiembroId || typeof nuevoMiembroId !== 'string') {
-      throw new ApplicationError(400, 'ID del miembro inválido');
-    }
-
-    const grupo = await this.groupRepository.findById(grupoId);
-    if (!grupo) throw new ApplicationError(404, 'Grupo no encontrado');
-
-    const usuarioDestino = await this.userRepository.findSafeById(nuevoMiembroId);
-    if (!usuarioDestino) throw new ApplicationError(404, 'Usuario no encontrado');
-
-    const materiasUsuarioDestino = (usuarioDestino.materiasCursando || []).map((m) =>
-      this.normalizarMateria(m),
-    );
-    if (!materiasUsuarioDestino.includes(this.normalizarMateria(grupo.materia.nombre))) {
-      throw new ApplicationError(403, 'Solo puedes agregar usuarios que estén cursando esta materia');
-    }
-
-    // El estado valida permisos de admin y duplicados
-    const ctx = new GroupContext(grupo);
-    ctx.agregarMiembro(nuevoMiembroId, authUser.id);
-
-    try {
-      await this.groupRepository.join(grupo.id, nuevoMiembroId);
-
-      if (ctx.pendingEstado) {
-        await this.groupRepository.updateEstado(grupo.id, ctx.pendingEstado);
-      }
-    } catch (error) {
-      // Rollback lógico
-      console.error('Error en agregarMiembro, ejecutando rollback:', error);
-      await this.groupRepository.leave(grupo.id, nuevoMiembroId).catch(() => {});
-      throw new ApplicationError(500, 'Error de integridad al agregar el miembro. Se revirtieron los cambios.');
-    }
-
-    return { message: 'Miembro agregado correctamente' };
+    return this.invitarMiembro(usuario, grupoId, nuevoMiembroId);
   }
 
   async abandonarGrupo(usuario: AuthenticatedUser | undefined, grupoId: unknown) {
@@ -683,16 +788,16 @@ export class GroupUseCases {
 
     try {
       await this.groupRepository.leave(grupo.id, authUser.id);
-      
+
       if (ctx.pendingEstado) {
         await this.groupRepository.updateEstado(grupo.id, ctx.pendingEstado);
       }
     } catch (error) {
       console.error('Error en abandonarGrupo, ejecutando rollback:', error);
-      await this.groupRepository.join(grupo.id, authUser.id).catch(() => {});
+      await this.groupRepository.join(grupo.id, authUser.id).catch(() => { });
       throw new ApplicationError(500, 'Error de integridad al abandonar el grupo. Se revirtieron los cambios.');
     }
-    
+
     return {
       message: 'Has abandonado el grupo correctamente',
       grupoEliminado: false,
