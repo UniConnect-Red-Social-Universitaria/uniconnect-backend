@@ -11,6 +11,8 @@ import {
 import { ApplicationError } from '../../../shared/application-error';
 import { cloudinary } from '../../../lib/cloudinary';
 import { GroupContext } from '../domain/group-state';
+import { NotificacionService } from '../../notifications/application/NotificacionService';
+import { NotificacionBase, NotificacionConAccion, NotificacionConPrioridad } from '../../../shared/notificacion';
 
 type CreateGroupInput = {
   nombre: unknown;
@@ -34,6 +36,7 @@ export class GroupUseCases {
     private readonly grupoArchivoRepository: GrupoArchivoRepository,
     private readonly solicitudGrupoRepository: SolicitudGrupoRepository,
     private readonly observers: GroupEventObserver[] = [],
+    private readonly notificacionService?: NotificacionService,
   ) { }
 
   async crearGrupo(usuario: AuthenticatedUser | undefined, input: CreateGroupInput) {
@@ -157,18 +160,19 @@ export class GroupUseCases {
     ctx.solicitarIngreso(authUser.id);
 
     // Limpiar solicitudes rechazadas previas para permitir reenvío
-    await this.solicitudGrupoRepository.eliminarRechazada(authUser.id, grupo.id);
+    await this.solicitudGrupoRepository.eliminarRechazada(authUser.id, grupo.id, 'INGRESO');
 
     // Verificar que no haya solicitud pendiente
     const solicitudExistente = await this.solicitudGrupoRepository.buscarPendiente(
       authUser.id,
       grupo.id,
+      'INGRESO',
     );
     if (solicitudExistente) {
       throw new ApplicationError(409, 'Ya tienes una solicitud pendiente para este grupo');
     }
 
-    const solicitud = await this.solicitudGrupoRepository.crear(authUser.id, grupo.id);
+    const solicitud = await this.solicitudGrupoRepository.crear(authUser.id, grupo.id, 'INGRESO');
 
     // Notificar al administrador del grupo
     const solicitante = await this.userRepository.findSafeById(authUser.id);
@@ -178,9 +182,31 @@ export class GroupUseCases {
       grupoNombre: grupo.nombre,
       administradorId: grupo.administradorId,
       solicitanteId: authUser.id,
+      tipo: 'INGRESO',
       solicitanteNombre: solicitante?.nombre || '',
       solicitanteApellido: solicitante?.apellido || '',
     }));
+
+    if (this.notificacionService) {
+      const notificacion = new NotificacionConAccion(
+        new NotificacionConPrioridad(
+          new NotificacionBase(
+            `${solicitante?.nombre || authUser.nombre} quiere unirse a tu grupo "${grupo.nombre}"`,
+            grupo.administradorId,
+            solicitud.createdAt,
+          ),
+          'normal',
+        ),
+        {
+          label: 'Ver solicitudes',
+          endpoint: `/api/grupos/${grupo.id}/solicitudes`,
+        },
+      );
+
+      this.notificacionService
+        .notificar(notificacion.render(), grupo.administradorId, 'solicitud-grupo')
+        .catch((error) => console.error('[notificacion] Error al notificar solicitud de grupo:', error));
+    }
 
     return {
       message: 'Solicitud de ingreso enviada correctamente',
@@ -237,6 +263,211 @@ export class GroupUseCases {
     };
   }
 
+  async invitarMiembro(
+    usuario: AuthenticatedUser | undefined,
+    grupoId: unknown,
+    usuarioDestinoId: unknown,
+  ) {
+    const authUser = this.ensureAuthenticated(usuario);
+
+    if (!grupoId || typeof grupoId !== 'string') {
+      throw new ApplicationError(400, 'ID de grupo inválido');
+    }
+    if (!usuarioDestinoId || typeof usuarioDestinoId !== 'string') {
+      throw new ApplicationError(400, 'ID del miembro inválido');
+    }
+
+    const grupo = await this.groupRepository.findById(grupoId);
+    if (!grupo) throw new ApplicationError(404, 'Grupo no encontrado');
+
+    const usuarioDestino = await this.userRepository.findSafeById(usuarioDestinoId);
+    if (!usuarioDestino) throw new ApplicationError(404, 'Usuario no encontrado');
+
+    const materiasUsuarioDestino = (usuarioDestino.materiasCursando || []).map((m) =>
+      this.normalizarMateria(m),
+    );
+    if (!materiasUsuarioDestino.includes(this.normalizarMateria(grupo.materia.nombre))) {
+      throw new ApplicationError(403, 'Solo puedes invitar usuarios que estén cursando esta materia');
+    }
+
+    const ctx = new GroupContext(grupo);
+    ctx.agregarMiembro(usuarioDestinoId, authUser.id);
+
+    await this.solicitudGrupoRepository.eliminarRechazada(usuarioDestinoId, grupo.id, 'INVITACION');
+
+    const solicitudExistente = await this.solicitudGrupoRepository.buscarPendiente(
+      usuarioDestinoId,
+      grupo.id,
+      'INVITACION',
+    );
+    if (solicitudExistente) {
+      throw new ApplicationError(409, 'Ya existe una invitación pendiente para este estudiante');
+    }
+
+    const solicitud = await this.solicitudGrupoRepository.crear(usuarioDestinoId, grupo.id, 'INVITACION');
+    const invitador = await this.userRepository.findSafeById(authUser.id);
+
+    this.observers.forEach(obs => obs.onSolicitudNueva({
+      solicitudId: solicitud.id,
+      grupoId: grupo.id,
+      grupoNombre: grupo.nombre,
+      administradorId: usuarioDestinoId,
+      solicitanteId: authUser.id,
+      tipo: 'INVITACION',
+      solicitanteNombre: invitador?.nombre || '',
+      solicitanteApellido: invitador?.apellido || '',
+    }));
+
+    if (this.notificacionService) {
+      const notificacion = new NotificacionConAccion(
+        new NotificacionConPrioridad(
+          new NotificacionBase(
+            `Te invitaron a unirte al grupo "${grupo.nombre}"`,
+            usuarioDestinoId,
+            solicitud.createdAt,
+          ),
+          'normal',
+        ),
+        {
+          label: 'Ver notificación',
+          endpoint: '/notificaciones',
+        },
+      );
+
+      this.notificacionService
+        .notificar(notificacion.render(), usuarioDestinoId, 'invitacion-grupo')
+        .catch((error) => console.error('[notificacion] Error al notificar invitación de grupo:', error));
+    }
+
+    return { message: 'Solicitud enviada al estudiante' };
+  }
+
+  async aceptarInvitacion(
+    usuario: AuthenticatedUser | undefined,
+    grupoId: unknown,
+    solicitudId: unknown,
+  ) {
+    const authUser = this.ensureAuthenticated(usuario);
+
+    if (!grupoId || typeof grupoId !== 'string') {
+      throw new ApplicationError(400, 'ID de grupo inválido');
+    }
+    if (!solicitudId || typeof solicitudId !== 'string') {
+      throw new ApplicationError(400, 'ID de solicitud inválido');
+    }
+
+    const grupo = await this.groupRepository.findById(grupoId);
+    if (!grupo) throw new ApplicationError(404, 'Grupo no encontrado');
+
+    const solicitud = await this.solicitudGrupoRepository.buscarPorId(solicitudId);
+    if (!solicitud || solicitud.grupoId !== grupo.id || solicitud.tipo !== 'INVITACION') {
+      throw new ApplicationError(404, 'Solicitud no encontrada');
+    }
+    if (solicitud.solicitanteId !== authUser.id) {
+      throw new ApplicationError(403, 'No tienes permiso para aceptar esta invitación');
+    }
+    if (solicitud.estado !== 'PENDIENTE') {
+      throw new ApplicationError(400, 'Esta solicitud ya fue procesada');
+    }
+
+    await this.solicitudGrupoRepository.aprobar(solicitud.id);
+    await this.groupRepository.join(grupo.id, authUser.id);
+
+    this.observers.forEach(obs => obs.onSolicitudResuelta({
+      solicitudId: solicitud.id,
+      grupoId: grupo.id,
+      grupoNombre: grupo.nombre,
+      solicitanteId: authUser.id,
+      estado: 'APROBADA',
+    }));
+
+    if (this.notificacionService) {
+      const notificacion = new NotificacionConAccion(
+        new NotificacionConPrioridad(
+          new NotificacionBase(
+            `Aceptaron tu invitación para unirte a "${grupo.nombre}"`,
+            grupo.administradorId,
+            new Date(),
+          ),
+          'normal',
+        ),
+        {
+          label: 'Ver grupo',
+          endpoint: `/api/grupos/${grupo.id}`,
+        },
+      );
+
+      this.notificacionService
+        .notificar(notificacion.render(), grupo.administradorId, 'invitacion-grupo')
+        .catch((error) => console.error('[notificacion] Error al notificar invitación de grupo aceptada:', error));
+    }
+
+    return { message: 'Has aceptado unirte al grupo' };
+  }
+
+  async rechazarInvitacion(
+    usuario: AuthenticatedUser | undefined,
+    grupoId: unknown,
+    solicitudId: unknown,
+  ) {
+    const authUser = this.ensureAuthenticated(usuario);
+
+    if (!grupoId || typeof grupoId !== 'string') {
+      throw new ApplicationError(400, 'ID de grupo inválido');
+    }
+    if (!solicitudId || typeof solicitudId !== 'string') {
+      throw new ApplicationError(400, 'ID de solicitud inválido');
+    }
+
+    const grupo = await this.groupRepository.findById(grupoId);
+    if (!grupo) throw new ApplicationError(404, 'Grupo no encontrado');
+
+    const solicitud = await this.solicitudGrupoRepository.buscarPorId(solicitudId);
+    if (!solicitud || solicitud.grupoId !== grupo.id || solicitud.tipo !== 'INVITACION') {
+      throw new ApplicationError(404, 'Solicitud no encontrada');
+    }
+    if (solicitud.solicitanteId !== authUser.id) {
+      throw new ApplicationError(403, 'No tienes permiso para rechazar esta invitación');
+    }
+    if (solicitud.estado !== 'PENDIENTE') {
+      throw new ApplicationError(400, 'Esta solicitud ya fue procesada');
+    }
+
+    await this.solicitudGrupoRepository.rechazar(solicitud.id);
+    await this.solicitudGrupoRepository.eliminarRechazada(authUser.id, grupo.id, 'INVITACION');
+
+    this.observers.forEach(obs => obs.onSolicitudResuelta({
+      solicitudId: solicitud.id,
+      grupoId: grupo.id,
+      grupoNombre: grupo.nombre,
+      solicitanteId: authUser.id,
+      estado: 'RECHAZADA',
+    }));
+
+    if (this.notificacionService) {
+      const notificacion = new NotificacionConAccion(
+        new NotificacionConPrioridad(
+          new NotificacionBase(
+            `Rechazaste la invitación al grupo "${grupo.nombre}"`,
+            grupo.administradorId,
+            new Date(),
+          ),
+          'normal',
+        ),
+        {
+          label: 'Ver grupo',
+          endpoint: `/api/grupos/${grupo.id}`,
+        },
+      );
+
+      this.notificacionService
+        .notificar(notificacion.render(), grupo.administradorId, 'invitacion-grupo')
+        .catch((error) => console.error('[notificacion] Error al notificar invitación de grupo rechazada:', error));
+    }
+
+    return { message: 'Has rechazado la invitación al grupo' };
+  }
+
   async aprobarSolicitud(
     usuario: AuthenticatedUser | undefined,
     grupoId: unknown,
@@ -276,7 +507,7 @@ export class GroupUseCases {
     } catch (error) {
       // Rollback lógico en caso de fallo parcial
       console.error('Error en aprobarSolicitud, ejecutando rollback:', error);
-      await this.groupRepository.leave(grupo.id, solicitud.solicitanteId).catch(() => {});
+      await this.groupRepository.leave(grupo.id, solicitud.solicitanteId).catch(() => { });
       throw new ApplicationError(500, 'Error de integridad al aprobar la solicitud. Se han revertido los cambios.');
     }
 
@@ -497,6 +728,27 @@ export class GroupUseCases {
       nuevoEstado: 'PENDIENTE_TRANSFERENCIA',
     }));
 
+    if (this.notificacionService) {
+      const notificacion = new NotificacionConAccion(
+        new NotificacionConPrioridad(
+          new NotificacionBase(
+            `El administrador de "${grupo.nombre}" quiere transferirte la administración`,
+            candidatoId,
+            new Date(),
+          ),
+          'urgente',
+        ),
+        {
+          label: 'Revisar grupo',
+          endpoint: `/api/grupos/${grupo.id}`,
+        },
+      );
+
+      this.notificacionService
+        .notificar(notificacion.render(), candidatoId, 'transferencia-admin')
+        .catch((error) => console.error('[notificacion] Error al notificar transferencia de admin:', error));
+    }
+
     return { message: 'Transferencia de administración iniciada. El candidato debe aceptar o rechazar.' };
   }
 
@@ -528,7 +780,7 @@ export class GroupUseCases {
       await this.groupRepository.updateEstado(grupo.id, 'ACTIVO');
     } catch (error) {
       console.error('Error en aceptarTransferenciaAdministracion, ejecutando rollback:', error);
-      await this.groupRepository.updateAdministrador(grupo.id, anteriorAdminId).catch(() => {});
+      await this.groupRepository.updateAdministrador(grupo.id, anteriorAdminId).catch(() => { });
       throw new ApplicationError(500, 'Error al aceptar la transferencia. Se revirtieron los cambios.');
     }
 
@@ -541,6 +793,27 @@ export class GroupUseCases {
       nuevoAdminNombre: [nuevoAdmin?.nombre, nuevoAdmin?.apellido].filter(Boolean).join(' '),
       nuevoEstado: 'TRANSFERENCIA_ACEPTADA',
     }));
+
+    if (this.notificacionService) {
+      const notificacion = new NotificacionConAccion(
+        new NotificacionConPrioridad(
+          new NotificacionBase(
+            `Aceptaron la transferencia de administración de "${grupo.nombre}"`,
+            anteriorAdminId,
+            new Date(),
+          ),
+          'normal',
+        ),
+        {
+          label: 'Ver grupo',
+          endpoint: `/api/grupos/${grupo.id}`,
+        },
+      );
+
+      this.notificacionService
+        .notificar(notificacion.render(), anteriorAdminId, 'transferencia-admin')
+        .catch((error) => console.error('[notificacion] Error al notificar transferencia aceptada:', error));
+    }
 
     return { message: 'Has aceptado la administración del grupo correctamente' };
   }
@@ -575,6 +848,27 @@ export class GroupUseCases {
       nuevoEstado: 'ACTIVO',
     }));
 
+    if (this.notificacionService) {
+      const notificacion = new NotificacionConAccion(
+        new NotificacionConPrioridad(
+          new NotificacionBase(
+            `Rechazaste la transferencia de administración de "${grupo.nombre}"`,
+            grupo.administradorId,
+            new Date(),
+          ),
+          'normal',
+        ),
+        {
+          label: 'Ver grupo',
+          endpoint: `/api/grupos/${grupo.id}`,
+        },
+      );
+
+      this.notificacionService
+        .notificar(notificacion.render(), grupo.administradorId, 'transferencia-admin')
+        .catch((error) => console.error('[notificacion] Error al notificar transferencia rechazada:', error));
+    }
+
     return { message: 'Has rechazado la administración del grupo' };
   }
 
@@ -608,6 +902,27 @@ export class GroupUseCases {
       nuevoEstado: 'ACTIVO',
     }));
 
+    if (this.notificacionService && candidatoId) {
+      const notificacion = new NotificacionConAccion(
+        new NotificacionConPrioridad(
+          new NotificacionBase(
+            `La transferencia de administración de "${grupo.nombre}" fue cancelada`,
+            candidatoId,
+            new Date(),
+          ),
+          'normal',
+        ),
+        {
+          label: 'Ver grupo',
+          endpoint: `/api/grupos/${grupo.id}`,
+        },
+      );
+
+      this.notificacionService
+        .notificar(notificacion.render(), candidatoId, 'transferencia-admin')
+        .catch((error) => console.error('[notificacion] Error al notificar transferencia cancelada:', error));
+    }
+
     return { message: 'Transferencia de administración cancelada' };
   }
 
@@ -616,46 +931,7 @@ export class GroupUseCases {
     grupoId: unknown,
     nuevoMiembroId: unknown,
   ) {
-    const authUser = this.ensureAuthenticated(usuario);
-
-    if (!grupoId || typeof grupoId !== 'string') {
-      throw new ApplicationError(400, 'ID de grupo inválido');
-    }
-    if (!nuevoMiembroId || typeof nuevoMiembroId !== 'string') {
-      throw new ApplicationError(400, 'ID del miembro inválido');
-    }
-
-    const grupo = await this.groupRepository.findById(grupoId);
-    if (!grupo) throw new ApplicationError(404, 'Grupo no encontrado');
-
-    const usuarioDestino = await this.userRepository.findSafeById(nuevoMiembroId);
-    if (!usuarioDestino) throw new ApplicationError(404, 'Usuario no encontrado');
-
-    const materiasUsuarioDestino = (usuarioDestino.materiasCursando || []).map((m) =>
-      this.normalizarMateria(m),
-    );
-    if (!materiasUsuarioDestino.includes(this.normalizarMateria(grupo.materia.nombre))) {
-      throw new ApplicationError(403, 'Solo puedes agregar usuarios que estén cursando esta materia');
-    }
-
-    // El estado valida permisos de admin y duplicados
-    const ctx = new GroupContext(grupo);
-    ctx.agregarMiembro(nuevoMiembroId, authUser.id);
-
-    try {
-      await this.groupRepository.join(grupo.id, nuevoMiembroId);
-
-      if (ctx.pendingEstado) {
-        await this.groupRepository.updateEstado(grupo.id, ctx.pendingEstado);
-      }
-    } catch (error) {
-      // Rollback lógico
-      console.error('Error en agregarMiembro, ejecutando rollback:', error);
-      await this.groupRepository.leave(grupo.id, nuevoMiembroId).catch(() => {});
-      throw new ApplicationError(500, 'Error de integridad al agregar el miembro. Se revirtieron los cambios.');
-    }
-
-    return { message: 'Miembro agregado correctamente' };
+    return this.invitarMiembro(usuario, grupoId, nuevoMiembroId);
   }
 
   async abandonarGrupo(usuario: AuthenticatedUser | undefined, grupoId: unknown) {
@@ -683,16 +959,16 @@ export class GroupUseCases {
 
     try {
       await this.groupRepository.leave(grupo.id, authUser.id);
-      
+
       if (ctx.pendingEstado) {
         await this.groupRepository.updateEstado(grupo.id, ctx.pendingEstado);
       }
     } catch (error) {
       console.error('Error en abandonarGrupo, ejecutando rollback:', error);
-      await this.groupRepository.join(grupo.id, authUser.id).catch(() => {});
+      await this.groupRepository.join(grupo.id, authUser.id).catch(() => { });
       throw new ApplicationError(500, 'Error de integridad al abandonar el grupo. Se revirtieron los cambios.');
     }
-    
+
     return {
       message: 'Has abandonado el grupo correctamente',
       grupoEliminado: false,

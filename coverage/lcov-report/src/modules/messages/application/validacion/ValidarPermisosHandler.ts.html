@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>15/15</span>
+                <span class='fraction'>0/15</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>10/10</span>
+                <span class='fraction'>0/10</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>2/2</span>
+                <span class='fraction'>0/2</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>15/15</span>
+                <span class='fraction'>0/15</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line high'></div>
+    <div class='status-line low'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -98,71 +98,71 @@
 <a name='L33'></a><a href='#L33'>33</a>
 <a name='L34'></a><a href='#L34'>34</a>
 <a name='L35'></a><a href='#L35'>35</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">9x</span>
-<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { MensajeContexto, ResultadoValidacion } from '../../domain/IValidadorMensajeHandler';
-import { ValidadorMensajeBase } from './ValidadorMensajeBase';
+<span class="cstat-no" title="statement not covered" >import { ValidadorMensajeBase } from './ValidadorMensajeBase';</span>
 &nbsp;
 export interface PermisosChecker {
   esMiembroDeGrupo(emisorId: string, grupoId: string): boolean;
   tieneRelacionAceptada(emisorId: string, receptorId: string): boolean;
 }
 &nbsp;
-export class ValidarPermisosHandler extends ValidadorMensajeBase {
-  constructor(private readonly checker: PermisosChecker) {
-    super();
+<span class="cstat-no" title="statement not covered" >export class V</span>alidarPermisosHandler extends ValidadorMensajeBase {
+<span class="fstat-no" title="function not covered" >  constructor(private readonly <span class="cstat-no" title="statement not covered" >c</span>hecker: PermisosChecker)</span> {
+<span class="cstat-no" title="statement not covered" >    super();</span>
   }
 &nbsp;
-  protected validar(mensaje: MensajeContexto): ResultadoValidacion {
-    if (mensaje.grupoId) {
-      if (!this.checker.esMiembroDeGrupo(mensaje.emisorId, mensaje.grupoId)) {
-        return { valido: false, error: 'Solo los miembros pueden enviar mensajes al grupo' };
+  protected <span class="fstat-no" title="function not covered" >validar(</span>mensaje: MensajeContexto): ResultadoValidacion {
+<span class="cstat-no" title="statement not covered" >    if (mensaje.grupoId) {</span>
+<span class="cstat-no" title="statement not covered" >      if (!this.checker.esMiembroDeGrupo(mensaje.emisorId, mensaje.grupoId)) {</span>
+<span class="cstat-no" title="statement not covered" >        return { valido: false, error: 'Solo los miembros pueden enviar mensajes al grupo' };</span>
       }
-      return { valido: true };
+<span class="cstat-no" title="statement not covered" >      return { valido: true };</span>
     }
 &nbsp;
-    if (mensaje.receptorId) {
-      if (mensaje.emisorId === mensaje.receptorId) {
-        return { valido: false, error: 'No puedes enviarte mensajes a ti mismo' };
+<span class="cstat-no" title="statement not covered" >    if (mensaje.receptorId) {</span>
+<span class="cstat-no" title="statement not covered" >      if (mensaje.emisorId === mensaje.receptorId) {</span>
+<span class="cstat-no" title="statement not covered" >        return { valido: false, error: 'No puedes enviarte mensajes a ti mismo' };</span>
       }
-      if (!this.checker.tieneRelacionAceptada(mensaje.emisorId, mensaje.receptorId)) {
-        return { valido: false, error: 'Solo puedes chatear con compañeros agregados' };
+<span class="cstat-no" title="statement not covered" >      if (!this.checker.tieneRelacionAceptada(mensaje.emisorId, mensaje.receptorId)) {</span>
+<span class="cstat-no" title="statement not covered" >        return { valido: false, error: 'Solo puedes chatear con compañeros agregados' };</span>
       }
-      return { valido: true };
+<span class="cstat-no" title="statement not covered" >      return { valido: true };</span>
     }
 &nbsp;
-    return { valido: false, error: 'El mensaje debe tener un destinatario' };
+<span class="cstat-no" title="statement not covered" >    return { valido: false, error: 'El mensaje debe tener un destinatario' };</span>
   }
 }
 &nbsp;</pre></td></tr></table></pre>
@@ -172,7 +172,7 @@ export class ValidarPermisosHandler extends ValidadorMensajeBase {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-18T00:32:54.064Z
+                at 2026-05-20T01:58:58.582Z
             </div>
         <script src="../../../../../prettify.js"></script>
         <script>

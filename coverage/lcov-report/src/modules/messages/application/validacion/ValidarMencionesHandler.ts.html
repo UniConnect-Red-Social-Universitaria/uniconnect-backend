@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>11/11</span>
+                <span class='fraction'>0/11</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>4/4</span>
+                <span class='fraction'>0/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>1/1</span>
+                <span class='fraction'>0/1</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>10/10</span>
+                <span class='fraction'>0/10</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line high'></div>
+    <div class='status-line low'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -88,51 +88,51 @@
 <a name='L23'></a><a href='#L23'>23</a>
 <a name='L24'></a><a href='#L24'>24</a>
 <a name='L25'></a><a href='#L25'>25</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">5x</span>
-<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { MensajeContexto, ResultadoValidacion } from '../../domain/IValidadorMensajeHandler';
-import { ValidadorMensajeBase } from './ValidadorMensajeBase';
+<span class="cstat-no" title="statement not covered" >import { ValidadorMensajeBase } from './ValidadorMensajeBase';</span>
 &nbsp;
 // Menciones válidas: @palabra con solo letras, números, puntos o guiones bajos
-const MENCION_VALIDA = /^[a-zA-Z0-9._]+$/;
+const MENCION_VALIDA = <span class="cstat-no" title="statement not covered" >/^[a-zA-Z0-9._]+$/;</span>
 &nbsp;
-export class ValidarMencionesHandler extends ValidadorMensajeBase {
-  protected validar(mensaje: MensajeContexto): ResultadoValidacion {
-    const menciones = mensaje.contenido.match(/@(\S+)/g);
-    if (!menciones) return { valido: true };
+<span class="cstat-no" title="statement not covered" >export class V</span>alidarMencionesHandler extends ValidadorMensajeBase {
+  protected <span class="fstat-no" title="function not covered" >validar(</span>mensaje: MensajeContexto): ResultadoValidacion {
+    const menciones = <span class="cstat-no" title="statement not covered" >mensaje.contenido.match(/@(\S+)/g);</span>
+<span class="cstat-no" title="statement not covered" >    if (!menciones) <span class="cstat-no" title="statement not covered" >return { valido: true };</span></span>
 &nbsp;
-    for (const mencion of menciones) {
-      const nombre = mencion.slice(1); // quita el @
-      if (!MENCION_VALIDA.test(nombre)) {
-        return {
+<span class="cstat-no" title="statement not covered" >    for (const mencion of menciones) {</span>
+      const nombre = <span class="cstat-no" title="statement not covered" >mencion.slice(1);</span> // quita el @
+<span class="cstat-no" title="statement not covered" >      if (!MENCION_VALIDA.test(nombre)) {</span>
+<span class="cstat-no" title="statement not covered" >        return {</span>
           valido: false,
           error: `La mención "${mencion}" tiene formato inválido. Solo se permiten letras, números, puntos y guiones bajos`,
         };
       }
     }
 &nbsp;
-    return { valido: true };
+<span class="cstat-no" title="statement not covered" >    return { valido: true };</span>
   }
 }
 &nbsp;</pre></td></tr></table></pre>
@@ -142,7 +142,7 @@ export class ValidarMencionesHandler extends ValidadorMensajeBase {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-18T00:32:54.064Z
+                at 2026-05-20T01:58:58.582Z
             </div>
         <script src="../../../../../prettify.js"></script>
         <script>

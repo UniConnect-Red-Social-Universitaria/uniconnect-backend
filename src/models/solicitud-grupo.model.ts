@@ -1,4 +1,5 @@
 import prisma from "../lib/prisma";
+import type { SolicitudGrupoTipo } from '../domain/contracts';
 
 type EstadoSolicitudGrupo = 'PENDIENTE' | 'APROBADA' | 'RECHAZADA';
 
@@ -6,6 +7,7 @@ interface SolicitudGrupoBase {
   id: string;
   solicitanteId: string;
   grupoId: string;
+  tipo: SolicitudGrupoTipo;
   estado: EstadoSolicitudGrupo;
   createdAt: Date;
   updatedAt: Date;
@@ -49,11 +51,12 @@ function solicitudGrupoDelegate() {
 }
 
 export class SolicitudGrupoModel {
-  static async crear(solicitanteId: string, grupoId: string) {
+  static async crear(solicitanteId: string, grupoId: string, tipo: SolicitudGrupoTipo = 'INGRESO') {
     return solicitudGrupoDelegate().create({
       data: {
         solicitanteId,
         grupoId,
+        tipo,
       },
       include: {
         solicitante: {
@@ -66,11 +69,12 @@ export class SolicitudGrupoModel {
     });
   }
 
-  static async buscarPendiente(solicitanteId: string, grupoId: string) {
+  static async buscarPendiente(solicitanteId: string, grupoId: string, tipo: SolicitudGrupoTipo = 'INGRESO') {
     return solicitudGrupoDelegate().findFirst({
       where: {
         solicitanteId,
         grupoId,
+        tipo,
         estado: "PENDIENTE",
       },
     });
@@ -94,6 +98,7 @@ export class SolicitudGrupoModel {
     const solicitudesRaw = await solicitudGrupoDelegate().findMany({
       where: {
         grupoId,
+        tipo: 'INGRESO',
         estado: "PENDIENTE",
       },
       include: {
@@ -111,7 +116,7 @@ export class SolicitudGrupoModel {
 
   static async listarPorUsuario(solicitanteId: string) {
     const solicitudesRaw = await solicitudGrupoDelegate().findMany({
-      where: { solicitanteId },
+      where: { solicitanteId, tipo: 'INVITACION' },
       include: {
         grupo: {
           include: { materia: { select: { id: true, nombre: true } } },
@@ -155,11 +160,12 @@ export class SolicitudGrupoModel {
     });
   }
 
-  static async eliminarRechazada(solicitanteId: string, grupoId: string) {
+  static async eliminarRechazada(solicitanteId: string, grupoId: string, tipo: SolicitudGrupoTipo = 'INGRESO') {
     await solicitudGrupoDelegate().deleteMany({
       where: {
         solicitanteId,
         grupoId,
+        tipo,
         estado: "RECHAZADA",
       },
     });

@@ -16,6 +16,7 @@ export class SocketGroupObserver implements GroupEventObserver {
     grupoNombre: string;
     administradorId: string;
     solicitanteId: string;
+    tipo: 'INGRESO' | 'INVITACION';
     solicitanteNombre: string;
     solicitanteApellido?: string;
   }): void {

@@ -38,7 +38,10 @@ import { InAppWebSocketStrategy } from './modules/notifications/infrastructure/s
 import { EmailInstitucionalStrategy } from './modules/notifications/infrastructure/strategies/EmailInstitucionalStrategy';
 import { PushMovilStrategy } from './modules/notifications/infrastructure/strategies/PushMovilStrategy';
 import { ResumenDiarioStrategy } from './modules/notifications/infrastructure/strategies/ResumenDiarioStrategy';
+import * as nodemailer from 'nodemailer';
+import { logger } from './lib/logger';
 
+// ── Repositorios ──
 const userRepository = new PrismaUserRepository();
 const contactRepository = new PrismaContactRepository();
 const careerRepository = new PrismaCarreraRepository();
@@ -49,9 +52,9 @@ const solicitudGrupoRepository = new PrismaSolicitudGrupoRepository();
 const mensajeRepository = new PrismaMensajeRepository();
 const eventoRepository = new PrismaEventoRepository();
 const pollRepository = new PrismaPollRepository();
-
 const estadisticasRepository = new PrismaEstadisticasRepository();
 
+// ── Servicios de infraestructura ──
 const passwordService = new BcryptPasswordService();
 const tokenService = new JwtTokenService();
 const identityVerificationService = new Auth0IdentityVerificationService();
@@ -63,9 +66,44 @@ const pollGateway = new ModerationPollGatewayDecorator(
 const groupEventObserver = new SocketGroupObserver();
 const groupPersistenciaObserver = new PersistenciaGroupObserver();
 
-// ── ChatSubject para mensajes de grupo (Patrón Observer) ──
+// ── SMTP ──
+const mailTransporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT),
+  secure: process.env.SMTP_PORT === '465',
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
+
+mailTransporter.verify((error) => {
+  if (error) {
+    logger.error('[Email] Transporter SMTP no válido:', error);
+  } else {
+    logger.info('[Email] Transporter SMTP listo');
+  }
+});
+
+// ── Notificaciones (deben declararse ANTES que messageUseCases) ── // ← CAMBIO: bloque movido arriba
+export const preferenciaRepository = new InMemoryPreferenciaRepository();
+
+const emailStrategy = new EmailInstitucionalStrategy(mailTransporter, userRepository);
+
+export const notificacionService = new NotificacionService(
+  [
+    new InAppWebSocketStrategy(),
+    emailStrategy,
+    new PushMovilStrategy(),
+    new ResumenDiarioStrategy(),
+  ],
+  preferenciaRepository,
+);
+
+// ── ChatSubject ──
 const chatSubject = ChatSubject.getInstance();
 
+// ── Casos de uso ──
 export const usersUseCases = new UsersUseCases({
   userRepository,
   contactRepository,
@@ -76,6 +114,7 @@ export const usersUseCases = new UsersUseCases({
   identityVerificationService,
   tokenBlacklistService,
   estadisticasRepository,
+  notificacionService,
 });
 
 export const groupUseCases = new GroupUseCases(
@@ -84,17 +123,22 @@ export const groupUseCases = new GroupUseCases(
   userRepository,
   grupoArchivoRepository,
   solicitudGrupoRepository,
-  [groupEventObserver, groupPersistenciaObserver]
+  [groupEventObserver, groupPersistenciaObserver],
+  notificacionService,
 );
+
 export const materiaUseCases = new MateriaUseCases(materiaRepository);
-export const messageUseCases = new MessageUseCases(
+
+export const messageUseCases = new MessageUseCases( // ← CAMBIO: agregado notificacionService al final
   mensajeRepository,
   userRepository,
   contactRepository,
   grupoRepository,
   messageGateway,
   chatSubject,
+  notificacionService,
 );
+
 export const eventUseCases = new EventUseCases(eventoRepository);
 export const catalogUseCases = new CatalogUseCases(careerRepository, materiaRepository);
 export const pollUseCases = new PollUseCases(pollRepository, grupoRepository, pollGateway);
@@ -103,25 +147,11 @@ export const pollAutoCloseScheduler = new PollAutoCloseScheduler(pollRepository,
 // ── Exportar ChatSubject para uso en socket.ts ──
 export { chatSubject };
 
-// ── Patrón Strategy: Notificaciones ──
-export const preferenciaRepository = new InMemoryPreferenciaRepository();
-
-export const notificacionService = new NotificacionService(
-  [
-    new InAppWebSocketStrategy(),
-    new EmailInstitucionalStrategy(),
-    new PushMovilStrategy(),
-    new ResumenDiarioStrategy(),
-  ],
-  preferenciaRepository,
-);
-
-// ── Módulo Foro ──
+// ── Foro ──
 const foroRepository = new PrismaForoRepository();
 export const foroUseCases = new ForoUseCases(foroRepository);
 
-// ── Módulo Sesiones de Estudio ──
+// ── Sesiones de Estudio ──
 const sesionRepository = new PrismaSesionEstudioRepository();
 export const sesionUseCases = new SesionEstudioUseCases(sesionRepository);
-
 export const recordatorioScheduler = new RecordatorioScheduler(sesionRepository, notificacionService);

@@ -265,6 +265,34 @@ export class GrupoController {
     }
   }
 
+  static async aceptarInvitacion(req: Request, res: Response) {
+    try {
+      const resultado = await groupUseCases.aceptarInvitacion(
+        req.usuario,
+        req.params.id,
+        req.params.solicitudId,
+      );
+
+      return res.json({ success: true, message: resultado.message });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al aceptar la invitación');
+    }
+  }
+
+  static async rechazarInvitacion(req: Request, res: Response) {
+    try {
+      const resultado = await groupUseCases.rechazarInvitacion(
+        req.usuario,
+        req.params.id,
+        req.params.solicitudId,
+      );
+
+      return res.json({ success: true, message: resultado.message });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al rechazar la invitación');
+    }
+  }
+
   static async abandonarGrupo(req: Request, res: Response) {
     try {
       const resultado = await groupUseCases.abandonarGrupo(req.usuario, req.params.id);

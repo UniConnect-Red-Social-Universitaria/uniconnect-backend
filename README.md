@@ -227,6 +227,19 @@ Prefijo base: `/api`
 - `POST /` (protegida)
 - `GET /` (pública)
 
+### Recursos (`/api/recursos`)
+
+- `POST /` (protegida)
+- `GET /grupo/:grupoId` (protegida)
+- `PUT /:id` (protegida)
+- `DELETE /:id` (protegida)
+
+Los recursos se componen desde `RecursoBase` y decoradores de metadata para etiquetas, comentarios y valoración. La extracción Open Graph se ejecuta al crear o editar recursos con URL, y el tipo detectado alimenta los filtros de la interfaz móvil.
+
+Documentación del flujo de composición:
+
+- [src/docs/arquitectura-decoradores-recursos.md](src/docs/arquitectura-decoradores-recursos.md)
+
 ### Catálogos (`/api/catalogos`)
 
 - `POST /poblar` (protegida)
@@ -241,7 +254,7 @@ Prefijo base: `/api`
 import { io } from 'socket.io-client';
 
 const socket = io('http://localhost:3000', {
-  auth: { token: '<JWT>' }
+	auth: { token: '<JWT>' },
 });
 ```
 
@@ -265,15 +278,20 @@ Eventos emitidos por el backend:
 `GET /` responde información general de la API y endpoints de referencia.
 
 # Configuración del token NGrok
+
 - No olvides hacer npm install (npm install ngrok)
+
 1. Crea una cuenta en: [ngrok.com](https://ngrok.com/?homepage-cta-docs=test)
 2. En el menú de la izquierda, busca la sección "Your Authtoken".
-3. Configura el token con: 
-```bash 
-ngrok config add-authtoken TU_TOKEN_AQUI 
+3. Configura el token con:
+
+```bash
+ngrok config add-authtoken TU_TOKEN_AQUI
 ```
+
 4. Correr el backen normalmente
 5. En otra terminal correr
+
 ```bash
 ngrok http 3001
 
@@ -295,10 +313,10 @@ El pipeline se compone de tres workflows principales que interactúan de la sigu
 
 El proyecto cuenta con dos entornos principales de ejecución:
 
-| Entorno | Propósito | URL Base / Acceso | Health Check / Metadata |
-| :--- | :--- | :--- | :--- |
-| **Desarrollo (Local)** | Pruebas locales y desarrollo activo | `http://localhost:3000` *(o `3001` con ngrok)* | `http://localhost:3000/health` *(commit: `"development"`)* |
-| **Producción (Fly.io)** | Servidor real para el frontend de UniConnect | `https://uniconnect-backend.fly.dev` | `https://uniconnect-backend.fly.dev/health` *(commit: `git_hash`)* |
+| Entorno                 | Propósito                                    | URL Base / Acceso                              | Health Check / Metadata                                            |
+| :---------------------- | :------------------------------------------- | :--------------------------------------------- | :----------------------------------------------------------------- |
+| **Desarrollo (Local)**  | Pruebas locales y desarrollo activo          | `http://localhost:3000` _(o `3001` con ngrok)_ | `http://localhost:3000/health` _(commit: `"development"`)_         |
+| **Producción (Fly.io)** | Servidor real para el frontend de UniConnect | `https://uniconnect-backend.fly.dev`           | `https://uniconnect-backend.fly.dev/health` _(commit: `git_hash`)_ |
 
 ---
 
@@ -312,12 +330,13 @@ Para asegurar el correcto funcionamiento del pipeline y sus integraciones, se de
 2. **`SLACK_WEBHOOK_URL`**:
    - **Descripción**: URL del Webhook de Slack utilizada para enviar notificaciones automáticas y alertas en tiempo real al canal del equipo (despliegues exitosos, fallas del pipeline o rollbacks).
    - **Obtención**: Configurando una App en el espacio de trabajo de Slack con la característica "Incoming Webhooks".
-3. **`GITHUB_TOKEN`** *(Implícito)*:
+3. **`GITHUB_TOKEN`** _(Implícito)_:
    - **Descripción**: Token proporcionado de manera automática y segura por GitHub Actions, utilizado por el pipeline para comentar y actualizar los reportes de cobertura en los Pull Requests abiertos. No requiere configuración manual.
 
 ---
 
 > [!IMPORTANT]
 > **Políticas de Resiliencia en Producción:**
+>
 > - El merge a la rama principal está bloqueado si la cobertura de pruebas de un Pull Request cae por debajo del **80%**.
 > - En caso de que una nueva versión se despliegue en Fly.io pero no pase el Health Check post-despliegue, el pipeline se autodeclara fallido y se ejecuta un **Rollback automático por hardware** para mantener el servicio activo en la versión anterior estable sin causar downtime.

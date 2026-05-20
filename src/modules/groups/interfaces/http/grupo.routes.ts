@@ -256,6 +256,28 @@ router.patch('/:id/solicitudes/:solicitudId/rechazar', verificarJWT, GrupoContro
 
 /**
  * @swagger
+ * /api/grupos/{id}/invitaciones/{solicitudId}/aceptar:
+ *   patch:
+ *     summary: Aceptar una invitación a un grupo
+ *     tags: [Grupos]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.patch('/:id/invitaciones/:solicitudId/aceptar', verificarJWT, GrupoController.aceptarInvitacion);
+
+/**
+ * @swagger
+ * /api/grupos/{id}/invitaciones/{solicitudId}/rechazar:
+ *   patch:
+ *     summary: Rechazar una invitación a un grupo
+ *     tags: [Grupos]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.patch('/:id/invitaciones/:solicitudId/rechazar', verificarJWT, GrupoController.rechazarInvitacion);
+
+/**
+ * @swagger
  * /api/grupos/{id}/abandonar:
  *   delete:
  *     summary: Abandonar un grupo

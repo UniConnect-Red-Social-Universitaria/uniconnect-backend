@@ -63,6 +63,80 @@ const options: swaggerJsdoc.Options = {
             createdAt: { type: 'string', format: 'date-time' },
           },
         },
+        OpenGraphData: {
+          type: 'object',
+          properties: {
+            title: { type: 'string' },
+            description: { type: 'string' },
+            image: { type: 'string' },
+            url: { type: 'string' },
+            siteName: { type: 'string' },
+            favicon: { type: 'string' },
+            domain: { type: 'string' },
+            resourceType: {
+              type: 'string',
+              enum: ['video', 'pdf', 'repo', 'doc', 'image', 'ai', 'link'],
+            },
+          },
+        },
+        RecursoMetadata: {
+          type: 'object',
+          properties: {
+            titulo: { type: 'string' },
+            domain: { type: 'string' },
+            resourceType: {
+              type: 'string',
+              enum: ['VIDEO', 'PDF', 'IMAGEN', 'ARCHIVO', 'URL', 'LINK', 'video', 'pdf', 'repo', 'doc', 'image', 'ai', 'link'],
+            },
+            openGraph: { $ref: '#/components/schemas/OpenGraphData' },
+            etiquetas: {
+              type: 'array',
+              items: { type: 'string' },
+            },
+            comentarios: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  autorId: { type: 'string' },
+                  autorNombre: { type: 'string' },
+                  contenido: { type: 'string' },
+                  fecha: { type: 'string', format: 'date-time' },
+                },
+              },
+            },
+            valoracion: {
+              type: 'object',
+              properties: {
+                acumulado: { type: 'integer' },
+                totalVotos: { type: 'integer' },
+                promedio: { type: 'number' },
+              },
+            },
+          },
+          additionalProperties: true,
+        },
+        Recurso: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            titulo: { type: 'string' },
+            contenido: { type: 'string' },
+            tipo: { type: 'string' },
+            metadata: { $ref: '#/components/schemas/RecursoMetadata' },
+            grupoId: { type: 'string' },
+            creadorId: { type: 'string' },
+            creador: {
+              type: 'object',
+              properties: {
+                nombre: { type: 'string' },
+                apellido: { type: 'string' },
+              },
+            },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
         SesionEstudio: {
           type: 'object',
           properties: {

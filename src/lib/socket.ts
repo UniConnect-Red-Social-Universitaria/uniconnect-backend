@@ -366,6 +366,7 @@ export function emitirSolicitudGrupoNueva(payload: {
     grupoNombre: string;
     administradorId: string;
     solicitanteId: string;
+    tipo: 'INGRESO' | 'INVITACION';
     solicitanteNombre: string;
     solicitanteApellido?: string;
 }) {

@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">63.63% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>7/11</span>
+                <span class='fraction'>0/11</span>
             </div>
         
             
@@ -37,16 +37,16 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">66.66% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>2/3</span>
+                <span class='fraction'>0/3</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">70% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>7/10</span>
+                <span class='fraction'>0/10</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line medium'></div>
+    <div class='status-line low'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -92,25 +92,25 @@
 <a name='L27'></a><a href='#L27'>27</a>
 <a name='L28'></a><a href='#L28'>28</a>
 <a name='L29'></a><a href='#L29'>29</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">6x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -120,25 +120,25 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { NotificacionDTO } from '../../../../shared/notificacion/INotificacion';
-import { logger } from '../../../../lib/logger';
+<span class="cstat-no" title="statement not covered" >import { logger } from '../../../../lib/logger';</span>
 import { INotificacionStrategy, ResultadoEnvio } from '../../domain/INotificacionStrategy';
 &nbsp;
 /**
  * Canal adicional que demuestra el principio Open/Closed:
  * se agrega sin modificar NotificacionService ni las estrategias existentes.
  */
-export class ResumenDiarioStrategy implements INotificacionStrategy {
-  readonly canal = 'resumen-diario';
+<span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >export class R</span></span>esumenDiarioStrategy implements INotificacionStrategy {
+  readonly <span class="cstat-no" title="statement not covered" >canal = 'resumen-diario';</span>
 &nbsp;
-  private cola: Array&lt;NotificacionDTO &amp; { encola: Date }&gt; = [];
+  private <span class="cstat-no" title="statement not covered" >cola: Array&lt;NotificacionDTO &amp; { encola: Date }&gt; = [];</span>
 &nbsp;
-  async enviar(notificacion: NotificacionDTO): Promise&lt;ResultadoEnvio&gt; {
-    this.cola.push({ ...notificacion, encola: new Date() });
-    logger.info(
+<span class="fstat-no" title="function not covered" >  async </span>enviar(notificacion: NotificacionDTO): Promise&lt;ResultadoEnvio&gt; {
+<span class="cstat-no" title="statement not covered" >    this.cola.push({ ...notificacion, encola: new Date() });</span>
+<span class="cstat-no" title="statement not covered" >    logger.info(</span>
       `[ResumenDiario] Notificación encolada para ${notificacion.destinatario} (${this.cola.length} pendientes)`,
     );
 &nbsp;
-    return { canal: this.canal, exito: true };
+<span class="cstat-no" title="statement not covered" >    return { canal: this.canal, exito: true };</span>
   }
 &nbsp;
 <span class="fstat-no" title="function not covered" >  flushResumen(</span>): void {
@@ -154,7 +154,7 @@ export class ResumenDiarioStrategy implements INotificacionStrategy {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-18T00:32:54.064Z
+                at 2026-05-20T01:58:58.582Z
             </div>
         <script src="../../../../../prettify.js"></script>
         <script>

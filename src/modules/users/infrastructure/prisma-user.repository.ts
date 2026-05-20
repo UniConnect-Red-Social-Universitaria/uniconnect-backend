@@ -119,4 +119,10 @@ export class PrismaUserRepository implements UserRepository {
   async delete(id: string) {
     await UsuarioModel.eliminar(id);
   }
+
+  async obtenerEmailPorId(id: string): Promise<string | null> {
+    const usuario = await this.findSafeById(id);
+
+    return usuario ? String((usuario as Record<string, unknown>).correo) : null;
+  }
 }
