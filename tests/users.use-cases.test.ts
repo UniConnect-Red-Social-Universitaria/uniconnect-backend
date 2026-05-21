@@ -634,5 +634,154 @@ describe('UsersUseCases', () => {
       expect(updateProfile).toHaveBeenCalledWith(MONGO_ID_1, expect.objectContaining({ semestre: 5 }));
       expect(result.message).toMatch(/actualizado/i);
     });
+
+    it('lanza 400 si la carrera no está en el catálogo', async () => {
+      const carreras = [{ id: 'c-1', nombre: 'Ingeniería de Sistemas y Computación' }];
+      const uc = makeUC({
+        careerRepo: { listAll: jest.fn().mockResolvedValue(carreras) },
+        materiaRepo: { listAll: jest.fn().mockResolvedValue([]) },
+      });
+      await expect(uc.actualizarPerfil(USUARIO, { carrera: 'Carrera Inexistente' })).rejects.toMatchObject({ status: 400 });
+    });
+
+    it('resuelve carrera desde el catálogo cuando existe', async () => {
+      const carreras = [{ id: 'c-1', nombre: 'Ingeniería de Sistemas y Computación' }];
+      const updateProfile = jest.fn().mockResolvedValue(USER_SUMMARY);
+      const uc = makeUC({
+        careerRepo: { listAll: jest.fn().mockResolvedValue(carreras) },
+        materiaRepo: { listAll: jest.fn().mockResolvedValue([]) },
+        userRepo: { updateProfile },
+      });
+      await uc.actualizarPerfil(USUARIO, { carrera: 'Ingeniería de Sistemas y Computación' });
+      expect(updateProfile).toHaveBeenCalledWith(MONGO_ID_1, expect.objectContaining({ carreraId: 'c-1' }));
+    });
+
+    it('lanza 400 si materias tiene un elemento no string', async () => {
+      const uc = makeUC({
+        careerRepo: { listAll: jest.fn().mockResolvedValue([]) },
+        materiaRepo: { listAll: jest.fn().mockResolvedValue([]) },
+      });
+      await expect(uc.actualizarPerfil(USUARIO, { materiasCursando: ['Cálculo', 123] })).rejects.toMatchObject({ status: 400 });
+    });
+  });
+
+  // ─── obtenerTodos ─────────────────────────────────────────────────────────────
+
+  describe('obtenerTodos', () => {
+    it('retorna todos los usuarios', async () => {
+      const uc = makeUC({ userRepo: { listAll: jest.fn().mockResolvedValue([USER_SUMMARY]) } });
+      const result = await uc.obtenerTodos();
+      expect(result.data).toHaveLength(1);
+    });
+
+    it('retorna lista vacía cuando no hay usuarios', async () => {
+      const uc = makeUC();
+      const result = await uc.obtenerTodos();
+      expect(result.data).toHaveLength(0);
+    });
+  });
+
+  // ─── registrar ────────────────────────────────────────────────────────────────
+
+  describe('registrar', () => {
+    const INPUT_VALIDO = {
+      nombre: 'Juan',
+      apellido: 'Pérez',
+      correo: 'juan@ucaldas.edu.co',
+      contrasena: 'password123',
+      carrera: 'Ingeniería de Sistemas',
+      semestre: 4,
+      materiasCursando: ['Cálculo I'],
+      googleIdToken: 'token-google-123',
+    };
+
+    it('lanza 400 si faltan campos obligatorios', async () => {
+      const uc = makeUC();
+      await expect(uc.registrar({ ...INPUT_VALIDO, nombre: '' })).rejects.toMatchObject({ status: 400 });
+    });
+
+    it('lanza 400 si googleIdToken está ausente', async () => {
+      const uc = makeUC();
+      await expect(uc.registrar({ ...INPUT_VALIDO, googleIdToken: undefined })).rejects.toMatchObject({ status: 400 });
+    });
+
+    it('lanza 400 si nombre no es string', async () => {
+      const uc = makeUC();
+      await expect(uc.registrar({ ...INPUT_VALIDO, nombre: 123 })).rejects.toMatchObject({ status: 400 });
+    });
+
+    it('lanza 400 si semestre no es entero positivo', async () => {
+      const uc = makeUC();
+      await expect(uc.registrar({ ...INPUT_VALIDO, semestre: 0 })).rejects.toMatchObject({ status: 400 });
+    });
+
+    it('lanza 400 si semestre es negativo', async () => {
+      const uc = makeUC();
+      await expect(uc.registrar({ ...INPUT_VALIDO, semestre: -1 })).rejects.toMatchObject({ status: 400 });
+    });
+
+    it('lanza 400 si materiasCursando está vacío', async () => {
+      const uc = makeUC();
+      await expect(uc.registrar({ ...INPUT_VALIDO, materiasCursando: [] })).rejects.toMatchObject({ status: 400 });
+    });
+
+    it('lanza 400 si materiasCursando tiene elemento no string', async () => {
+      const uc = makeUC();
+      await expect(uc.registrar({ ...INPUT_VALIDO, materiasCursando: [123] })).rejects.toMatchObject({ status: 400 });
+    });
+
+    it('lanza 400 si la carrera no está en el catálogo oficial', async () => {
+      const uc = makeUC({
+        careerRepo: {
+          count: jest.fn().mockResolvedValue(1),
+          listAll: jest.fn().mockResolvedValue([{ id: 'c-1', nombre: 'Ingeniería de Sistemas y Computación' }]),
+        },
+        materiaRepo: { createCatalog: jest.fn().mockResolvedValue({ count: 0 }) },
+      });
+      await expect(uc.registrar({ ...INPUT_VALIDO, carrera: 'Carrera Inexistente' })).rejects.toMatchObject({ status: 400 });
+    });
+
+    it('lanza 400 si la contraseña tiene menos de 8 caracteres', async () => {
+      const uc = makeUC({
+        materiaRepo: { createCatalog: jest.fn().mockResolvedValue({ count: 0 }) },
+      });
+      await expect(uc.registrar({ ...INPUT_VALIDO, contrasena: 'corta' })).rejects.toMatchObject({ status: 400 });
+    });
+
+    it('lanza 400 si el correo no es institucional', async () => {
+      const uc = makeUC({
+        materiaRepo: { createCatalog: jest.fn().mockResolvedValue({ count: 0 }) },
+      });
+      await expect(uc.registrar({ ...INPUT_VALIDO, correo: 'juan@gmail.com' })).rejects.toMatchObject({ status: 400 });
+    });
+
+    it('lanza 401 si la verificación de identidad falla', async () => {
+      const uc = makeUC({
+        materiaRepo: { createCatalog: jest.fn().mockResolvedValue({ count: 0 }) },
+        identityService: { verifyRegistrationIdentity: jest.fn().mockRejectedValue(new Error('Token inválido')) },
+      });
+      await expect(uc.registrar(INPUT_VALIDO)).rejects.toMatchObject({ status: 401 });
+    });
+
+    it('lanza 409 si el correo ya está registrado', async () => {
+      const uc = makeUC({
+        materiaRepo: { createCatalog: jest.fn().mockResolvedValue({ count: 0 }) },
+        userRepo: { findByEmail: jest.fn().mockResolvedValue({ id: MONGO_ID_1 }) },
+      });
+      await expect(uc.registrar(INPUT_VALIDO)).rejects.toMatchObject({ status: 409 });
+    });
+
+    it('registra el usuario correctamente', async () => {
+      const uc = makeUC({
+        materiaRepo: { createCatalog: jest.fn().mockResolvedValue({ count: 0 }) },
+        userRepo: {
+          findByEmail: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue({ id: MONGO_ID_1, createdAt: new Date() }),
+        },
+      });
+      const result = await uc.registrar(INPUT_VALIDO);
+      expect(result.message).toMatch(/registro/i);
+      expect(result.data.correo).toBe('juan@ucaldas.edu.co');
+    });
   });
 });
