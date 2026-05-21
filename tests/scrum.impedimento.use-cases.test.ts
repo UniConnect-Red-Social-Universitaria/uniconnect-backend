@@ -16,13 +16,16 @@ function makeRepo(overrides: Partial<ImpedimentoRepository> = {}): ImpedimentoRe
   };
 }
 
+// ID MongoDB válido (24 hex chars)
+const MONGO_ID = 'aaaaaaaaaaaaaaaaaaaaaaaa';
+
 const IMPEDIMENTO_ABIERTO: ImpedimentoRecord = {
   id: 'imp-1',
   descripcion: 'No hay acceso al servidor de pruebas',
   estado: 'ABIERTO',
   esCritico: false,
   diasAbierto: 1,
-  responsable: 'user-1',
+  responsable: MONGO_ID,
   fechaApertura: new Date(),
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -59,7 +62,7 @@ describe('ImpedimentoUseCases', () => {
     it('crea impedimento y retorna datos', async () => {
       const repo = makeRepo({ create: jest.fn().mockResolvedValue(IMPEDIMENTO_ABIERTO) });
       const uc = new ImpedimentoUseCases(repo);
-      const result = await uc.crearImpedimento(USUARIO, 'No hay acceso', 'ABIERTO', 'user-1', 'sprint-1');
+      const result = await uc.crearImpedimento(USUARIO, 'No hay acceso', 'ABIERTO', MONGO_ID, 'sprint-1');
       expect(repo.create).toHaveBeenCalledWith(expect.objectContaining({ descripcion: 'No hay acceso' }));
       expect(result.data).toEqual(IMPEDIMENTO_ABIERTO);
       expect(result.message).toMatch(/creado/i);
@@ -68,14 +71,14 @@ describe('ImpedimentoUseCases', () => {
     it('usa ABIERTO como estado por defecto cuando estado no es string', async () => {
       const repo = makeRepo({ create: jest.fn().mockResolvedValue(IMPEDIMENTO_ABIERTO) });
       const uc = new ImpedimentoUseCases(repo);
-      await uc.crearImpedimento(USUARIO, 'Desc', undefined, 'user-1', undefined);
+      await uc.crearImpedimento(USUARIO, 'Desc', undefined, undefined, undefined);
       expect(repo.create).toHaveBeenCalledWith(expect.objectContaining({ estado: 'ABIERTO' }));
     });
 
     it('omite sprintId si no es string', async () => {
       const repo = makeRepo({ create: jest.fn().mockResolvedValue(IMPEDIMENTO_ABIERTO) });
       const uc = new ImpedimentoUseCases(repo);
-      await uc.crearImpedimento(USUARIO, 'Desc', 'ABIERTO', 'user-1', 123);
+      await uc.crearImpedimento(USUARIO, 'Desc', 'ABIERTO', undefined, 123);
       expect(repo.create).toHaveBeenCalledWith(expect.objectContaining({ sprintId: undefined }));
     });
   });
