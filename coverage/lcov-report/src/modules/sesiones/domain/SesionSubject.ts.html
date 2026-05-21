@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">32.14% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/28</span>
+                <span class='fraction'>9/28</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">14.28% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/14</span>
+                <span class='fraction'>2/14</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">42.85% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/7</span>
+                <span class='fraction'>3/7</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">34.61% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/26</span>
+                <span class='fraction'>9/26</span>
             </div>
         
             
@@ -124,26 +124,26 @@
 <a name='L59'></a><a href='#L59'>59</a>
 <a name='L60'></a><a href='#L60'>60</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -183,26 +183,26 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { CambioAsistenciaPayload, ISesionObserver } from './ISesionObserver';
 &nbsp;
-const WILDCARD = <span class="cstat-no" title="statement not covered" >'*';</span>
+const WILDCARD = '*';
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export class S</span>esionSubject {
+export class SesionSubject {
   private static instance: SesionSubject;
-  private <span class="cstat-no" title="statement not covered" >observadores: Map&lt;string, ISesionObserver[]&gt; = new Map();</span>
+  private observadores: Map&lt;string, ISesionObserver[]&gt; = new Map();
 &nbsp;
-<span class="fstat-no" title="function not covered" >  private constructor() {}</span>
+  private constructor() {}
 &nbsp;
-<span class="fstat-no" title="function not covered" >  static </span>getInstance(): SesionSubject {
-<span class="cstat-no" title="statement not covered" >    if (!SesionSubject.instance) {</span>
-<span class="cstat-no" title="statement not covered" >      SesionSubject.instance = new SesionSubject();</span>
+  static getInstance(): SesionSubject {
+    <span class="missing-if-branch" title="else path not taken" >E</span>if (!SesionSubject.instance) {
+      SesionSubject.instance = new SesionSubject();
     }
-<span class="cstat-no" title="statement not covered" >    return SesionSubject.instance;</span>
+    return SesionSubject.instance;
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  suscribir(</span>organizadorId: string, observer: ISesionObserver): void {
-<span class="cstat-no" title="statement not covered" >    if (!this.observadores.has(organizadorId)) {</span>
-<span class="cstat-no" title="statement not covered" >      this.observadores.set(organizadorId, []);</span>
+  suscribir(organizadorId: string, observer: ISesionObserver): void {
+    <span class="missing-if-branch" title="else path not taken" >E</span>if (!this.observadores.has(organizadorId)) {
+      this.observadores.set(organizadorId, []);
     }
-<span class="cstat-no" title="statement not covered" >    this.observadores.get(organizadorId)!.push(observer);</span>
+    this.observadores.get(organizadorId)!.push(observer);
   }
 &nbsp;
 <span class="fstat-no" title="function not covered" >  desuscribir(</span>organizadorId: string, observer: ISesionObserver): void {
@@ -247,7 +247,7 @@ const WILDCARD = <span class="cstat-no" title="statement not covered" >'*';</spa
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-21T07:30:01.794Z
+                at 2026-05-21T08:31:17.486Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

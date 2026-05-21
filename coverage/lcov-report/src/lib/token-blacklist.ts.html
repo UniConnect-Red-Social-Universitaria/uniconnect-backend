@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">90.9% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/11</span>
+                <span class='fraction'>10/11</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">50% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/2</span>
+                <span class='fraction'>1/2</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/3</span>
+                <span class='fraction'>3/3</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">90.9% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/11</span>
+                <span class='fraction'>10/11</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -95,57 +95,57 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">17x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">17x</span>
+<span class="cline-any cline-yes">9x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">16x</span>
+<span class="cline-any cline-yes">16x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">type RevokedToken = {
     expMs: number;
 };
 &nbsp;
-const revokedTokens = <span class="cstat-no" title="statement not covered" >new Map&lt;string, RevokedToken&gt;();</span>
+const revokedTokens = new Map&lt;string, RevokedToken&gt;();
 &nbsp;
-function <span class="fstat-no" title="function not covered" >cleanupExpiredTokens(</span>) {
-    const now = <span class="cstat-no" title="statement not covered" >Date.now();</span>
+function cleanupExpiredTokens() {
+    const now = Date.now();
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    for (const [token, payload] of revokedTokens.entries()) {</span>
-<span class="cstat-no" title="statement not covered" >        if (payload.expMs &lt;= now) {</span>
+    for (const [token, payload] of revokedTokens.entries()) {
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (payload.expMs &lt;= now) {
 <span class="cstat-no" title="statement not covered" >            revokedTokens.delete(token);</span>
         }
     }
 }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export function <span class="fstat-no" title="function not covered" >r</span>evokeToken(</span>token: string, expSeconds: number) {
-<span class="cstat-no" title="statement not covered" >    cleanupExpiredTokens();</span>
+export function revokeToken(token: string, expSeconds: number) {
+    cleanupExpiredTokens();
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    revokedTokens.set(token, {</span>
+    revokedTokens.set(token, {
         expMs: expSeconds * 1000
     });
 }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export function <span class="fstat-no" title="function not covered" >i</span>sTokenRevoked(</span>token: string): boolean {
-<span class="cstat-no" title="statement not covered" >    cleanupExpiredTokens();</span>
-<span class="cstat-no" title="statement not covered" >    return revokedTokens.has(token);</span>
+export function isTokenRevoked(token: string): boolean {
+    cleanupExpiredTokens();
+    return revokedTokens.has(token);
 }
 &nbsp;</pre></td></tr></table></pre>
 
@@ -154,7 +154,7 @@ function <span class="fstat-no" title="function not covered" >cleanupExpiredToke
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-21T07:30:01.794Z
+                at 2026-05-21T08:31:17.486Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
