@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">8.82% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>3/34</span>
+                <span class='fraction'>0/40</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/10</span>
+                <span class='fraction'>0/14</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/10</span>
+                <span class='fraction'>0/12</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">9.09% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>3/33</span>
+                <span class='fraction'>0/38</span>
             </div>
         
             
@@ -196,12 +196,31 @@
 <a name='L131'></a><a href='#L131'>131</a>
 <a name='L132'></a><a href='#L132'>132</a>
 <a name='L133'></a><a href='#L133'>133</a>
-<a name='L134'></a><a href='#L134'>134</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">3x</span>
+<a name='L134'></a><a href='#L134'>134</a>
+<a name='L135'></a><a href='#L135'>135</a>
+<a name='L136'></a><a href='#L136'>136</a>
+<a name='L137'></a><a href='#L137'>137</a>
+<a name='L138'></a><a href='#L138'>138</a>
+<a name='L139'></a><a href='#L139'>139</a>
+<a name='L140'></a><a href='#L140'>140</a>
+<a name='L141'></a><a href='#L141'>141</a>
+<a name='L142'></a><a href='#L142'>142</a>
+<a name='L143'></a><a href='#L143'>143</a>
+<a name='L144'></a><a href='#L144'>144</a>
+<a name='L145'></a><a href='#L145'>145</a>
+<a name='L146'></a><a href='#L146'>146</a>
+<a name='L147'></a><a href='#L147'>147</a>
+<a name='L148'></a><a href='#L148'>148</a>
+<a name='L149'></a><a href='#L149'>149</a>
+<a name='L150'></a><a href='#L150'>150</a>
+<a name='L151'></a><a href='#L151'>151</a>
+<a name='L152'></a><a href='#L152'>152</a>
+<a name='L153'></a><a href='#L153'>153</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -310,6 +329,25 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -329,12 +367,12 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import prisma from '../../../lib/prisma';
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import prisma from '../../../lib/prisma';</span>
 import { ForoPreguntaDTO, ForoRespuestaDTO, IForoRepository } from '../domain/IForoHandler';
 &nbsp;
-const db = prisma as any;
+const db = <span class="cstat-no" title="statement not covered" >prisma as any;</span>
 &nbsp;
-export class PrismaForoRepository implements IForoRepository {
+<span class="cstat-no" title="statement not covered" >export class P</span>rismaForoRepository implements IForoRepository {
 <span class="fstat-no" title="function not covered" >  async </span>crearPregunta(data: {
     titulo: string;
     contenido: string;
@@ -437,11 +475,30 @@ export class PrismaForoRepository implements IForoRepository {
 <span class="cstat-no" title="statement not covered" >    return respuestas.map(<span class="fstat-no" title="function not covered" >(r</span>espuesta) =&gt; <span class="cstat-no" title="statement not covered" >this.mapRespuesta(respuesta, votosUsuario[respuesta.id]))</span>;</span>
   }
 &nbsp;
+<span class="fstat-no" title="function not covered" >  async </span>cerrarPregunta(preguntaId: string): Promise&lt;ForoPreguntaDTO&gt; {
+    const pregunta = <span class="cstat-no" title="statement not covered" >await db.foroPregunta.update({</span>
+      where: { id: preguntaId },
+      data: { cerrada: true },
+      include: { autor: { select: { nombre: true, apellido: true } } },
+    });
+<span class="cstat-no" title="statement not covered" >    return this.mapPregunta(pregunta);</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  async </span>obtenerPreguntaPorId(preguntaId: string): Promise&lt;ForoPreguntaDTO | null&gt; {
+    const pregunta = <span class="cstat-no" title="statement not covered" >await db.foroPregunta.findUnique({</span>
+      where: { id: preguntaId },
+      include: { autor: { select: { nombre: true, apellido: true } } },
+    });
+<span class="cstat-no" title="statement not covered" >    if (!pregunta) <span class="cstat-no" title="statement not covered" >return null;</span></span>
+<span class="cstat-no" title="statement not covered" >    return this.mapPregunta(pregunta);</span>
+  }
+&nbsp;
   private <span class="fstat-no" title="function not covered" >mapPregunta(</span>p: any): ForoPreguntaDTO {
 <span class="cstat-no" title="statement not covered" >    return {</span>
       id: p.id,
       titulo: p.titulo,
       contenido: p.contenido,
+      cerrada: p.cerrada ?? false,
       autorId: p.autorId,
       autorNombre: `${p.autor.nombre} ${p.autor.apellido}`,
       materiaId: p.materiaId,
@@ -469,7 +526,7 @@ export class PrismaForoRepository implements IForoRepository {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-21T07:26:29.508Z
+                at 2026-05-21T07:30:01.794Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

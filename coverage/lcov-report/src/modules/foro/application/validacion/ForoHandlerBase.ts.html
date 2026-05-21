@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">10% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>1/10</span>
+                <span class='fraction'>10/10</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/4</span>
+                <span class='fraction'>4/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/3</span>
+                <span class='fraction'>3/3</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">12.5% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>1/8</span>
+                <span class='fraction'>8/8</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -84,38 +84,38 @@
 <a name='L19'></a><a href='#L19'>19</a>
 <a name='L20'></a><a href='#L20'>20</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">24x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">16x</span>
+<span class="cline-any cline-yes">16x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { ForoContexto, IForoHandler, ResultadoForo } from '../../domain/IForoHandler';
 &nbsp;
-<span class="fstat-no" title="function not covered" >export abstract class F</span>oroHandlerBase implements IForoHandler {
-  private <span class="cstat-no" title="statement not covered" >siguiente: IForoHandler | null = null;</span>
+export abstract class ForoHandlerBase implements IForoHandler {
+  private siguiente: IForoHandler | null = null;
 &nbsp;
-<span class="fstat-no" title="function not covered" >  setSiguiente(</span>handler: IForoHandler): IForoHandler {
-<span class="cstat-no" title="statement not covered" >    this.siguiente = handler;</span>
-<span class="cstat-no" title="statement not covered" >    return handler;</span>
+  setSiguiente(handler: IForoHandler): IForoHandler {
+    this.siguiente = handler;
+    return handler;
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  async </span>manejar(ctx: ForoContexto): Promise&lt;ResultadoForo&gt; {
-    const resultado = <span class="cstat-no" title="statement not covered" >await this.validar(ctx);</span>
-<span class="cstat-no" title="statement not covered" >    if (!resultado.valido) <span class="cstat-no" title="statement not covered" >return resultado;</span></span>
-<span class="cstat-no" title="statement not covered" >    if (this.siguiente) <span class="cstat-no" title="statement not covered" >return this.siguiente.manejar(ctx);</span></span>
-<span class="cstat-no" title="statement not covered" >    return { valido: true };</span>
+  async manejar(ctx: ForoContexto): Promise&lt;ResultadoForo&gt; {
+    const resultado = await this.validar(ctx);
+    if (!resultado.valido) return resultado;
+    if (this.siguiente) return this.siguiente.manejar(ctx);
+    return { valido: true };
   }
 &nbsp;
   protected abstract validar(ctx: ForoContexto): Promise&lt;ResultadoForo&gt;;
@@ -127,7 +127,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-21T07:26:29.508Z
+                at 2026-05-21T07:30:01.794Z
             </div>
         <script src="../../../../../prettify.js"></script>
         <script>

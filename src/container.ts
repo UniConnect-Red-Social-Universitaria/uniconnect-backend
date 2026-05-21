@@ -3,6 +3,8 @@ import { PrismaForoRepository } from './modules/foro/infrastructure/prisma-foro.
 import { SesionEstudioUseCases } from './modules/sesiones/application/sesion.use-cases';
 import { PrismaSesionEstudioRepository } from './modules/sesiones/infrastructure/prisma-sesion.repository';
 import { RecordatorioScheduler } from './modules/sesiones/infrastructure/RecordatorioScheduler';
+import { SesionSubject } from './modules/sesiones/domain/SesionSubject';
+import { NotificacionSesionObserver } from './modules/sesiones/infrastructure/NotificacionSesionObserver';
 import { CatalogUseCases } from './modules/catalog/application/catalog.use-cases';
 import { PrismaCarreraRepository } from './modules/catalog/infrastructure/prisma-carrera.repository';
 import { EventUseCases } from './modules/events/application/event.use-cases';
@@ -39,6 +41,25 @@ import { InAppWebSocketStrategy } from './modules/notifications/infrastructure/s
 import { EmailInstitucionalStrategy } from './modules/notifications/infrastructure/strategies/EmailInstitucionalStrategy';
 import { PushMovilStrategy } from './modules/notifications/infrastructure/strategies/PushMovilStrategy';
 import { ResumenDiarioStrategy } from './modules/notifications/infrastructure/strategies/ResumenDiarioStrategy';
+// ════════════════════════════════════════════════════════════════════════════════════
+// MÓDULO SCRUM - Importes
+// ════════════════════════════════════════════════════════════════════════════════════
+import { PrismaSprintRepository } from './modules/scrum/infrastructure/prisma-sprint.repository';
+import { PrismaHistoriaUsuarioRepository } from './modules/scrum/infrastructure/prisma-historia-usuario.repository';
+import { PrismaCriterioAceptacionRepository } from './modules/scrum/infrastructure/prisma-criterio-aceptacion.repository';
+import { PrismaEvaluacionCriterioRepository } from './modules/scrum/infrastructure/prisma-evaluacion-criterio.repository';
+import { PrismaTrazabilidadHURepository } from './modules/scrum/infrastructure/prisma-trazabilidad.repository';
+import { PrismaVelocidadSprintRepository } from './modules/scrum/infrastructure/prisma-velocidad.repository';
+import { PrismaBurndownDiarioRepository } from './modules/scrum/infrastructure/prisma-burndown.repository';
+import { PrismaRetrospectivaRepository } from './modules/scrum/infrastructure/prisma-retrospectiva.repository';
+import { PrismaImpedimentoRepository } from './modules/scrum/infrastructure/prisma-impedimento.repository';
+import { SprintUseCases } from './modules/scrum/application/sprint.use-cases';
+import { HistoriaUsuarioUseCases } from './modules/scrum/application/historia-usuario.use-cases';
+import { CriterioAceptacionUseCases } from './modules/scrum/application/criterio-aceptacion.use-cases';
+import { MetricasUseCases } from './modules/scrum/application/metricas.use-cases';
+import { TrazabilidadUseCases } from './modules/scrum/application/trazabilidad.use-cases';
+import { RetrospectivaUseCases } from './modules/scrum/application/retrospectiva.use-cases';
+import { ImpedimentoUseCases } from './modules/scrum/application/impedimento.use-cases';
 import * as nodemailer from 'nodemailer';
 import { logger } from './lib/logger';
 
@@ -155,5 +176,58 @@ export const foroUseCases = new ForoUseCases(foroRepository);
 
 // ── Sesiones de Estudio ──
 const sesionRepository = new PrismaSesionEstudioRepository();
-export const sesionUseCases = new SesionEstudioUseCases(sesionRepository);
+
+// ════════════════════════════════════════════════════════════════════════════════════
+// MÓDULO SCRUM - Repositorios y Use Cases
+// ════════════════════════════════════════════════════════════════════════════════════
+
+// ── Repositorios Scrum ──
+const sprintRepository = new PrismaSprintRepository();
+const historiaUsuarioRepository = new PrismaHistoriaUsuarioRepository();
+const criterioAceptacionRepository = new PrismaCriterioAceptacionRepository();
+const evaluacionCriterioRepository = new PrismaEvaluacionCriterioRepository();
+const trazabilidadRepository = new PrismaTrazabilidadHURepository();
+const velocidadRepository = new PrismaVelocidadSprintRepository();
+const burndownRepository = new PrismaBurndownDiarioRepository();
+const retrospectivaRepository = new PrismaRetrospectivaRepository();
+const impedimentoRepository = new PrismaImpedimentoRepository();
+
+// Exportar repositorios para uso en controllers
+export {
+  sprintRepository,
+  historiaUsuarioRepository,
+  criterioAceptacionRepository,
+  evaluacionCriterioRepository,
+  trazabilidadRepository,
+  velocidadRepository,
+  burndownRepository,
+  retrospectivaRepository,
+  impedimentoRepository,
+};
+
+// ── Use Cases Scrum ──
+export const sprintUseCases = new SprintUseCases(sprintRepository);
+export const historiaUsuarioUseCases = new HistoriaUsuarioUseCases(historiaUsuarioRepository);
+export const criterioAceptacionUseCases = new CriterioAceptacionUseCases(
+  criterioAceptacionRepository,
+  evaluacionCriterioRepository,
+);
+export const metricasUseCases = new MetricasUseCases(
+  sprintRepository,
+  historiaUsuarioRepository,
+  velocidadRepository,
+  burndownRepository,
+  criterioAceptacionRepository,
+  evaluacionCriterioRepository,
+);
+export const trazabilidadUseCases = new TrazabilidadUseCases(trazabilidadRepository);
+export const retrospectivaUseCases = new RetrospectivaUseCases(retrospectivaRepository);
+export const impedimentoUseCases = new ImpedimentoUseCases(impedimentoRepository);
+const sesionSubject = SesionSubject.getInstance();
+const notificacionSesionObserver = new NotificacionSesionObserver(notificacionService);
+
+// Suscribir observer para Criterio 7: notificar al organizador cuando cambia disponibilidad
+sesionSubject.suscribir('*', notificacionSesionObserver);
+
+export const sesionUseCases = new SesionEstudioUseCases(sesionRepository, sesionSubject, userRepository);
 export const recordatorioScheduler = new RecordatorioScheduler(sesionRepository, notificacionService);

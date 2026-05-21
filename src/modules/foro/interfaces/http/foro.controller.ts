@@ -49,6 +49,15 @@ export class ForoController {
     }
   }
 
+  static async cerrarPregunta(req: Request, res: Response) {
+    try {
+      const resultado = await foroUseCases.cerrarPregunta(req.usuario, req.params.preguntaId);
+      res.json({ success: true, data: resultado.data });
+    } catch (error) {
+      return handleControllerError(res, error, 'Error al cerrar pregunta');
+    }
+  }
+
   static async votarRespuesta(req: Request, res: Response) {
     try {
       const resultado = await foroUseCases.votarRespuesta(

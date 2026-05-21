@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">13.04% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>3/23</span>
+                <span class='fraction'>0/27</span>
             </div>
         
             
@@ -39,14 +39,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/5</span>
+                <span class='fraction'>0/6</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">13.04% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>3/23</span>
+                <span class='fraction'>0/27</span>
             </div>
         
             
@@ -127,11 +127,20 @@
 <a name='L62'></a><a href='#L62'>62</a>
 <a name='L63'></a><a href='#L63'>63</a>
 <a name='L64'></a><a href='#L64'>64</a>
-<a name='L65'></a><a href='#L65'>65</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a>
+<a name='L72'></a><a href='#L72'>72</a>
+<a name='L73'></a><a href='#L73'>73</a>
+<a name='L74'></a><a href='#L74'>74</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -163,6 +172,15 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -192,10 +210,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { Request, Response } from 'express';
-import { foroUseCases } from '../../../../container';
-import { handleControllerError } from '../../../../shared/controller-error';
+<span class="cstat-no" title="statement not covered" >import { foroUseCases } from '../../../../container';</span>
+<span class="cstat-no" title="statement not covered" >import { handleControllerError } from '../../../../shared/controller-error';</span>
 &nbsp;
-export class ForoController {
+<span class="cstat-no" title="statement not covered" >export class F</span>oroController {
 <span class="fstat-no" title="function not covered" >  static </span>async publicarPregunta(req: Request, res: Response) {
 <span class="cstat-no" title="statement not covered" >    try {</span>
       const resultado = <span class="cstat-no" title="statement not covered" >await foroUseCases.publicarPregunta(</span>
@@ -242,6 +260,15 @@ export class ForoController {
     }
   }
 &nbsp;
+<span class="fstat-no" title="function not covered" >  static </span>async cerrarPregunta(req: Request, res: Response) {
+<span class="cstat-no" title="statement not covered" >    try {</span>
+      const resultado = <span class="cstat-no" title="statement not covered" >await foroUseCases.cerrarPregunta(req.usuario, req.params.preguntaId);</span>
+<span class="cstat-no" title="statement not covered" >      res.json({ success: true, data: resultado.data });</span>
+    } catch (error) {
+<span class="cstat-no" title="statement not covered" >      return handleControllerError(res, error, 'Error al cerrar pregunta');</span>
+    }
+  }
+&nbsp;
 <span class="fstat-no" title="function not covered" >  static </span>async votarRespuesta(req: Request, res: Response) {
 <span class="cstat-no" title="statement not covered" >    try {</span>
       const resultado = <span class="cstat-no" title="statement not covered" >await foroUseCases.votarRespuesta(</span>
@@ -262,7 +289,7 @@ export class ForoController {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-21T07:26:29.508Z
+                at 2026-05-21T07:30:01.794Z
             </div>
         <script src="../../../../../prettify.js"></script>
         <script>
