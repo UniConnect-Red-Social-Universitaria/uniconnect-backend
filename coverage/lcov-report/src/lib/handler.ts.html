@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/6</span>
+                <span class='fraction'>6/6</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">75% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/4</span>
+                <span class='fraction'>3/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/4</span>
+                <span class='fraction'>4/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/6</span>
+                <span class='fraction'>6/6</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -106,23 +106,15 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -130,34 +122,42 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { Response } from 'express';
 &nbsp;
 class Handler {
     private static instance: Handler;
 &nbsp;
-<span class="fstat-no" title="function not covered" >    private constructor() {}</span>
+    private constructor() {}
 &nbsp;
-<span class="fstat-no" title="function not covered" >    static </span>getInstance(): Handler {
-<span class="cstat-no" title="statement not covered" >        if (!Handler.instance) {</span>
-<span class="cstat-no" title="statement not covered" >            Handler.instance = new Handler();</span>
+    static getInstance(): Handler {
+        <span class="missing-if-branch" title="else path not taken" >E</span>if (!Handler.instance) {
+            Handler.instance = new Handler();
         }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >        return Handler.instance;</span>
+        return Handler.instance;
     }
 &nbsp;
-<span class="fstat-no" title="function not covered" >    failure(</span>res: Response, statusCode: number, message: string, extra?: Record&lt;string, unknown&gt;) {
-<span class="cstat-no" title="statement not covered" >        return res.status(statusCode).json({</span>
+    failure(res: Response, statusCode: number, message: string, extra?: Record&lt;string, unknown&gt;) {
+        return res.status(statusCode).json({
             success: false,
             message,
             ...(extra ?? {})
         });
     }
 &nbsp;
-<span class="fstat-no" title="function not covered" >    standardError(</span>res: Response, statusCode: number, message: string) {
-<span class="cstat-no" title="statement not covered" >        return res.status(statusCode).json({</span>
+    standardError(res: Response, statusCode: number, message: string) {
+        return res.status(statusCode).json({
             ok: false,
             error: {
                 message,
@@ -167,7 +167,7 @@ class Handler {
     }
 }
 &nbsp;
-export const <span class="cstat-no" title="statement not covered" >handler = Handler.getInstance();</span>
+export const handler = Handler.getInstance();
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -175,7 +175,7 @@ export const <span class="cstat-no" title="statement not covered" >handler = Han
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-21T07:30:01.794Z
+                at 2026-05-21T08:31:17.486Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

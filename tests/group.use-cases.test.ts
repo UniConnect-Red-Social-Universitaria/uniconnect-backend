@@ -390,4 +390,179 @@ describe('GroupUseCases', () => {
       expect(result.grupoEliminado).toBe(false);
     });
   });
+
+  // ─── invitarMiembro ───────────────────────────────────────────────────────────
+
+  describe('invitarMiembro', () => {
+    it('lanza 401 si no hay usuario', async () => {
+      const uc = makeUC();
+      await expect(uc.invitarMiembro(undefined, 'grupo-1', 'user-2')).rejects.toMatchObject({ status: 401 });
+    });
+
+    it('invita a un miembro correctamente', async () => {
+      const uc = makeUC(
+        { findById: jest.fn().mockResolvedValue(GRUPO_MOCK) },
+        {},
+        { findSafeById: jest.fn().mockResolvedValue(OTRO_USUARIO) },
+        {},
+        { buscarPendiente: jest.fn().mockResolvedValue(null), crear: jest.fn().mockResolvedValue(SOLICITUD_MOCK) }
+      );
+      const result = await uc.invitarMiembro(ADMIN_USUARIO, 'grupo-1', 'user-2');
+      expect(result.message).toMatch(/enviada/i);
+    });
+  });
+
+  // ─── aceptarInvitacion ────────────────────────────────────────────────────────
+
+  describe('aceptarInvitacion', () => {
+    it('lanza 401 si no hay usuario', async () => {
+      const uc = makeUC();
+      await expect(uc.aceptarInvitacion(undefined, 'grupo-1', 'sol-1')).rejects.toMatchObject({ status: 401 });
+    });
+
+    it('acepta la invitacion correctamente', async () => {
+      const mockSol = { ...SOLICITUD_MOCK, solicitanteId: 'user-2', tipo: 'INVITACION' };
+      const uc = makeUC(
+        { findById: jest.fn().mockResolvedValue(GRUPO_MOCK), join: jest.fn() },
+        {}, {}, {},
+        { buscarPorId: jest.fn().mockResolvedValue(mockSol), aprobar: jest.fn() }
+      );
+      const result = await uc.aceptarInvitacion(OTRO_USUARIO, 'grupo-1', 'sol-1');
+      expect(result.message).toMatch(/aceptado/i);
+    });
+  });
+
+  // ─── rechazarInvitacion ───────────────────────────────────────────────────────
+
+  describe('rechazarInvitacion', () => {
+    it('rechaza la invitacion correctamente', async () => {
+      const mockSol = { ...SOLICITUD_MOCK, solicitanteId: 'user-2', tipo: 'INVITACION' };
+      const uc = makeUC(
+        { findById: jest.fn().mockResolvedValue(GRUPO_MOCK) },
+        {}, {}, {},
+        { buscarPorId: jest.fn().mockResolvedValue(mockSol), rechazar: jest.fn() }
+      );
+      const result = await uc.rechazarInvitacion(OTRO_USUARIO, 'grupo-1', 'sol-1');
+      expect(result.message).toMatch(/rechazado/i);
+    });
+  });
+
+  // ─── aprobarSolicitud ─────────────────────────────────────────────────────────
+
+  describe('aprobarSolicitud', () => {
+    it('aprueba la solicitud de ingreso', async () => {
+      const mockSol = { ...SOLICITUD_MOCK, solicitanteId: 'user-2', tipo: 'INGRESO' };
+      const uc = makeUC(
+        { findById: jest.fn().mockResolvedValue(GRUPO_MOCK), join: jest.fn() },
+        {}, {}, {},
+        { buscarPorId: jest.fn().mockResolvedValue(mockSol), aprobar: jest.fn() }
+      );
+      const result = await uc.aprobarSolicitud(ADMIN_USUARIO, 'grupo-1', 'sol-1');
+      expect(result.message).toMatch(/aprobada/i);
+    });
+  });
+
+  // ─── rechazarSolicitud ────────────────────────────────────────────────────────
+
+  describe('rechazarSolicitud', () => {
+    it('rechaza la solicitud de ingreso', async () => {
+      const mockSol = { ...SOLICITUD_MOCK, solicitanteId: 'user-2', tipo: 'INGRESO' };
+      const uc = makeUC(
+        { findById: jest.fn().mockResolvedValue(GRUPO_MOCK) },
+        {}, {}, {},
+        { buscarPorId: jest.fn().mockResolvedValue(mockSol), rechazar: jest.fn() }
+      );
+      const result = await uc.rechazarSolicitud(ADMIN_USUARIO, 'grupo-1', 'sol-1');
+      expect(result.message).toMatch(/rechazada/i);
+    });
+  });
+
+  // ─── subirArchivo ─────────────────────────────────────────────────────────────
+
+  describe('subirArchivo', () => {
+    it('lanza 400 si no hay archivo', async () => {
+      const uc = makeUC();
+      await expect(uc.subirArchivo(USUARIO, 'grupo-1', undefined, 'nombre')).rejects.toMatchObject({ status: 400 });
+    });
+  });
+
+  // ─── listarArchivos ───────────────────────────────────────────────────────────
+
+  describe('listarArchivos', () => {
+    it('lista los archivos del grupo', async () => {
+      const uc = makeUC(
+        { findById: jest.fn().mockResolvedValue(GRUPO_MOCK) },
+        {}, {},
+        { listarPorGrupo: jest.fn().mockResolvedValue([]) }
+      );
+      const result = await uc.listarArchivos(USUARIO, 'grupo-1');
+      expect(result.data).toEqual([]);
+    });
+  });
+
+  // ─── obtenerRutaArchivo ───────────────────────────────────────────────────────
+
+  describe('obtenerRutaArchivo', () => {
+    it('obtiene la ruta del archivo', async () => {
+      const uc = makeUC(
+        { findById: jest.fn().mockResolvedValue(GRUPO_MOCK) },
+        {}, {},
+        { buscarPorId: jest.fn().mockResolvedValue({ grupoId: 'grupo-1', ruta: 'http://url', nombre: 'n', nombreFisico: 'f' }) }
+      );
+      const result = await uc.obtenerRutaArchivo(USUARIO, 'grupo-1', 'archivo-1');
+      expect(result.data.url).toBe('http://url');
+    });
+  });
+
+  // ─── iniciarTransferenciaAdministracion ───────────────────────────────────────
+
+  describe('iniciarTransferenciaAdministracion', () => {
+    it('inicia transferencia', async () => {
+      const uc = makeUC(
+        { findById: jest.fn().mockResolvedValue({ ...GRUPO_MOCK, miembros: [{ usuarioId: 'user-2' }, { usuarioId: 'admin-1' }] }) },
+        {}, { findSafeById: jest.fn().mockResolvedValue(OTRO_USUARIO) }
+      );
+      const result = await uc.iniciarTransferenciaAdministracion(ADMIN_USUARIO, 'grupo-1', 'user-2');
+      expect(result.message).toMatch(/iniciada/i);
+    });
+  });
+
+  // ─── aceptarTransferenciaAdministracion ───────────────────────────────────────
+
+  describe('aceptarTransferenciaAdministracion', () => {
+    it('acepta transferencia', async () => {
+      const uc = makeUC(
+        { findById: jest.fn().mockResolvedValue({ ...GRUPO_MOCK, candidatoAdminId: 'user-2', estado: 'PENDIENTE_TRANSFERENCIA' }) },
+        {}, { findSafeById: jest.fn().mockResolvedValue(OTRO_USUARIO) }
+      );
+      const result = await uc.aceptarTransferenciaAdministracion(OTRO_USUARIO, 'grupo-1');
+      expect(result.message).toMatch(/aceptado/i);
+    });
+  });
+
+  // ─── rechazarTransferenciaAdministracion ──────────────────────────────────────
+
+  describe('rechazarTransferenciaAdministracion', () => {
+    it('rechaza transferencia', async () => {
+      const uc = makeUC(
+        { findById: jest.fn().mockResolvedValue({ ...GRUPO_MOCK, candidatoAdminId: 'user-2', estado: 'PENDIENTE_TRANSFERENCIA' }) }
+      );
+      const result = await uc.rechazarTransferenciaAdministracion(OTRO_USUARIO, 'grupo-1');
+      expect(result.message).toMatch(/rechazado/i);
+    });
+  });
+
+  // ─── cancelarTransferenciaAdministracion ──────────────────────────────────────
+
+  describe('cancelarTransferenciaAdministracion', () => {
+    it('cancela transferencia', async () => {
+      const uc = makeUC(
+        { findById: jest.fn().mockResolvedValue({ ...GRUPO_MOCK, candidatoAdminId: 'user-2', estado: 'PENDIENTE_TRANSFERENCIA' }) }
+      );
+      const result = await uc.cancelarTransferenciaAdministracion(ADMIN_USUARIO, 'grupo-1');
+      expect(result.message).toMatch(/cancelada/i);
+    });
+  });
+
 });
+

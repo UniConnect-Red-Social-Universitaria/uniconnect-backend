@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/9</span>
+                <span class='fraction'>9/9</span>
             </div>
         
             
@@ -37,16 +37,16 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/7</span>
+                <span class='fraction'>7/7</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/9</span>
+                <span class='fraction'>9/9</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -95,66 +95,66 @@
 <a name='L30'></a><a href='#L30'>30</a>
 <a name='L31'></a><a href='#L31'>31</a>
 <a name='L32'></a><a href='#L32'>32</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { MateriaRepository } from '../../../domain/contracts';
-<span class="cstat-no" title="statement not covered" >import { MateriaModel } from '../../../models/materia.model';</span>
+import { MateriaModel } from '../../../models/materia.model';
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export class P</span>rismaMateriaRepository implements MateriaRepository {
-<span class="fstat-no" title="function not covered" >  async </span>create(nombre: string) {
-<span class="cstat-no" title="statement not covered" >    return MateriaModel.crear(nombre);</span>
+export class PrismaMateriaRepository implements MateriaRepository {
+  async create(nombre: string) {
+    return MateriaModel.crear(nombre);
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  async </span>findById(id: string) {
-<span class="cstat-no" title="statement not covered" >    return MateriaModel.buscarPorId(id);</span>
+  async findById(id: string) {
+    return MateriaModel.buscarPorId(id);
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  async </span>findByName(nombre: string) {
-<span class="cstat-no" title="statement not covered" >    return MateriaModel.buscarPorNombre(nombre);</span>
+  async findByName(nombre: string) {
+    return MateriaModel.buscarPorNombre(nombre);
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  async </span>listAll() {
-<span class="cstat-no" title="statement not covered" >    return MateriaModel.listarTodas();</span>
+  async listAll() {
+    return MateriaModel.listarTodas();
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  async </span>searchByText(texto: string) {
-<span class="cstat-no" title="statement not covered" >    return MateriaModel.buscarPorTexto(texto);</span>
+  async searchByText(texto: string) {
+    return MateriaModel.buscarPorTexto(texto);
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  async </span>count() {
-<span class="cstat-no" title="statement not covered" >    return MateriaModel.contar();</span>
+  async count() {
+    return MateriaModel.contar();
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  async </span>createCatalog(nombres: string[]) {
-<span class="cstat-no" title="statement not covered" >    return MateriaModel.crearCatalogo(nombres);</span>
+  async createCatalog(nombres: string[]) {
+    return MateriaModel.crearCatalogo(nombres);
   }
 }</pre></td></tr></table></pre>
 
@@ -163,7 +163,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-21T07:30:01.794Z
+                at 2026-05-21T08:31:17.486Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>
