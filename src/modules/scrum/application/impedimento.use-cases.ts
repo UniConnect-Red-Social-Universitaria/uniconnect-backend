@@ -8,6 +8,7 @@ import {
   CreateImpedimentoDTO,
 } from '../domain/scrum-contracts';
 import { ApplicationError } from '../../../shared/application-error';
+import { isValidMongoId } from '../../../shared/mongo-id';
 
 export class ImpedimentoUseCases {
   constructor(private impedimentoRepository: ImpedimentoRepository) {}
@@ -25,10 +26,15 @@ export class ImpedimentoUseCases {
       throw new ApplicationError(400, 'Descripción de impedimento requerida');
     }
 
+    const responsableStr = typeof responsable === 'string' ? responsable.trim() : '';
+    if (responsableStr && !isValidMongoId(responsableStr)) {
+      throw new ApplicationError(400, 'Responsable inválido: debe ser un ID de usuario válido');
+    }
+
     const impedimento = await this.impedimentoRepository.create({
       descripcion: descripcion.trim(),
       estado: typeof estado === 'string' ? (estado as any) : 'ABIERTO',
-      responsable: typeof responsable === 'string' ? responsable.trim() : undefined,
+      responsable: responsableStr || undefined,
       sprintId: typeof sprintId === 'string' ? sprintId.trim() : undefined,
     });
 

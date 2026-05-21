@@ -19,6 +19,7 @@ export interface ForoPreguntaDTO {
   id: string;
   titulo: string;
   contenido: string;
+  cerrada: boolean;
   autorId: string;
   autorNombre: string;
   materiaId: string;
@@ -42,4 +43,6 @@ export interface IForoRepository {
   registrarVoto(usuarioId: string, respuestaId: string, valor: 1 | -1): Promise<ForoRespuestaDTO>;
   obtenerPreguntasPorMateria(materiaId: string): Promise<ForoPreguntaDTO[]>;
   obtenerRespuestasPorPregunta(preguntaId: string, usuarioId?: string): Promise<ForoRespuestaDTO[]>;
+  cerrarPregunta(preguntaId: string): Promise<ForoPreguntaDTO>;
+  obtenerPreguntaPorId(preguntaId: string): Promise<ForoPreguntaDTO | null>;
 }

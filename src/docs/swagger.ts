@@ -45,6 +45,7 @@ const options: swaggerJsdoc.Options = {
             id: { type: 'string' },
             titulo: { type: 'string' },
             contenido: { type: 'string' },
+            cerrada: { type: 'boolean' },
             autorId: { type: 'string' },
             autorNombre: { type: 'string' },
             materiaId: { type: 'string' },
