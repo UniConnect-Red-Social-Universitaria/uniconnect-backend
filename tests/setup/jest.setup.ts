@@ -22,6 +22,10 @@ const prismaMock = {
     update: jest.fn(),
     delete: jest.fn(),
   },
+
+  grupoEstadoLog: {
+    create: jest.fn().mockResolvedValue({}),
+  },
 };
 
 jest.mock('../../src/infrastructure/database/prisma-client', () => ({
