@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">96.42% </span>
+                <span class="strong">96.51% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>81/84</span>
+                <span class='fraction'>83/86</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">97.59% </span>
+                <span class="strong">97.64% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>81/83</span>
+                <span class='fraction'>83/85</span>
             </div>
         
             
@@ -217,7 +217,11 @@
 <a name='L152'></a><a href='#L152'>152</a>
 <a name='L153'></a><a href='#L153'>153</a>
 <a name='L154'></a><a href='#L154'>154</a>
-<a name='L155'></a><a href='#L155'>155</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">3x</span>
+<a name='L155'></a><a href='#L155'>155</a>
+<a name='L156'></a><a href='#L156'>156</a>
+<a name='L157'></a><a href='#L157'>157</a>
+<a name='L158'></a><a href='#L158'>158</a>
+<a name='L159'></a><a href='#L159'>159</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
@@ -249,18 +253,6 @@
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
@@ -275,6 +267,18 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
@@ -304,11 +308,11 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -316,6 +320,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
@@ -406,7 +414,8 @@ import { InMemoryTokenBlacklistService } from './modules/users/infrastructure/to
 import { PrismaUserRepository } from './modules/users/infrastructure/prisma-user.repository';
 import { PrismaEstadisticasRepository } from './modules/users/infrastructure/prisma-estadisticas.repository';
 import { NotificacionService } from './modules/notifications/application/NotificacionService';
-import { InMemoryPreferenciaRepository } from './modules/notifications/infrastructure/InMemoryPreferenciaRepository';
+import { PrismaPreferenciaRepository } from './modules/notifications/infrastructure/prisma-preferencia.repository';
+import { PrismaNotificacionRepository } from './modules/notifications/infrastructure/prisma-notificacion.repository';
 import { InAppWebSocketStrategy } from './modules/notifications/infrastructure/strategies/InAppWebSocketStrategy';
 import { EmailInstitucionalStrategy } from './modules/notifications/infrastructure/strategies/EmailInstitucionalStrategy';
 import { PushMovilStrategy } from './modules/notifications/infrastructure/strategies/PushMovilStrategy';
@@ -432,7 +441,6 @@ const passwordService = new BcryptPasswordService();
 const tokenService = new JwtTokenService();
 const identityVerificationService = new Auth0IdentityVerificationService();
 const tokenBlacklistService = new InMemoryTokenBlacklistService();
-const messageGateway = new SocketMessageGateway();
 const pollGateway = new ModerationPollGatewayDecorator(
   new LoggingPollGatewayDecorator(new SocketPollGateway()),
 );
@@ -456,8 +464,9 @@ const mailTransporter = nodemailer.createTransport({
   });
 }
 &nbsp;
-// ── Notificaciones (deben declararse ANTES que messageUseCases) ── // ← CAMBIO: bloque movido arriba
-export const preferenciaRepository = new InMemoryPreferenciaRepository();
+// ── Notificaciones ──
+export const preferenciaRepository = new PrismaPreferenciaRepository();
+export const notificacionRepository = new PrismaNotificacionRepository();
 &nbsp;
 const emailStrategy = new EmailInstitucionalStrategy(mailTransporter, userRepository);
 &nbsp;
@@ -469,7 +478,10 @@ export const notificacionService = new NotificacionService(
     new ResumenDiarioStrategy(),
   ],
   preferenciaRepository,
+  notificacionRepository,
 );
+&nbsp;
+const messageGateway = new SocketMessageGateway(notificacionService);
 &nbsp;
 // ── ChatSubject ──
 const chatSubject = ChatSubject.getInstance();
@@ -532,7 +544,7 @@ export const recordatorioScheduler = new RecordatorioScheduler(sesionRepository,
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-20T02:44:55.582Z
+                at 2026-05-21T07:26:29.508Z
             </div>
         <script src="../prettify.js"></script>
         <script>
