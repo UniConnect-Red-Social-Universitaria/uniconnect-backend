@@ -106,11 +106,30 @@ export class PrismaForoRepository implements IForoRepository {
     return respuestas.map((respuesta) => this.mapRespuesta(respuesta, votosUsuario[respuesta.id]));
   }
 
+  async cerrarPregunta(preguntaId: string): Promise<ForoPreguntaDTO> {
+    const pregunta = await db.foroPregunta.update({
+      where: { id: preguntaId },
+      data: { cerrada: true },
+      include: { autor: { select: { nombre: true, apellido: true } } },
+    });
+    return this.mapPregunta(pregunta);
+  }
+
+  async obtenerPreguntaPorId(preguntaId: string): Promise<ForoPreguntaDTO | null> {
+    const pregunta = await db.foroPregunta.findUnique({
+      where: { id: preguntaId },
+      include: { autor: { select: { nombre: true, apellido: true } } },
+    });
+    if (!pregunta) return null;
+    return this.mapPregunta(pregunta);
+  }
+
   private mapPregunta(p: any): ForoPreguntaDTO {
     return {
       id: p.id,
       titulo: p.titulo,
       contenido: p.contenido,
+      cerrada: p.cerrada ?? false,
       autorId: p.autorId,
       autorNombre: `${p.autor.nombre} ${p.autor.apellido}`,
       materiaId: p.materiaId,

@@ -140,6 +140,32 @@ router.post('/preguntas/:preguntaId/respuestas', verificarJWT, ForoController.pu
  *                 success: { type: boolean }
  *                 data: { $ref: '#/components/schemas/ForoRespuesta' }
  */
+/**
+ * @swagger
+ * /api/foro/preguntas/{preguntaId}/cerrar:
+ *   patch:
+ *     summary: Cerrar una pregunta (solo el autor)
+ *     tags: [Foro]
+ *     parameters:
+ *       - in: path
+ *         name: preguntaId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Pregunta cerrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data: { $ref: '#/components/schemas/ForoPregunta' }
+ *       403:
+ *         description: No eres el autor
+ */
+router.patch('/preguntas/:preguntaId/cerrar', verificarJWT, ForoController.cerrarPregunta);
+
 router.post('/respuestas/:respuestaId/votos', verificarJWT, ForoController.votarRespuesta);
 
 export default router;

@@ -183,6 +183,7 @@ model ForoPregunta {
   id         String        @id @default(auto()) @map("_id") @db.ObjectId
   titulo     String
   contenido  String
+  cerrada    Boolean       @default(false)
   autorId    String        @db.ObjectId
   materiaId  String        @db.ObjectId
   autor      Usuario       @relation(fields: [autorId], references: [id])

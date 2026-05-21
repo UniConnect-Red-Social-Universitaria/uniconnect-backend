@@ -93,6 +93,22 @@ export class ForoUseCases {
     return { data: preguntas };
   }
 
+  async cerrarPregunta(
+    usuario: UsuarioAutenticado | undefined,
+    preguntaId: unknown,
+  ): Promise<{ data: ForoPreguntaDTO }> {
+    if (!usuario) throw new ApplicationError(401, 'Debes estar autenticado');
+    if (typeof preguntaId !== 'string' || !preguntaId.trim()) throw new ApplicationError(400, 'preguntaId inválido');
+
+    const pregunta = await this.foroRepository.obtenerPreguntaPorId(preguntaId);
+    if (!pregunta) throw new ApplicationError(404, 'Pregunta no encontrada');
+    if (pregunta.autorId !== usuario.id) throw new ApplicationError(403, 'Solo el autor puede cerrar la pregunta');
+    if (pregunta.cerrada) throw new ApplicationError(400, 'La pregunta ya está cerrada');
+
+    const cerrada = await this.foroRepository.cerrarPregunta(preguntaId);
+    return { data: cerrada };
+  }
+
   async obtenerRespuestas(
     usuario: UsuarioAutenticado | undefined,
     preguntaId: unknown,
