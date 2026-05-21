@@ -176,8 +176,6 @@ export const foroUseCases = new ForoUseCases(foroRepository);
 
 // ── Sesiones de Estudio ──
 const sesionRepository = new PrismaSesionEstudioRepository();
-export const sesionUseCases = new SesionEstudioUseCases(sesionRepository);
-export const recordatorioScheduler = new RecordatorioScheduler(sesionRepository, notificacionService);
 
 // ════════════════════════════════════════════════════════════════════════════════════
 // MÓDULO SCRUM - Repositorios y Use Cases
