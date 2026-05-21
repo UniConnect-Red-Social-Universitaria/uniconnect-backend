@@ -126,6 +126,18 @@ describe('Composición PerfilConEstadisticas + PerfilConInsignias', () => {
     expect(resultado).not.toHaveProperty('estadisticas');
     expect(resultado).not.toHaveProperty('insignias');
   });
+
+  it('PerfilDecorator render() delega al componente envuelto via super', () => {
+    const base = new PerfilBase(BASE);
+    const decorador = new (class extends PerfilDecorator {
+      render() { return { ...super.render(), extra: true }; }
+    })(base);
+
+    const resultado = decorador.render();
+    expect(resultado.nombre).toBe(BASE.nombre);
+    expect(resultado.carrera).toBe(BASE.carrera);
+    expect(resultado).toHaveProperty('extra', true);
+  });
 });
 
 // ──────────────────────────────────────────────────────────────────

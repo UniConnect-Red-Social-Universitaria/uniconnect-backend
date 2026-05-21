@@ -4,6 +4,8 @@ import { describe, expect, it } from '@jest/globals';
 import { NotificacionBase } from '../src/shared/notificacion/INotificacion';
 import { NotificacionConPrioridad } from '../src/shared/notificacion/NotificacionConPrioridad';
 import { NotificacionConAccion } from '../src/shared/notificacion/NotificacionConAccion';
+import { NotificacionConEncuesta } from '../src/shared/notificacion/NotificacionConEncuesta';
+import { NotificacionDecorator } from '../src/shared/notificacion/NotificacionDecorator';
 
 const TIMESTAMP = new Date('2024-01-15T10:00:00Z');
 
@@ -100,6 +102,65 @@ describe('NotificacionConAccion', () => {
 
     expect(resultado.accion.label).toBe('Ver mensaje');
     expect(resultado.accion.endpoint).toBe('/api/mensajes/conversacion/abc');
+  });
+});
+
+describe('NotificacionConEncuesta', () => {
+  const encuesta = {
+    encuestaId: 'enc-1',
+    grupoId: 'grupo-1',
+    pregunta: '¿Preferencia?',
+    estado: 'OPEN' as const,
+    totalOpciones: 3,
+    autoCloseAt: new Date('2024-02-01T12:00:00Z'),
+  };
+
+  it('agrega encuesta al resultado de render()', () => {
+    const base = new NotificacionBase('Vota ya', 'usuario-1', TIMESTAMP);
+    const conEncuesta = new NotificacionConEncuesta(base, encuesta);
+
+    expect(conEncuesta.render()).toEqual({
+      mensaje: 'Vota ya',
+      destinatario: 'usuario-1',
+      timestamp: TIMESTAMP,
+      encuesta,
+    });
+  });
+
+  it('soporta autoCloseAt null', () => {
+    const base = new NotificacionBase('Test', 'dest', TIMESTAMP);
+    const sinFecha = { ...encuesta, autoCloseAt: null };
+    const conEncuesta = new NotificacionConEncuesta(base, sinFecha);
+
+    expect(conEncuesta.render().encuesta.autoCloseAt).toBeNull();
+  });
+
+  it('soporta estado CLOSED', () => {
+    const base = new NotificacionBase('Cerrada', 'dest', TIMESTAMP);
+    const cerrada = { ...encuesta, estado: 'CLOSED' as const };
+    const conEncuesta = new NotificacionConEncuesta(base, cerrada);
+
+    expect(conEncuesta.render().encuesta.estado).toBe('CLOSED');
+  });
+
+  it('delega getters al componente base', () => {
+    const base = new NotificacionBase('Delegado', 'dest-xyz', TIMESTAMP);
+    const conEncuesta = new NotificacionConEncuesta(base, encuesta);
+
+    expect(conEncuesta.getMensaje()).toBe('Delegado');
+    expect(conEncuesta.getDestinatario()).toBe('dest-xyz');
+    expect(conEncuesta.getTimestamp()).toBe(TIMESTAMP);
+  });
+});
+
+describe('NotificacionDecorator (abstracto)', () => {
+  it('render() delega al componente envuelto via super', () => {
+    const base = new NotificacionBase('Abstracto', 'dest-abs', TIMESTAMP);
+    const decorador = new (class extends NotificacionDecorator {
+      render() { return super.render(); }
+    })(base);
+
+    expect(decorador.render()).toEqual(base.render());
   });
 });
 

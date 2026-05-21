@@ -79,4 +79,24 @@ describe('LoggingPollGatewayDecorator', () => {
         );
         expect(emitUpdatedPoll).toHaveBeenCalledTimes(2);
     });
+
+    it('maneja opciones con votos nulos o sin definir', () => {
+        const emitNewPoll = jest.fn();
+        const wrapped: PollGateway = { emitNewPoll, emitUpdatedPoll: jest.fn() };
+        const decorator = new LoggingPollGatewayDecorator(wrapped);
+
+        const payload = buildPayload('OPEN');
+        payload.opciones = [
+            { ...payload.opciones[0], votos: null as any },
+            { ...payload.opciones[1], votos: undefined as any },
+        ];
+
+        decorator.emitNewPoll(payload);
+
+        expect(emitNewPoll).toHaveBeenCalledWith(payload);
+        expect(loggerModule.logger.info).toHaveBeenCalledWith(
+            '[PollLogging] Encuesta creada',
+            expect.objectContaining({ totalVotos: 0 }),
+        );
+    });
 });

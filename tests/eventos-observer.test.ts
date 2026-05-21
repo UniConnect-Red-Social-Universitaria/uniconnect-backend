@@ -3,7 +3,13 @@
 import { describe, expect, it, beforeEach, jest } from '@jest/globals';
 import { EventoPublicador } from '../src/shared/eventos-observer/EventoPublicador';
 import { IEventoObserver } from '../src/shared/eventos-observer/IEventoObserver';
+import { SocketEventoObserver } from '../src/shared/eventos-observer/SocketEventoObserver';
 import { EventRecord, CategoriaEvento } from '../src/domain/contracts';
+
+const mockEmitirEvento = jest.fn();
+jest.mock('../src/lib/socket', () => ({
+  emitirEventoNuevoPorCategoria: (...args: unknown[]) => mockEmitirEvento(...args),
+}));
 
 function crearEventoMock(categoria: CategoriaEvento, titulo = 'Evento test'): EventRecord {
   return {
@@ -173,17 +179,82 @@ describe('EventoPublicador', () => {
 
     consoleErrorSpy.mockRestore();
   });
+
+  it('listarCategoriasSuscritas retorna categorias donde el usuario esta', () => {
+    const obs = crearObserverMock();
+    const usuarioId = obs.getUsuarioId();
+
+    publicador.suscribir('academico', obs);
+    publicador.suscribir('deportivo', obs);
+
+    const categorias = publicador.listarCategoriasSuscritas(usuarioId);
+    expect(categorias).toContain('academico');
+    expect(categorias).toContain('deportivo');
+  });
+
+  it('listarCategoriasSuscritas retorna vacio si el usuario no esta suscrito', () => {
+    const categorias = publicador.listarCategoriasSuscritas('usuario-inexistente');
+    expect(categorias).toHaveLength(0);
+  });
+
+  it('listarCategoriasSuscritas solo retorna categorias donde el usuario esta', () => {
+    const obs = crearObserverMock();
+    const id = obs.getUsuarioId();
+    const obsOtro = crearObserverMock();
+
+    publicador.suscribir('academico', obs);
+    publicador.suscribir('deportivo', obsOtro);
+
+    const categorias = publicador.listarCategoriasSuscritas(id);
+    expect(categorias).toEqual(['academico']);
+    expect(categorias).not.toContain('deportivo');
+  });
+
+  it('notificar con usuarioExcluido omite a ese observer', () => {
+    const obs = crearObserverMock();
+    const usuarioId = obs.getUsuarioId();
+
+    publicador.suscribir('academico', obs);
+    publicador.notificar('academico', crearEventoMock('academico'), usuarioId);
+
+    expect(obs.llamadas).toHaveLength(0);
+  });
+
+  it('notificar con usuarioExcluido notifica a los demas observers', () => {
+    const obs1 = crearObserverMock();
+    const obs2 = crearObserverMock();
+
+    publicador.suscribir('academico', obs1);
+    publicador.suscribir('academico', obs2);
+
+    publicador.notificar('academico', crearEventoMock('academico'), obs1.getUsuarioId());
+
+    expect(obs1.llamadas).toHaveLength(0);
+    expect(obs2.llamadas).toHaveLength(1);
+  });
+
+  it('desuscribir de categoria inexistente no lanza error', () => {
+    const obs = crearObserverMock();
+    expect(() => publicador.desuscribir('inexistente' as CategoriaEvento, obs)).not.toThrow();
+  });
 });
 
 describe('SocketEventoObserver', () => {
-  it('llama a emitirEventoNuevoPorCategoria con el usuarioId y el evento', () => {
-    const mockEmitir = jest.fn();
-    jest.mock('../src/lib/socket', () => ({
-      emitirEventoNuevoPorCategoria: mockEmitir,
-    }));
+  beforeEach(() => {
+    mockEmitirEvento.mockClear();
+  });
 
-    const { SocketEventoObserver } = require('../src/shared/eventos-observer/SocketEventoObserver');
+  it('getUsuarioId retorna el id correcto', () => {
     const obs = new SocketEventoObserver('usuario-abc');
     expect(obs.getUsuarioId()).toBe('usuario-abc');
+  });
+
+  it('onNuevoEvento llama a emitirEventoNuevoPorCategoria con usuarioId y evento', () => {
+    const obs = new SocketEventoObserver('usuario-xyz');
+    const evento = crearEventoMock('academico', 'Evento de prueba');
+
+    obs.onNuevoEvento(evento);
+
+    expect(mockEmitirEvento).toHaveBeenCalledWith('usuario-xyz', evento);
   });
 });

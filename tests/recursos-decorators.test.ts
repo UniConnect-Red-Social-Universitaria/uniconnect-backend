@@ -1,7 +1,9 @@
 /// <reference types="jest" />
 
 import { describe, expect, it } from '@jest/globals';
+import { RecursoComponent } from '../src/domain/recursos/RecursoComponent';
 import { RecursoBase } from '../src/domain/recursos/RecursoBase';
+import { RecursoDecorator } from '../src/domain/recursos/RecursoDecorator';
 import { RecursoConComentarios } from '../src/domain/recursos/decorators/RecursoConComentarios';
 import { RecursoConEtiquetas } from '../src/domain/recursos/decorators/RecursoConEtiquetas';
 import { RecursoConValoracion } from '../src/domain/recursos/decorators/RecursoConValoracion';
@@ -62,6 +64,37 @@ describe('Decorators de recursos', () => {
                 promedio: 3.4,
             },
         });
+    });
+
+    it('RecursoConValoracion retorna promedio 0 cuando no hay votos', () => {
+        const recurso = new RecursoConValoracion(
+            new RecursoBase('PDF', 'https://example.com/doc.pdf'),
+            { acumulado: 0, totalVotos: 0 },
+        );
+
+        expect(recurso.getMetadata().valoracion.promedio).toBe(0);
+    });
+
+    it('RecursoDecorator delega getContenido al componente envuelto', () => {
+        const base = new RecursoBase('Titulo', 'contenido-original');
+        const decorador = new RecursoConEtiquetas(base, []);
+
+        expect(decorador.getContenido()).toBe('contenido-original');
+    });
+
+    it('RecursoDecorator delega getMetadata al componente envuelto', () => {
+        const base = new RecursoBase('Titulo', 'url', { extra: 'dato' });
+        const decorador = new RecursoConComentarios(base, []);
+
+        expect(decorador.getMetadata()).toMatchObject({ titulo: 'Titulo', extra: 'dato' });
+    });
+
+    it('RecursoDecorator (abstracto) implementa RecursoComponent', () => {
+        const decorador = new (class extends RecursoDecorator {
+            constructor() { super(new RecursoBase('A', 'B')); }
+        })();
+
+        expect(decorador).toBeInstanceOf(RecursoDecorator);
     });
 
     it('la composicion de decorators mantiene todas las extensiones del recurso', () => {
