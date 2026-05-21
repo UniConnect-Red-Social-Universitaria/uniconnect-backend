@@ -22,13 +22,40 @@ export class RecordatorioScheduler {
     const pendientes = await this.sesionRepository.obtenerSesionesPendientesRecordatorio(new Date());
 
     for (const sesion of pendientes) {
-      const notificacion = new NotificacionBase(
-        `Recordatorio: "${sesion.titulo}" comienza en ${sesion.recordatorioMinutos} minutos.`,
-        sesion.creadorId,
-        new Date(),
-      );
+      // Obtener los IDs de todos los destinatarios
+      const destinatariosIds = new Set<string>();
 
-      await this.notificacionService.notificar(notificacion.render(), sesion.creadorId, 'recordatorio');
+      // El creador siempre recibe recordatorio
+      destinatariosIds.add(sesion.creadorId);
+
+      // Si tiene asistentes registrados, notificar a todos
+      if (sesion.asistentes && sesion.asistentes.length > 0) {
+        for (const asistente of sesion.asistentes) {
+          destinatariosIds.add(asistente.usuarioId);
+        }
+      }
+
+      // Notificar a cada destinatario y persistir la notificación
+      for (const destinatarioId of destinatariosIds) {
+        const notificacion = new NotificacionBase(
+          `Recordatorio: "${sesion.titulo}" comienza en ${sesion.recordatorioMinutos} minutos.`,
+          destinatarioId,
+          new Date(),
+        );
+
+        await this.notificacionService
+          .notificarYPersistir(
+            notificacion.render(),
+            destinatarioId,
+            'recordatorio',
+            `Recordatorio: ${sesion.titulo}`,
+            sesion.id,
+          )
+          .catch((error) =>
+            console.error(`[RecordatorioScheduler] Error al notificar a ${destinatarioId}:`, error),
+          );
+      }
+
       await this.sesionRepository.marcarRecordatorioEnviado(sesion.id);
     }
   }

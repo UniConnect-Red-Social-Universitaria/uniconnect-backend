@@ -27,16 +27,10 @@ const router = Router();
  *               fechaInicio: { type: string, format: date-time }
  *               fechaFin: { type: string, format: date-time }
  *               recordatorioMinutos: { type: integer, default: 30 }
+ *               grupoId: { type: string, description: "Opcional. ID del grupo para sesiones grupales" }
  *     responses:
  *       201:
  *         description: Serie creada con todas sus instancias
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success: { type: boolean }
- *                 data: { $ref: '#/components/schemas/SerieEstudio' }
  */
 router.post('/series', verificarJWT, SesionController.crearSerie);
 
@@ -49,15 +43,6 @@ router.post('/series', verificarJWT, SesionController.crearSerie);
  *     responses:
  *       200:
  *         description: Lista de sesiones no canceladas
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success: { type: boolean }
- *                 data:
- *                   type: array
- *                   items: { $ref: '#/components/schemas/SesionEstudio' }
  */
 router.get('/', verificarJWT, SesionController.obtenerSesiones);
 
@@ -121,5 +106,100 @@ router.patch('/:sesionId', verificarJWT, SesionController.modificarSesion);
  *         description: Sesión(es) cancelada(s)
  */
 router.post('/:sesionId/cancelar', verificarJWT, SesionController.cancelarSesion);
+
+// ── Criterio 3: Cancelar múltiples sesiones específicas ──
+
+/**
+ * @swagger
+ * /api/sesiones/cancelar-multiples:
+ *   post:
+ *     summary: Cancelar múltiples sesiones específicas (Criterio 3)
+ *     description: Permite cancelar una o varias sesiones por sus IDs sin afectar el resto de la serie
+ *     tags: [Sesiones]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [sesionIds]
+ *             properties:
+ *               sesionIds:
+ *                 type: array
+ *                 items: { type: string }
+ *                 description: IDs de las sesiones a cancelar
+ *     responses:
+ *       200:
+ *         description: Sesiones canceladas
+ */
+router.post('/cancelar-multiples', verificarJWT, SesionController.cancelarSesionesPorIds);
+
+// ── Criterio 4: Calendario web ──
+
+/**
+ * @swagger
+ * /api/sesiones/calendario:
+ *   get:
+ *     summary: Obtener calendario completo de sesiones (Criterio 4)
+ *     description: Retorna sesiones del usuario ordenadas cronológicamente con indicador de recurrencia, estado de cancelación, participantes y asistencia
+ *     tags: [Sesiones]
+ *     responses:
+ *       200:
+ *         description: Calendario de sesiones
+ */
+router.get('/calendario', verificarJWT, SesionController.obtenerCalendario);
+
+// ── Criterio 5: Detalle de sesión y asistencia ──
+
+/**
+ * @swagger
+ * /api/sesiones/{sesionId}/detalle:
+ *   get:
+ *     summary: Obtener detalle completo de una sesión (Criterio 5)
+ *     tags: [Sesiones]
+ *     parameters:
+ *       - in: path
+ *         name: sesionId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Detalle de la sesión incluyendo asistentes y recurrencia
+ */
+router.get('/:sesionId/detalle', verificarJWT, SesionController.obtenerDetalleSesion);
+
+/**
+ * @swagger
+ * /api/sesiones/{sesionId}/asistir:
+ *   post:
+ *     summary: Confirmar asistencia a una sesión (Criterio 5)
+ *     tags: [Sesiones]
+ *     parameters:
+ *       - in: path
+ *         name: sesionId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Asistencia confirmada
+ */
+router.post('/:sesionId/asistir', verificarJWT, SesionController.confirmarAsistencia);
+
+/**
+ * @swagger
+ * /api/sesiones/{sesionId}/declinar:
+ *   post:
+ *     summary: Declinar asistencia a una sesión (Criterio 5)
+ *     tags: [Sesiones]
+ *     parameters:
+ *       - in: path
+ *         name: sesionId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Asistencia declinada
+ */
+router.post('/:sesionId/declinar', verificarJWT, SesionController.declinarAsistencia);
 
 export default router;
